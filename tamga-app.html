@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="kk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TAMGA AI — Цифровой Курултай</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #080808;
+            --bg-surface: #0D0D0D;
+            --bg-elevated: #111111;
+            --gold-primary: #C5A55A;
+            --gold-deep: #8B6914;
+            --gold-light: #E8D5A0;
+            --gold-glow: rgba(197, 165, 90, 0.2);
+            --text-primary: #FFFFFF;
+            --text-secondary: #999999;
+            --text-muted: #555555;
+            --success: #4ADE80;
+        }
+
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            user-select: none;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .glass-card {
+            background: rgba(13, 13, 13, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(197, 165, 90, 0.1);
+            border-radius: 28px;
+        }
+
+        .gold-border-glow {
+            box-shadow: 0 0 30px rgba(197, 165, 90, 0.1);
+        }
+
+        .tamga-glow {
+            text-shadow: 0 0 20px rgba(197, 165, 90, 0.6);
+        }
+
+        .nav-blur {
+            background: rgba(8, 8, 8, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(197, 165, 90, 0.1);
+        }
+
+        /* Safe Area Insets for iOS */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .pt-safe {
+            padding-top: env(safe-area-inset-top);
+        }
+
+        @keyframes pulse-gold {
+            0% {
+                box-shadow: 0 0 0 0 rgba(197, 165, 90, 0.3);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(197, 165, 90, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(197, 165, 90, 0);
+            }
+        }
+
+        .animate-pulse-gold {
+            animation: pulse-gold 2.5s infinite;
+        }
+
+        .mask-gold-gradient {
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-deep) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .premium-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const SCREENS = {
+            DASHBOARD: 'dashboard',
+            KURULTAI: 'kurultai',
+            HISTORY: 'history',
+            VERIFY: 'verify',
+            PROFILE: 'profile'
+        };
+
+        const TRIBES_DATA = [
+            { id: 'nayman', name: 'Найман', tamga: '⩔', juz: 'Орта жүз', story: 'Найман — наследники великого Найманского ханства. Обладали развитой государственностью и письменностью задолго до возвышения монголов.' },
+            { id: 'argyn', name: 'Арғын', tamga: '△', juz: 'Орта жүз', story: 'Аргыны — политический и интеллектуальный каркас Орта жуза. Племя биев, поэтов и дипломатов.' },
+            { id: 'alshyn', name: 'Алшын', tamga: '⫝', juz: 'Кіші жүз', story: 'Алшыны — военная элита Младшего жуза, щит западных рубежей.' },
+            { id: 'dulat', name: 'Дулат', tamga: '◯', juz: 'Ұлы жүз', story: 'Дулаты — самое многочисленное племя Старшего жуза, хранители Семиречья.' }
+        ];
+
+        // --- Layout Components ---
+
+        function AppLayout({ children, currentScreen, setScreen }) {
+            return (
+                <div className="flex flex-col h-screen max-w-md mx-auto relative bg-[#080808] overflow-hidden">
+                    <div className="flex-1 overflow-y-auto pt-safe scroll-hide px-5 pb-32">
+                        {children}
+                    </div>
+
+                    <nav className="fixed bottom-0 left-0 right-0 nav-blur pb-safe z-50">
+                        <div className="max-w-md mx-auto flex justify-around items-center py-5 px-4">
+                            <NavButton icon="🏠" label="Гостевая" active={currentScreen === SCREENS.DASHBOARD} onClick={() => setScreen(SCREENS.DASHBOARD)} />
+                            <NavButton icon="⚖️" label="Курултай" active={currentScreen === SCREENS.KURULTAI} onClick={() => setScreen(SCREENS.KURULTAI)} />
+                            <NavButton icon="📜" label="История" active={currentScreen === SCREENS.HISTORY} onClick={() => setScreen(SCREENS.HISTORY)} />
+                            <NavButton icon="🛡️" label="Паспорт" active={currentScreen === SCREENS.PROFILE} onClick={() => setScreen(SCREENS.PROFILE)} />
+                        </div>
+                    </nav>
+                </div>
+            );
+        }
+
+        function NavButton({ icon, label, active, onClick }) {
+            return (
+                <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'scale-110' : 'opacity-30'}`}>
+                    <span className="text-2xl">{icon}</span>
+                    <span className={`text-[9px] uppercase tracking-[0.2em] font-extrabold ${active ? 'text-[#C5A55A]' : 'text-white'}`}>{label}</span>
+                    {active && <div className="w-1.5 h-1.5 rounded-full bg-[#C5A55A] mt-0.5 shadow-[0_0_10px_#C5A55A]"></div>}
+                </button>
+            );
+        }
+
+        // --- Reusable UI ---
+
+        function Card({ children, className = "", onClick }) {
+            return (
+                <div onClick={onClick} className={`glass-card p-6 ${className} transition-all active:scale-[0.98]`}>
+                    {children}
+                </div>
+            );
+        }
+
+        function Badge({ text, color = "#C5A55A" }) {
+            return (
+                <span className="px-2.5 py-1 rounded-full border text-[9px] uppercase tracking-widest font-bold" style={{ borderColor: `${color}40`, color: color, backgroundColor: `${color}10` }}>
+                    {text}
+                </span>
+            );
+        }
+
+        // --- Screens ---
+
+        function Dashboard({ user, onStartVerify }) {
+            return (
+                <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+                    <div className="flex items-center justify-between mt-6 mb-10">
+                        <div>
+                            <p className="text-[10px] text-[#555] tracking-[0.4em] uppercase font-bold mb-1">Ассалаумағалейкум,</p>
+                            <h2 className="text-3xl font-serif text-white">{user.name || 'Бауыр'}</h2>
+                        </div>
+                        <div className="w-14 h-14 rounded-3xl glass-card flex items-center justify-center border-[#C5A55A40] rotate-3 hover:rotate-0 transition-transform">
+                            <span className="text-2xl">👤</span>
+                        </div>
+                    </div>
+
+                    <Card className="mb-8 relative overflow-hidden group border-[#C5A55A30] gold-border-glow" onClick={onStartVerify}>
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <span className="text-6xl font-serif">{user.tribe?.tamga || '⩔'}</span>
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-5 mb-8">
+                                <div className="w-16 h-16 rounded-full bg-[#0a0a0a] border-2 border-[#C5A55A60] flex items-center justify-center tamga-glow shadow-[0_0_30px_rgba(197,165,90,0.2)]">
+                                    <span className="text-4xl text-[#C5A55A] font-serif">{user.tribe?.tamga || '⩔'}</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold tracking-[0.1em] uppercase mb-1">{user.tribe?.name || 'В поисках рода'}</h3>
+                                    <Badge text={user.status || 'Guest Rank'} color={user.status === 'Gold' ? '#C5A55A' : '#4ADE80'} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[10px] text-[#555] uppercase tracking-widest font-bold">Прогресс Соединения</span>
+                                    <span className="text-sm font-serif text-[#C5A55A]">{user.filled}/7</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-[#8B6914] to-[#C5A55A] transition-all duration-1000" style={{ width: `${(user.filled / 7) * 100}%` }}></div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-center">
+                                <button className="text-[10px] text-[#C5A55A] uppercase tracking-[0.3em] font-black animate-pulse">
+                                    Продолжить Путь →
+                                </button>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div className="grid grid-cols-2 gap-5 mb-10">
+                        <Card className="flex flex-col items-center py-8">
+                            <span className="text-3xl mb-4">⚖️</span>
+                            <span className="text-[9px] text-[#444] uppercase tracking-[0.3em] mb-2 font-bold">Голоса (DAO)</span>
+                            <span className="text-2xl font-serif text-[#C5A55A]">12</span>
+                        </Card>
+                        <Card className="flex flex-col items-center py-8">
+                            <span className="text-3xl mb-4">🏆</span>
+                            <span className="text-[9px] text-[#444] uppercase tracking-[0.3em] mb-2 font-bold">Ранг Рода</span>
+                            <span className="text-2xl font-serif text-[#C5A55A]">#42</span>
+                        </Card>
+                    </div>
+
+                    <section className="mb-6">
+                        <div className="flex justify-between items-end mb-6">
+                            <h3 className="text-[11px] text-[#555] uppercase tracking-[0.4em] font-black">События Улуса</h3>
+                            <button className="text-[9px] text-[#C5A55A] uppercase tracking-widest opacity-60">Все →</button>
+                        </div>
+                        <div className="space-y-5">
+                            <div className="glass-card p-5 border-l-2 border-l-[#4ADE80] flex gap-5 items-start bg-white/[0.02]">
+                                <div className="w-12 h-12 rounded-2xl bg-white/5 flex-shrink-0 flex items-center justify-center text-xl shadow-inner">⚡</div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-xs font-black uppercase tracking-wider">Голосование ОТКРЫТО</h4>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-ping"></div>
+                                    </div>
+                                    <p className="text-[11px] text-[#888] leading-snug">Утверждение бюджета на оцифровку шежіре рода {user.tribe?.name} в г. Туркестан.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        }
+
+        function VerificationFlow({ onComplete, onCancel }) {
+            const [step, setStep] = useState(0);
+            const [data, setData] = useState({ name: "", tribe: null, ancestors: Array(6).fill("") });
+            const labels = ["Әке", "Ата", "Арғы ата", "Баба", "Түп ата", "Тек ата"];
+
+            const next = () => {
+                if (step === 2) onComplete(data);
+                else setStep(step + 1);
+            };
+
+            return (
+                <div className="animate-in fade-in slide-in-from-right-8 duration-500 py-6 min-h-[80vh] flex flex-col">
+                    <button onClick={onCancel} className="text-[#444] mb-10 text-[10px] tracking-widest uppercase font-bold self-start">← Отмена</button>
+
+                    <header className="mb-12">
+                        <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3 text-center">Протокол Верификации</p>
+                        <h2 className="text-4xl font-serif text-center text-white">
+                            {step === 0 ? "Имя Родовое" : step === 1 ? "Твой Улус" : "Жеті Ата"}
+                        </h2>
+                    </header>
+
+                    <div className="flex-1">
+                        {step === 0 && (
+                            <div className="space-y-10 animate-in fade-in duration-700">
+                                <p className="text-sm text-[#777] leading-relaxed italic text-center px-4">«Сперва назови свое имя, путник, чтобы голос твой был услышан в степи». Введите имя для чеканки SBT.</p>
+                                <input
+                                    autoFocus
+                                    value={data.name}
+                                    onChange={e => setData({ ...data, name: e.target.value })}
+                                    placeholder="Введите имя..."
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-[2rem] p-8 text-2xl text-center outline-none focus:border-[#C5A55A40] transition-all font-serif"
+                                />
+                                <button onClick={next} disabled={!data.name} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)] transition-all active:scale-95">Продолжить Путь</button>
+                            </div>
+                        )}
+
+                        {step === 1 && (
+                            <div className="grid grid-cols-2 gap-5 animate-in slide-in-from-bottom-5 duration-700">
+                                {TRIBES_DATA.map(t => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setData({ ...data, tribe: t })}
+                                        className={`glass-card p-8 flex flex-col items-center justify-center transition-all duration-500 ${data.tribe?.id === t.id ? 'border-[#C5A55A] bg-[#C5A55A10] scale-105 shadow-[0_0_40px_rgba(197,165,90,0.2)]' : 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}
+                                    >
+                                        <span className="text-5xl text-[#C5A55A] mb-4 tamga-glow font-serif">{t.tamga}</span>
+                                        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white">{t.name}</span>
+                                    </button>
+                                ))}
+                                <button onClick={next} disabled={!data.tribe} className="col-span-2 mt-10 bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Подтвердить Род</button>
+                            </div>
+                        )}
+
+                        {step === 2 && (
+                            <div className="space-y-6 animate-in fade-in duration-1000">
+                                <p className="text-[11px] text-[#666] mb-10 text-center uppercase tracking-widest font-bold">Связь Поколений</p>
+                                <div className="relative pl-10 space-y-8">
+                                    <div className="absolute left-4 top-2 bottom-2 w-[1px] bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                                    {labels.map((l, i) => (
+                                        <div key={i} className="relative group">
+                                            <div className="absolute -left-[32px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#080808] border border-white/10 flex items-center justify-center transition-all duration-500 group-focus-within:border-[#C5A55A60]">
+                                                <div className={`w-2 h-2 rounded-full transition-all duration-700 ${data.ancestors[i] ? 'bg-[#C5A55A] shadow-[0_0_10px_#C5A55A]' : 'bg-white/5'}`}></div>
+                                            </div>
+                                            <label className="text-[8px] text-[#444] uppercase tracking-[0.4em] block mb-2 font-black">{l}</label>
+                                            <input
+                                                value={data.ancestors[i]}
+                                                onChange={e => {
+                                                    const a = [...data.ancestors]; a[i] = e.target.value;
+                                                    setData({ ...data, ancestors: a });
+                                                }}
+                                                placeholder="..."
+                                                className="w-full bg-transparent border-b border-white/5 py-1 text-xl outline-none focus:border-[#C5A55A40] transition-all font-serif italic"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={next} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase mt-12 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Завершить Верификацию</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function Kurultai() {
+            return (
+                <div className="animate-in fade-in slide-in-from-bottom-10 duration-700">
+                    <header className="mb-12 mt-6">
+                        <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3">Governance</p>
+                        <h2 className="text-4xl font-serif text-white">Цифровой Курултай</h2>
+                    </header>
+
+                    <Card className="mb-10 border-[#4ADE8020] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#4ADE8010] blur-[60px] rounded-full"></div>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-center mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] animate-pulse"></div>
+                                    <span className="text-[10px] text-[#4ADE80] font-black uppercase tracking-[0.3em]">Активное Предложение</span>
+                                </div>
+                                <Badge text="24:12:05" color="#999" />
+                            </div>
+                            <h3 className="text-2xl font-serif mb-6 leading-tight">Создание фонда «Наследие Степи» для поддержки цифровых историков</h3>
+                            <p className="text-xs text-[#888] leading-relaxed mb-10 font-light italic">«Мы обязаны оцифровать последние бумажные архивы в Тургайской области, пока время их не стерло...»</p>
+                            <div className="flex gap-4">
+                                <button className="flex-1 bg-white/[0.03] border border-white/10 py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/5 transition-all">Против</button>
+                                <button className="flex-1 bg-gradient-to-r from-[#8B6914] to-[#C5A55A] text-black py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">За</button>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div className="space-y-6">
+                        <h4 className="text-[10px] text-[#555] uppercase tracking-[0.4em] font-black mb-6">Архив Решений</h4>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="glass-card p-6 flex justify-between items-center opacity-40 hover:opacity-100 transition-opacity">
+                                <div>
+                                    <h5 className="text-sm font-bold uppercase tracking-widest mb-1.5">Протокол #{1024 - i}</h5>
+                                    <p className="text-[10px] text-[#666] tracking-widest uppercase">Оцифровка архивов Кенесары-хана</p>
+                                </div>
+                                <div className="text-[#4ADE80] text-xs font-black">✓</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function HeritagePassport({ user }) {
+            const txHash = useMemo(() => `0x${Array.from({ length: 48 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`, []);
+
+            return (
+                <div className="animate-in zoom-in-95 duration-1000 py-6">
+                    <header className="text-center mb-16">
+                        <p className="text-[10px] text-[#C5A55A] tracking-[0.6em] uppercase font-black mb-4">Verification Artifact</p>
+                        <h2 className="text-4xl font-serif text-white uppercase tracking-tighter">Heritage Passport</h2>
+                    </header>
+
+                    <div className="relative mb-20 max-w-[340px] mx-auto group perspective-1000">
+                        {/* Dramatic Glows */}
+                        <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#C5A55A15] blur-[100px] rounded-full animate-pulse"></div>
+                        <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#8B691410] blur-[100px] rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+                        <div className="glass-card relative z-10 overflow-hidden border-[#C5A55A40] gold-border-glow rotate-[-4deg] hover:rotate-0 transition-all duration-1000 ease-out bg-black premium-shadow cursor-pointer">
+                            {/* Texture Overlay */}
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C5A55A 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+
+                            {/* Card Header Pattern */}
+                            <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-[#C5A55A20] to-transparent"></div>
+
+                            <div className="p-10 text-center pt-16">
+                                <div className="text-9xl text-[#C5A55A] tamga-glow font-serif mb-10 transition-transform duration-1000 group-hover:scale-110 group-hover:drop-shadow-[0_0_30px_#C5A55A]">
+                                    {user.tribe?.tamga || '⩔'}
+                                </div>
+                                <h1 className="text-4xl font-serif text-white tracking-[0.2em] uppercase mb-2">{user.tribe?.name || 'В поисках'}</h1>
+                                <p className="text-[11px] text-[#C5A55A] tracking-[0.6em] font-black uppercase mb-12">{user.tribe?.juz || 'Не верифицирован'}</p>
+
+                                <div className="border-t border-b border-white/5 py-8 mb-10 text-left space-y-5">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-[#444] uppercase tracking-[0.3em] font-bold">Владелец</span>
+                                        <span className="text-sm font-serif text-white italic">{user.name || 'Anonymous'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-[#444] uppercase tracking-[0.3em] font-bold">Глубина</span>
+                                        <span className="text-sm font-serif text-white italic">{user.filled || '0'}/7 Поколений</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-[#444] uppercase tracking-[0.3em] font-bold">Статус</span>
+                                        <span className="text-xs font-black text-[#4ADE80] tracking-[0.2em] uppercase bg-[#4ADE800A] px-3 py-1 rounded-full border border-[#4ADE8020]">{user.status || 'Guest'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#050505] rounded-2xl p-5 text-left border border-white/5 shadow-inner">
+                                    <span className="text-[8px] text-[#333] uppercase block mb-2 tracking-widest font-black">Meta-Hash (Soulbound Token)</span>
+                                    <code className="text-[9px] text-[#555] break-all font-mono leading-relaxed">{txHash}</code>
+                                </div>
+                            </div>
+
+                            {/* Bottom Pattern */}
+                            <div className="h-4 bg-gradient-to-r from-transparent via-[#C5A55A40] to-transparent"></div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <button className="w-full glass-card py-7 border-white/10 text-[10px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-white/5 transition-all hover:border-[#C5A55A40] active:scale-95 shadow-lg">
+                            <span>📤</span> Поделиться Наследием
+                        </button>
+                        <button className="w-full py-4 text-[9px] text-[#444] tracking-[0.5em] uppercase font-bold text-center">
+                            Экспорт в IPFS (V2)
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        const TREE_DATA = {
+            id: "alash", name: "Алаш", gen: 1,
+            children: [
+                {
+                    id: "uly-zhuz", name: "Ұлы жүз", gen: 2, siblings: ["Орта жүз"], isBranch: true,
+                    children: [
+                        { id: "dulat", name: "Дулат", gen: 3 },
+                        { id: "alban", name: "Албан", gen: 3 },
+                        { id: "suan", name: "Суан", gen: 3 }
+                    ]
+                },
+                {
+                    id: "orta-zhuz", name: "Орта жүз", gen: 2, isBranch: true,
+                    children: [
+                        { id: "argyn", name: "Арғын", gen: 3 },
+                        { id: "nayman", name: "Найман", gen: 3 },
+                        { id: "kerey", name: "Керей", gen: 3 }
+                    ]
+                },
+                {
+                    id: "kishi-zhuz", name: "Кіші жүз", gen: 2,
+                    children: [{
+                        id: "qayyrbay", name: "Қайырбай-Қаракесек", gen: 3,
+                        children: [{
+                            id: "alim", name: "Әлім", gen: 4,
+                            children: [{
+                                id: "tortqara", name: "Қарамашақ-Төртқара", gen: 5,
+                                children: [{
+                                    id: "qarash", name: "Қараш", gen: 6,
+                                    children: [{
+                                        id: "aqpan", name: "Ақпан-Аппақ", gen: 7,
+                                        children: [{
+                                            id: "qulaman", name: "Құламан", gen: 8,
+                                            children: [{
+                                                id: "amantay", name: "Амантай", gen: 9,
+                                                children: [{
+                                                    id: "suyir", name: "Сүйір", gen: 10,
+                                                    children: [{
+                                                        id: "agym", name: "Ағым", gen: 11,
+                                                        children: [{
+                                                            id: "baitemir", name: "Байтемір", gen: 12,
+                                                            siblings: ["Қосқұлақ", "Қосақ", "Досақ", "Жантемір", "Байторы"],
+                                                            children: [{
+                                                                id: "tanas", name: "Танас", gen: 13,
+                                                                siblings: ["Мырзабай", "Ерше"],
+                                                                children: [{
+                                                                    id: "zhuas", name: "Жуас", gen: 14,
+                                                                    siblings: ["Құдас", "Манабай", "Жанабай"],
+                                                                    children: [{
+                                                                        id: "kunash", name: "Күнәш", gen: 15,
+                                                                        siblings: ["Белес", "Жұлдыз", "Шеген", "Байсымақ"],
+                                                                        children: [{
+                                                                            id: "otar", name: "Отар", gen: 16,
+                                                                            siblings: ["Теңізбай", "Ниәз", "Ырғызбай", "Отаралы"],
+                                                                            children: [{
+                                                                                id: "qoilybai", name: "Қойлыбай", gen: 17,
+                                                                                siblings: ["Тәжі", "Тәкеш"],
+                                                                                children: [{
+                                                                                    id: "alibi", name: "Әліби", gen: 18,
+                                                                                    siblings: ["Қали", "Ағытай", "Тәбілбай", "Байжан", "Лайық"],
+                                                                                    children: [
+                                                                                        {
+                                                                                            id: "qairat", name: "Қайрат", gen: 19,
+                                                                                            children: [
+                                                                                                {
+                                                                                                    id: "aset", name: "Әсет", gen: 20, highlight: true, label: "Мен",
+                                                                                                    children: [
+                                                                                                        { id: "damir", name: "Дамир", gen: 21, highlight: true, label: "Тұңғыш ұлым" },
+                                                                                                        { id: "sultan", name: "Султан", gen: 21, highlight: true, label: "Ортаншы ұлым" },
+                                                                                                        { id: "batyr", name: "Батыр", gen: 21, highlight: true, label: "Кіші ұлым" }
+                                                                                                    ]
+                                                                                                },
+                                                                                                {
+                                                                                                    id: "arsen", name: "Арсен", gen: 20, highlight: true, label: "Інім",
+                                                                                                    children: [
+                                                                                                        { id: "dani", name: "Дани", gen: 21, highlight: true, label: "Тұңғыш ұлы" },
+                                                                                                        { id: "bari", name: "Бари", gen: 21, highlight: true, label: "Кіші ұлы" }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
+                                                                                        },
+                                                                                        {
+                                                                                            id: "askar", name: "Асқар", gen: 19, highlight: true, label: "Брат Кайрата",
+                                                                                            children: [
+                                                                                                {
+                                                                                                    id: "timur", name: "Тимур", gen: 20, highlight: true, label: "Сын Аскара",
+                                                                                                    children: [
+                                                                                                        { id: "sanzhar", name: "Санжар", gen: 21, highlight: true, label: "Ұлы" },
+                                                                                                        { id: "arystan", name: "Арыстан", gen: 21, highlight: true, label: "Ұлы" }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                }]
+                                                                            }]
+                                                                        }]
+                                                                    }]
+                                                                }]
+                                                            }]
+                                                        }]
+                                                    }]
+                                                }]
+                                            }]
+                                        }]
+                                    }]
+                                }]
+                            }]
+                        }]
+                    }]
+                }
+            ]
+        };
+
+        function TreeBranch({ node, expanded, onToggle }) {
+            const isOpen = expanded.has(node.id);
+            const hasKids = node.children && node.children.length > 0;
+            const isHL = node.highlight;
+
+            return (
+                <div className="flex flex-col items-center">
+                    <div
+                        onClick={() => hasKids && onToggle(node.id)}
+                        className={`glass-card p-4 flex flex-col items-center min-w-[120px] transition-all duration-500 ${isHL ? 'border-[#C5A55A] shadow-[0_0_20px_rgba(197,165,90,0.2)] scale-105' : 'border-white/5 opacity-80'}`}
+                    >
+                        <span className={`font-serif text-sm ${isHL ? 'text-[#C5A55A]' : 'text-white'}`}>{node.name}</span>
+                        <span className="text-[8px] text-[#444] uppercase tracking-widest mt-1">{node.gen}-ұрпақ</span>
+                        {node.label && <span className="text-[8px] text-[#C5A55A] mt-1 italic">{node.label}</span>}
+                        {hasKids && (
+                            <div className="mt-2 text-[10px] text-[#C5A55A] animate-bounce">
+                                {isOpen ? '▲' : '▼'}
+                            </div>
+                        )}
+                    </div>
+
+                    {hasKids && isOpen && (
+                        <div className="flex flex-col items-center w-full pt-4">
+                            <div className="w-px h-6 bg-gradient-to-b from-[#C5A55A40] to-transparent"></div>
+                            <div className="flex gap-4 overflow-x-auto w-full justify-center px-4 py-4 scroll-hide">
+                                {node.children.map(ch => (
+                                    <TreeBranch key={ch.id} node={ch} expanded={expanded} onToggle={onToggle} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function HistoryAI({ user }) {
+            const [expanded, setExpanded] = useState(new Set(["alash", "kishi-zhuz", "qayyrbay", "alim", "tortqara"]));
+
+            const toggle = (id) => {
+                setExpanded(prev => {
+                    const next = new Set(prev);
+                    next.has(id) ? next.delete(id) : next.add(id);
+                    return next;
+                });
+            };
+
+            return (
+                <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 py-6">
+                    <header className="mb-12 mt-6">
+                        <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3 text-center">Identity Tree</p>
+                        <h2 className="text-4xl font-serif text-white text-center">Шежіре Древо</h2>
+                    </header>
+
+                    <div className="overflow-x-auto scroll-hide pb-20">
+                        <div className="inline-block min-w-full text-center">
+                            <TreeBranch node={TREE_DATA} expanded={expanded} onToggle={toggle} />
+                        </div>
+                    </div>
+
+                    <div className="relative mb-12">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-[#8B691430] to-[#C5A55A30] rounded-[2rem] blur opacity-25"></div>
+                        <Card className="relative bg-[#0a0a0a] border-white/5 p-8 italic leading-relaxed text-sm text-[#ccc] font-serif premium-shadow">
+                            <span className="absolute -top-4 left-8 text-6xl text-[#C5A55A20] font-serif">“</span>
+                            {user.tribe ? (
+                                <>
+                                    <p className="mb-6">«{user.tribe.name} — это мощная политическая сила, чьи тамги ставились под самыми значимыми договорами степи. Твой личный код продолжает эту летопись.»</p>
+                                </>
+                            ) : (
+                                <p className="text-center py-12 opacity-40">«Выберите свой путь и род, чтобы AI пробудил память предков...»</p>
+                            )}
+                        </Card>
+                    </div>
+
+                    <Card className="flex items-center gap-6 p-6 active:scale-95 transition-all border-[#C5A55A20]" onClick={() => window.open('index.html', '_blank')}>
+                        <div className="w-14 h-14 rounded-2xl bg-[#C5A55A10] flex items-center justify-center text-2xl border border-[#C5A55A30]">🌍</div>
+                        <div className="flex-1">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A55A] mb-1">Сетка Племен</h4>
+                            <p className="text-[10px] text-[#666] tracking-widest uppercase">Вернуться на главный сайт</p>
+                        </div>
+                        <span className="text-[#C5A55A] opacity-40">→</span>
+                    </Card>
+                </div>
+            );
+        }
+
+        // --- Main App Logic ---
+
+        function App() {
+            const [currentScreen, setCurrentScreen] = useState(SCREENS.DASHBOARD);
+            const [user, setUser] = useState({
+                name: "Дамир Султан",
+                tribe: TRIBES_DATA[0],
+                status: "Silver Rank",
+                filled: 4
+            });
+
+            const handleVerifyComplete = (data) => {
+                const filledCount = 1 + data.ancestors.filter(a => a.trim()).length;
+                let status = "Bronze Rank";
+                if (filledCount >= 7) status = "Gold Rank";
+                else if (filledCount >= 5) status = "Silver Rank";
+
+                setUser({
+                    name: data.name,
+                    tribe: data.tribe,
+                    status: status,
+                    filled: filledCount
+                });
+                setCurrentScreen(SCREENS.DASHBOARD);
+            };
+
+            return (
+                <AppLayout currentScreen={currentScreen} setScreen={setCurrentScreen}>
+                    {currentScreen === SCREENS.DASHBOARD && (
+                        <Dashboard user={user} onStartVerify={() => setCurrentScreen(SCREENS.VERIFY)} />
+                    )}
+                    {currentScreen === SCREENS.VERIFY && (
+                        <VerificationFlow onComplete={handleVerifyComplete} onCancel={() => setCurrentScreen(SCREENS.DASHBOARD)} />
+                    )}
+                    {currentScreen === SCREENS.KURULTAI && (
+                        <Kurultai />
+                    )}
+                    {currentScreen === SCREENS.PROFILE && (
+                        <HeritagePassport user={user} />
+                    )}
+                    {currentScreen === SCREENS.HISTORY && (
+                        <HistoryAI user={user} />
+                    )}
+                </AppLayout>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
