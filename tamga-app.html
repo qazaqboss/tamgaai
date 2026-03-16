@@ -130,11 +130,40 @@
             PROFILE: 'profile'
         };
 
+        const ZHUZES = {
+            ULY: "Ұлы жүз",
+            ORTA: "Орта жүз",
+            KISHI: "Кіші жүз",
+            AKSUYEK: "Ақсүйек"
+        };
+
         const TRIBES_DATA = [
-            { id: 'nayman', name: 'Найман', tamga: '⩔', juz: 'Орта жүз', story: 'Найман — наследники великого Найманского ханства. Обладали развитой государственностью и письменностью задолго до возвышения монголов.' },
-            { id: 'argyn', name: 'Арғын', tamga: '△', juz: 'Орта жүз', story: 'Аргыны — политический и интеллектуальный каркас Орта жуза. Племя биев, поэтов и дипломатов.' },
-            { id: 'alshyn', name: 'Алшын', tamga: '⫝', juz: 'Кіші жүз', story: 'Алшыны — военная элита Младшего жуза, щит западных рубежей.' },
-            { id: 'dulat', name: 'Дулат', tamga: '◯', juz: 'Ұлы жүз', story: 'Дулаты — самое многочисленное племя Старшего жуза, хранители Семиречья.' }
+            // Ұлы жүз
+            { id: 'qanly', name: "Қаңлы", juz: ZHUZES.ULY, tamga: "⩚", tamgaName: "Көсеу", color: "#C5A55A", story: "Қаңлы — древнее племя, упоминаемое в источниках задолго до нашей эры. Они были мощной силой в Сырдарьинском регионе." },
+            { id: 'shanyshqyly', name: "Шанышқылы", juz: ZHUZES.ULY, tamga: "⋔", tamgaName: "Шанышқы", color: "#C5A55A", story: "Шанышқылы — воинственное племя Старшего жуза. Исторически связаны с Канджыгалы." },
+            { id: 'sirgeli', name: "Сіргелі", juz: ZHUZES.ULY, tamga: "⊓", tamgaName: "Сірге", color: "#C5A55A", story: "Сиргели получили название от знака 'сирге' — путы для жеребят." },
+            { id: 'shaqsham', name: "Шақшам", juz: ZHUZES.ULY, tamga: "ᗕ", tamgaName: "Тамға", color: "#C5A55A", story: "Малочисленное, но гордое объединение в составе Старшего жуза." },
+            { id: 'saryuysin', name: "Сарыүйсін", juz: ZHUZES.ULY, tamga: "⚭", tamgaName: "Абақ", color: "#C5A55A", story: "Прямые наследники древних Усуней, господствовавших в Семиречье в античную эпоху." },
+            { id: 'shapyrashty', name: "Шапырашты", juz: ZHUZES.ULY, tamga: "∀", tamgaName: "Айыр", color: "#C5A55A", story: "Шапырашты — стражи Жетысу. Из этого рода вышли многие батыры." },
+            { id: 'jalayir', name: "Жалайыр", juz: ZHUZES.ULY, tamga: "⫙", tamgaName: "Тарақ", color: "#C5A55A", story: "Жалайыры — одно из самых влиятельных племен в империи Чингисхана. Считались 'ноқта ағасы'." },
+            { id: 'isty', name: "Ысты", juz: ZHUZES.ULY, tamga: "⩔", tamgaName: "Көсеу", color: "#C5A55A", story: "Ысты — род, тесно связанный с Ошакты. Проживают преимущественно в Жамбылской области." },
+            { id: 'oshaqty', name: "Ошақты", juz: ZHUZES.ULY, tamga: "⊼", tamgaName: "Ошақ", color: "#C5A55A", story: "Название рода происходит от 'ошақ' (очаг). Символ домашнего уюта и нерушимости семейных уз." },
+            { id: 'alban', name: "Албан", juz: ZHUZES.ULY, tamga: "⧊", tamgaName: "Айыр", color: "#C5A55A", story: "Албаны — горные воины, хозяева Заилийского Алатау." },
+            { id: 'suan', name: "Суан", juz: ZHUZES.ULY, tamga: "⩝", tamgaName: "Айыр", color: "#C5A55A", story: "Братское племя Альбанов и Дулатов. Кочевали в предгорьях Джунгарского Алатау." },
+            { id: 'dulat', name: "Дулат", juz: ZHUZES.ULY, tamga: "◯", tamgaName: "Дөңгелек", color: "#C5A55A", story: "Дулаты — самое многочисленное племя Старшего жуза. Хранители Семиречья." },
+
+            // Орта жүз
+            { id: 'argyn', name: "Арғын", juz: ZHUZES.ORTA, tamga: "△", tamgaName: "Үшкіл", color: "#C5A55A", story: "Аргыны — политический и интеллектуальный каркас Орта жуза. Племя биев, поэтов и дипломатов." },
+            { id: 'nayman', name: "Найман", juz: ZHUZES.ORTA, tamga: "⩔", tamgaName: "Бақан", color: "#C5A55A", story: "Найманы — наследники великого Найманского ханства. Обладали развитой государственностью." },
+            { id: 'qonyrat', name: "Қоңырат", juz: ZHUZES.ORTA, tamga: "⧖", tamgaName: "Босаға", color: "#C5A55A", story: "Коныраты славились своей дипломатией. Из этого рода происходила Борте, супруга Чингисхана." },
+            { id: 'qypshaq', name: "Қыпшақ", juz: ZHUZES.ORTA, tamga: "⊥", tamgaName: "Қос алып", color: "#C5A55A", story: "Кыпчаки — хозяева Великой Степи. Их имя наводило трепет от Китая до Византии." },
+            { id: 'kerey', name: "Керей", juz: ZHUZES.ORTA, tamga: "🕀", tamgaName: "Абақ", color: "#C5A55A", story: "Кереи — одно из основателей Казахского ханства. Ядро новой нации." },
+            { id: 'uaq', name: "Уақ", juz: ZHUZES.ORTA, tamga: "⨼", tamgaName: "Уақ", color: "#C5A55A", story: "Воинственное племя, известное своими батырами в войне с джунгарами." },
+
+            // Кіші жүз
+            { id: 'alimuly', name: "Әлімұлы", juz: ZHUZES.KISHI, tamga: "⫝", tamgaName: "Шеге", color: "#C5A55A", story: "Алимулы — мощное объединение Младшего жуза. Стражи западных рубежей." },
+            { id: 'baiuly', name: "Байұлы", juz: ZHUZES.KISHI, tamga: "⩓", tamgaName: "Таяқ", color: "#C5A55A", story: "Байулы — объединение из 12 родов. Основная сила Западного Казахстана." },
+            { id: 'jetyru', name: "Жетіру", juz: ZHUZES.KISHI, tamga: "⧗", tamgaName: "Жеті", color: "#C5A55A", story: "Жетыру — союз семи родов, созданный по преданиям Тауке-ханом." },
         ];
 
         // --- Layout Components ---
@@ -271,23 +300,33 @@
         }
 
         function VerificationFlow({ onComplete, onCancel }) {
-            const [step, setStep] = useState(0);
-            const [data, setData] = useState({ name: "", tribe: null, ancestors: Array(6).fill("") });
+            const [step, setStep] = useState(0); // 0: Name, 1: Juz, 2: Tribe, 3: Jeti Ata
+            const [data, setData] = useState({ name: "", juz: null, tribe: null, ancestors: Array(6).fill("") });
             const labels = ["Әке", "Ата", "Арғы ата", "Баба", "Түп ата", "Тек ата"];
 
+            const filteredTribes = useMemo(() => {
+                if (!data.juz) return [];
+                return TRIBES_DATA.filter(t => t.juz === data.juz);
+            }, [data.juz]);
+
             const next = () => {
-                if (step === 2) onComplete(data);
+                if (step === 3) onComplete(data);
                 else setStep(step + 1);
+            };
+
+            const back = () => {
+                if (step === 0) onCancel();
+                else setStep(step - 1);
             };
 
             return (
                 <div className="animate-in fade-in slide-in-from-right-8 duration-500 py-6 min-h-[80vh] flex flex-col">
-                    <button onClick={onCancel} className="text-[#444] mb-10 text-[10px] tracking-widest uppercase font-bold self-start">← Отмена</button>
+                    <button onClick={back} className="text-[#444] mb-10 text-[10px] tracking-widest uppercase font-bold self-start">← {step === 0 ? "Отмена" : "Назад"}</button>
 
                     <header className="mb-12">
                         <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3 text-center">Протокол Верификации</p>
                         <h2 className="text-4xl font-serif text-center text-white">
-                            {step === 0 ? "Имя Родовое" : step === 1 ? "Твой Улус" : "Жеті Ата"}
+                            {step === 0 ? "Имя Родовое" : step === 1 ? "Твой Жуз" : step === 2 ? "Выбор Рода" : "Жеті Ата"}
                         </h2>
                     </header>
 
@@ -302,27 +341,44 @@
                                     placeholder="Введите имя..."
                                     className="w-full bg-white/[0.03] border border-white/5 rounded-[2rem] p-8 text-2xl text-center outline-none focus:border-[#C5A55A40] transition-all font-serif"
                                 />
-                                <button onClick={next} disabled={!data.name} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)] transition-all active:scale-95">Продолжить Путь</button>
+                                <button onClick={next} disabled={!data.name} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)] transition-all active:scale-95">Далее</button>
                             </div>
                         )}
 
                         {step === 1 && (
-                            <div className="grid grid-cols-2 gap-5 animate-in slide-in-from-bottom-5 duration-700">
-                                {TRIBES_DATA.map(t => (
+                            <div className="grid grid-cols-1 gap-4 animate-in slide-in-from-bottom-5 duration-700">
+                                {Object.values(ZHUZES).map(juz => (
                                     <button
-                                        key={t.id}
-                                        onClick={() => setData({ ...data, tribe: t })}
-                                        className={`glass-card p-8 flex flex-col items-center justify-center transition-all duration-500 ${data.tribe?.id === t.id ? 'border-[#C5A55A] bg-[#C5A55A10] scale-105 shadow-[0_0_40px_rgba(197,165,90,0.2)]' : 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}
+                                        key={juz}
+                                        onClick={() => { setData({ ...data, juz: juz, tribe: null }); next(); }}
+                                        className={`glass-card p-6 flex items-center justify-between transition-all duration-300 ${data.juz === juz ? 'border-[#C5A55A] bg-[#C5A55A10]' : 'opacity-60 grayscale'}`}
                                     >
-                                        <span className="text-5xl text-[#C5A55A] mb-4 tamga-glow font-serif">{t.tamga}</span>
-                                        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-white">{t.name}</span>
+                                        <span className="text-lg font-serif text-white">{juz}</span>
+                                        <span className="text-[#C5A55A]">→</span>
                                     </button>
                                 ))}
-                                <button onClick={next} disabled={!data.tribe} className="col-span-2 mt-10 bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Подтвердить Род</button>
                             </div>
                         )}
 
                         {step === 2 && (
+                            <div className="flex flex-col gap-5 animate-in slide-in-from-bottom-5 duration-700">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {filteredTribes.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setData({ ...data, tribe: t })}
+                                            className={`glass-card p-6 flex flex-col items-center justify-center transition-all duration-500 ${data.tribe?.id === t.id ? 'border-[#C5A55A] bg-[#C5A55A10] scale-105 shadow-[0_0_40px_rgba(197,165,90,0.2)]' : 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0'}`}
+                                        >
+                                            <span className="text-4xl text-[#C5A55A] mb-3 tamga-glow font-serif">{t.tamga}</span>
+                                            <span className="text-[9px] font-black tracking-[0.2em] uppercase text-white">{t.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={next} disabled={!data.tribe} className="mt-6 bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase disabled:opacity-20 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Подтвердить</button>
+                            </div>
+                        )}
+
+                        {step === 3 && (
                             <div className="space-y-6 animate-in fade-in duration-1000">
                                 <p className="text-[11px] text-[#666] mb-10 text-center uppercase tracking-widest font-bold">Связь Поколений</p>
                                 <div className="relative pl-10 space-y-8">
@@ -345,7 +401,7 @@
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={next} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase mt-12 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Завершить Верификацию</button>
+                                <button onClick={next} className="w-full bg-[#C5A55A] text-black font-black py-6 rounded-[2rem] tracking-[0.4em] uppercase mt-12 shadow-[0_10px_40px_rgba(197,165,90,0.3)]">Завершить</button>
                             </div>
                         )}
                     </div>
@@ -612,6 +668,14 @@
             );
         }
 
+        const PHILOSOPHY_DATA = [
+            { title: "Печати Времени", icon: "⏳", text: "Тамга — это не просто логотип. Это зашифрованный код собственности, власти и преемственности, прошедший сквозь тысячелетия." },
+            { title: "Ошақты — Очаг", icon: "🔥", text: "Тамга рода Ошақты (треугольник) символизирует треногу очага — центр жизни и нерушимость семейных уз кочевника." },
+            { title: "Керей — Ашамай", icon: "🐎", text: "Тамга Кереев напоминает седло для верблюда, но также хранит память о древних крестах, наносимых воинами на лоб." },
+            { title: "Қоңырат — Босаға", icon: "🚪", text: "Знак в виде буквы «П» означает порог юрты. Символ гостеприимства и священности домашнего пространства." },
+            { title: "Дулат — Күн", icon: "☀️", text: "Круглая тамга Дулатов — это символ солнца. «Күн таңбалы дулат» — сияющий род, хранитель Жетысу." }
+        ];
+
         function HistoryAI({ user }) {
             const [expanded, setExpanded] = useState(new Set(["alash", "kishi-zhuz", "qayyrbay", "alim", "tortqara"]));
 
@@ -626,11 +690,31 @@
             return (
                 <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 py-6">
                     <header className="mb-12 mt-6">
-                        <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3 text-center">Identity Tree</p>
-                        <h2 className="text-4xl font-serif text-white text-center">Шежіре Древо</h2>
+                        <p className="text-[10px] text-[#C5A55A] tracking-[0.5em] uppercase font-black mb-3 text-center">Identity & Lore</p>
+                        <h2 className="text-4xl font-serif text-white text-center">История и Код</h2>
                     </header>
 
-                    <div className="overflow-x-auto scroll-hide pb-20">
+                    {/* Philosophy Section */}
+                    <div className="mb-16">
+                        <h3 className="text-[10px] text-[#555] uppercase tracking-[0.4em] font-black mb-6 px-2">Философия Тамги</h3>
+                        <div className="flex gap-4 overflow-x-auto pb-4 scroll-hide -mx-2 px-2">
+                            {PHILOSOPHY_DATA.map((p, i) => (
+                                <Card key={i} className="min-w-[280px] p-6 border-white/5 bg-white/[0.02]">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-10 h-10 rounded-xl bg-[#C5A55A10] flex items-center justify-center text-xl border border-[#C5A55A20]">{p.icon}</div>
+                                        <h4 className="text-xs font-black uppercase tracking-widest text-[#C5A55A]">{p.title}</h4>
+                                    </div>
+                                    <p className="text-[11px] text-[#888] leading-relaxed italic font-serif">«{p.text}»</p>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    <header className="mb-10">
+                        <h3 className="text-[10px] text-[#555] uppercase tracking-[0.4em] font-black mb-2 px-2">Шежіре Древо</h3>
+                    </header>
+
+                    <div className="overflow-x-auto scroll-hide pb-20 mb-12">
                         <div className="inline-block min-w-full text-center">
                             <TreeBranch node={TREE_DATA} expanded={expanded} onToggle={toggle} />
                         </div>
@@ -642,7 +726,8 @@
                             <span className="absolute -top-4 left-8 text-6xl text-[#C5A55A20] font-serif">“</span>
                             {user.tribe ? (
                                 <>
-                                    <p className="mb-6">«{user.tribe.name} — это мощная политическая сила, чьи тамги ставились под самыми значимыми договорами степи. Твой личный код продолжает эту летопись.»</p>
+                                    <p className="mb-6">«{user.tribe.name} — это мощная политическая сила, чьи тамги ставились под самыми значимыми договорами степи. Ваша тамга — {user.tribe.tamgaName || 'священный знак'}.»</p>
+                                    <p className="text-[10px] text-[#C5A55A] uppercase tracking-[0.2em] font-black">Из хроник Радика Темиргалиева</p>
                                 </>
                             ) : (
                                 <p className="text-center py-12 opacity-40">«Выберите свой путь и род, чтобы AI пробудил память предков...»</p>

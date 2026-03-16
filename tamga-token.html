@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAMĠA Token</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #050505;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Cinzel', serif;
+      gap: 60px;
+      padding: 40px;
+    }
+
+    .token-wrapper {
+      display: flex;
+      gap: 60px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .token-label {
+      color: #8B6914;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .token-container { text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="token-wrapper">
+  <!-- Large Token -->
+  <div class="token-container">
+    <svg width="420" height="420" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Dark radial gradient for coin face -->
+        <radialGradient id="coinBg" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#1a1a12"/>
+          <stop offset="40%" stop-color="#0d0d08"/>
+          <stop offset="100%" stop-color="#050505"/>
+        </radialGradient>
+
+        <!-- Gold gradient for rim -->
+        <linearGradient id="rimGold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8CC7A"/>
+          <stop offset="20%" stop-color="#C5A550"/>
+          <stop offset="40%" stop-color="#F0D882"/>
+          <stop offset="60%" stop-color="#9A7520"/>
+          <stop offset="80%" stop-color="#D4A840"/>
+          <stop offset="100%" stop-color="#7A5510"/>
+        </linearGradient>
+
+        <!-- Gold for text and ornaments -->
+        <linearGradient id="goldText" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#F0D882"/>
+          <stop offset="30%" stop-color="#C5A550"/>
+          <stop offset="70%" stop-color="#D4B060"/>
+          <stop offset="100%" stop-color="#8B6914"/>
+        </linearGradient>
+
+        <!-- Subtle gold shimmer -->
+        <linearGradient id="goldShimmer" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8CC7A" stop-opacity="0.9"/>
+          <stop offset="50%" stop-color="#C5A550" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#8B6914" stop-opacity="0.9"/>
+        </linearGradient>
+
+        <!-- Circle path for text -->
+        <path id="topCircleText" d="M 210,210 m -148,0 a 148,148 0 1,1 296,0" />
+        <path id="bottomCircleText" d="M 210,210 m -142,0 a 142,142 0 0,0 284,0" />
+
+        <!-- Glow filter -->
+        <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        <!-- Subtle drop shadow -->
+        <filter id="tokenShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#C5A550" flood-opacity="0.25"/>
+        </filter>
+
+        <!-- Clip circle -->
+        <clipPath id="coinClip">
+          <circle cx="210" cy="210" r="200"/>
+        </clipPath>
+      </defs>
+
+      <!-- ── OUTER SHADOW RING ── -->
+      <circle cx="210" cy="210" r="205" fill="none" stroke="#C5A550" stroke-width="0.5" stroke-opacity="0.2" filter="url(#tokenShadow)"/>
+
+      <!-- ── COIN EDGE / RIM ── -->
+      <circle cx="210" cy="210" r="203" fill="url(#rimGold)"/>
+      <!-- Rim knurling effect (tick marks) -->
+      <g stroke="#0d0d08" stroke-width="1.2" opacity="0.6">
+        <animateTransform attributeName="transform" type="rotate" from="0 210 210" to="0 210 210" dur="0s"/>
+        <!-- Generate tick marks around rim -->
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(0 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(5 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(10 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(15 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(20 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(25 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(30 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(35 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(40 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(45 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(50 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(55 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(60 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(65 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(70 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(75 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(80 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(85 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(90 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(95 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(100 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(105 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(110 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(115 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(120 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(125 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(130 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(135 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(140 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(145 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(150 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(155 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(160 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(165 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(170 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(175 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(180 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(185 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(190 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(195 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(200 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(205 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(210 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(215 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(220 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(225 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(230 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(235 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(240 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(245 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(250 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(255 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(260 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(265 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(270 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(275 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(280 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(285 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(290 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(295 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(300 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(305 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(310 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(315 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(320 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(325 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(330 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(335 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(340 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(345 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(350 210 210)"/>
+        <line x1="210" y1="8" x2="210" y2="16" transform="rotate(355 210 210)"/>
+      </g>
+
+      <!-- ── COIN FACE ── -->
+      <circle cx="210" cy="210" r="195" fill="url(#coinBg)"/>
+
+      <!-- ── OUTER DECORATIVE RING (engraved look) ── -->
+      <circle cx="210" cy="210" r="190" fill="none" stroke="url(#goldShimmer)" stroke-width="1.5" stroke-opacity="0.8"/>
+      <circle cx="210" cy="210" r="186" fill="none" stroke="url(#goldShimmer)" stroke-width="0.5" stroke-opacity="0.5"/>
+
+      <!-- ── TAMGA SYMBOLS RING ── -->
+      <!-- 24 tribal tamga symbols arranged in circle at r=168 -->
+      <g fill="url(#goldShimmer)" stroke="none" opacity="0.85" font-size="13" text-anchor="middle" dominant-baseline="middle">
+        <!-- Tamga-style symbols using unicode/SVG paths, rotated around center -->
+
+        <!-- Symbol 1 — Aries/Ram horn -->
+        <text transform="rotate(0 210 210) translate(0,-168)" x="210" y="210" font-size="11">♈</text>
+        <!-- Symbol 2 — Triskelion/spiral -->
+        <text transform="rotate(15 210 210) translate(0,-168)" x="210" y="210" font-size="10">ꚞ</text>
+        <!-- Symbol 3 — Arrow up -->
+        <text transform="rotate(30 210 210) translate(0,-168)" x="210" y="210" font-size="12">⌅</text>
+        <!-- Symbol 4 — Fork -->
+        <text transform="rotate(45 210 210) translate(0,-168)" x="210" y="210" font-size="11">Ψ</text>
+        <!-- Symbol 5 — Cross -->
+        <text transform="rotate(60 210 210) translate(0,-168)" x="210" y="210" font-size="12">⊕</text>
+        <!-- Symbol 6 — Lambda -->
+        <text transform="rotate(75 210 210) translate(0,-168)" x="210" y="210" font-size="12">Λ</text>
+        <!-- Symbol 7 — Rune -->
+        <text transform="rotate(90 210 210) translate(0,-168)" x="210" y="210" font-size="12">ᚱ</text>
+        <!-- Symbol 8 — Delta -->
+        <text transform="rotate(105 210 210) translate(0,-168)" x="210" y="210" font-size="11">△</text>
+        <!-- Symbol 9 — Epsilon -->
+        <text transform="rotate(120 210 210) translate(0,-168)" x="210" y="210" font-size="12">Ξ</text>
+        <!-- Symbol 10 — Sigma -->
+        <text transform="rotate(135 210 210) translate(0,-168)" x="210" y="210" font-size="12">Σ</text>
+        <!-- Symbol 11 — Thor rune -->
+        <text transform="rotate(150 210 210) translate(0,-168)" x="210" y="210" font-size="12">ᚦ</text>
+        <!-- Symbol 12 — Ohm -->
+        <text transform="rotate(165 210 210) translate(0,-168)" x="210" y="210" font-size="12">Ω</text>
+        <!-- Symbol 13 — Fish/Pisces -->
+        <text transform="rotate(180 210 210) translate(0,-168)" x="210" y="210" font-size="11">♓</text>
+        <!-- Symbol 14 -->
+        <text transform="rotate(195 210 210) translate(0,-168)" x="210" y="210" font-size="11">ᛏ</text>
+        <!-- Symbol 15 -->
+        <text transform="rotate(210 210 210) translate(0,-168)" x="210" y="210" font-size="12">☽</text>
+        <!-- Symbol 16 -->
+        <text transform="rotate(225 210 210) translate(0,-168)" x="210" y="210" font-size="11">⊗</text>
+        <!-- Symbol 17 -->
+        <text transform="rotate(240 210 210) translate(0,-168)" x="210" y="210" font-size="12">Φ</text>
+        <!-- Symbol 18 -->
+        <text transform="rotate(255 210 210) translate(0,-168)" x="210" y="210" font-size="11">ᚦ</text>
+        <!-- Symbol 19 -->
+        <text transform="rotate(270 210 210) translate(0,-168)" x="210" y="210" font-size="12">⌘</text>
+        <!-- Symbol 20 -->
+        <text transform="rotate(285 210 210) translate(0,-168)" x="210" y="210" font-size="11">Ж</text>
+        <!-- Symbol 21 -->
+        <text transform="rotate(300 210 210) translate(0,-168)" x="210" y="210" font-size="12">Ŧ</text>
+        <!-- Symbol 22 -->
+        <text transform="rotate(315 210 210) translate(0,-168)" x="210" y="210" font-size="12">♊</text>
+        <!-- Symbol 23 -->
+        <text transform="rotate(330 210 210) translate(0,-168)" x="210" y="210" font-size="10">꩜</text>
+        <!-- Symbol 24 -->
+        <text transform="rotate(345 210 210) translate(0,-168)" x="210" y="210" font-size="12">Ŋ</text>
+      </g>
+
+      <!-- ── INNER DECORATIVE RINGS ── -->
+      <circle cx="210" cy="210" r="152" fill="none" stroke="url(#goldShimmer)" stroke-width="1" stroke-opacity="0.7"/>
+      <circle cx="210" cy="210" r="148" fill="none" stroke="url(#goldShimmer)" stroke-width="0.5" stroke-opacity="0.4"/>
+
+      <!-- Inner dark disc -->
+      <circle cx="210" cy="210" r="145" fill="#070708" fill-opacity="0.95"/>
+
+      <!-- ── GEOMETRIC RING (minute tick marks) ── -->
+      <g stroke="url(#goldShimmer)" stroke-opacity="0.5" stroke-width="0.8">
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(0 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(30 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(60 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(90 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(120 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(150 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(180 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(210 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(240 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(270 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(300 210 210)"/>
+        <line x1="210" y1="62" x2="210" y2="72" transform="rotate(330 210 210)"/>
+      </g>
+
+      <!-- ── CENTRAL LOGO — Antigravity Triangle ── -->
+      <!-- Outer triangle -->
+      <polygon points="210,100 268,195 152,195"
+               fill="none" stroke="url(#goldText)" stroke-width="2.5" stroke-linejoin="round" filter="url(#goldGlow)"/>
+      <!-- Inner inverted triangle -->
+      <polygon points="210,178 239,130 181,130"
+               fill="none" stroke="url(#goldText)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Center dot -->
+      <circle cx="210" cy="154" r="3.5" fill="url(#goldText)"/>
+      <!-- Vertical line through center logo -->
+      <line x1="210" y1="100" x2="210" y2="195" stroke="url(#goldText)" stroke-width="1" stroke-opacity="0.4"/>
+      <!-- Horizontal accent -->
+      <line x1="175" y1="154" x2="245" y2="154" stroke="url(#goldText)" stroke-width="0.8" stroke-opacity="0.3"/>
+
+      <!-- ── MAIN TITLE "TAMĠA" ── -->
+      <!-- The Ġ (G with comma/dot on top) as in the book -->
+      <text x="210" y="243"
+            font-family="'Cinzel Decorative', 'Cinzel', serif"
+            font-size="36"
+            font-weight="700"
+            fill="url(#goldText)"
+            text-anchor="middle"
+            letter-spacing="10"
+            filter="url(#goldGlow)">TAMĠA</text>
+
+      <!-- Thin line under title -->
+      <line x1="130" y1="253" x2="290" y2="253" stroke="url(#goldShimmer)" stroke-width="0.8" stroke-opacity="0.6"/>
+
+      <!-- ── SUBTITLE ── -->
+      <text x="210" y="272"
+            font-family="'Cinzel', serif"
+            font-size="9"
+            font-weight="400"
+            fill="#9A7520"
+            text-anchor="middle"
+            letter-spacing="5">ИСТОРИЯ · КАЗАХСКИХ · ПЛЕМЁН</text>
+
+      <!-- ── BOTTOM DECORATIVE DIVIDER ── -->
+      <!-- Diamond ornament -->
+      <polygon points="210,290 216,296 210,302 204,296"
+               fill="url(#goldShimmer)" stroke="none" opacity="0.7"/>
+      <line x1="140" y1="296" x2="202" y2="296" stroke="url(#goldShimmer)" stroke-width="0.7" stroke-opacity="0.5"/>
+      <line x1="218" y1="296" x2="280" y2="296" stroke="url(#goldShimmer)" stroke-width="0.7" stroke-opacity="0.5"/>
+
+      <!-- ── YEAR / TOKEN DENOMINATION ── -->
+      <text x="210" y="320"
+            font-family="'Cinzel', serif"
+            font-size="11"
+            font-weight="600"
+            fill="url(#goldShimmer)"
+            text-anchor="middle"
+            letter-spacing="6">2 0 2 5</text>
+
+      <!-- ── CORNER ORNAMENTS (4 diamond points) ── -->
+      <!-- Top -->
+      <polygon points="210,23 214,29 210,33 206,29" fill="url(#goldShimmer)" opacity="0.6"/>
+      <!-- Bottom -->
+      <polygon points="210,387 214,393 210,398 206,393" fill="url(#goldShimmer)" opacity="0.6"/>
+      <!-- Left -->
+      <polygon points="17,210 23,206 27,210 23,214" fill="url(#goldShimmer)" opacity="0.6"/>
+      <!-- Right -->
+      <polygon points="393,210 399,206 403,210 399,214" fill="url(#goldShimmer)" opacity="0.6"/>
+
+      <!-- ── FINE INNER CIRCLE ── -->
+      <circle cx="210" cy="210" r="130" fill="none" stroke="url(#goldShimmer)" stroke-width="0.5" stroke-opacity="0.3" stroke-dasharray="2,4"/>
+
+    </svg>
+    <div class="token-label">TAMĠA · FULL TOKEN</div>
+  </div>
+
+  <!-- Small Token (coin-size preview) -->
+  <div class="token-container">
+    <svg width="180" height="180" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="coinBg2" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#1a1a12"/>
+          <stop offset="50%" stop-color="#0d0d08"/>
+          <stop offset="100%" stop-color="#050505"/>
+        </radialGradient>
+        <linearGradient id="rimGold2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8CC7A"/>
+          <stop offset="25%" stop-color="#C5A550"/>
+          <stop offset="50%" stop-color="#F0D882"/>
+          <stop offset="75%" stop-color="#9A7520"/>
+          <stop offset="100%" stop-color="#7A5510"/>
+        </linearGradient>
+        <linearGradient id="goldText2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#F0D882"/>
+          <stop offset="50%" stop-color="#C5A550"/>
+          <stop offset="100%" stop-color="#8B6914"/>
+        </linearGradient>
+        <linearGradient id="goldShimmer2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8CC7A" stop-opacity="0.9"/>
+          <stop offset="50%" stop-color="#C5A550" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#8B6914" stop-opacity="0.9"/>
+        </linearGradient>
+        <filter id="glow2" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="210" cy="210" r="203" fill="url(#rimGold2)"/>
+      <circle cx="210" cy="210" r="193" fill="url(#coinBg2)"/>
+      <circle cx="210" cy="210" r="188" fill="none" stroke="url(#goldShimmer2)" stroke-width="1.5" stroke-opacity="0.7"/>
+
+      <!-- Symbol ring small -->
+      <g fill="url(#goldShimmer2)" font-size="10" text-anchor="middle" dominant-baseline="middle" opacity="0.8">
+        <text transform="rotate(0 210 210) translate(0,-168)" x="210" y="210">♈</text>
+        <text transform="rotate(30 210 210) translate(0,-168)" x="210" y="210">Ψ</text>
+        <text transform="rotate(60 210 210) translate(0,-168)" x="210" y="210">⊕</text>
+        <text transform="rotate(90 210 210) translate(0,-168)" x="210" y="210">ᚱ</text>
+        <text transform="rotate(120 210 210) translate(0,-168)" x="210" y="210">Σ</text>
+        <text transform="rotate(150 210 210) translate(0,-168)" x="210" y="210">Ω</text>
+        <text transform="rotate(180 210 210) translate(0,-168)" x="210" y="210">♓</text>
+        <text transform="rotate(210 210 210) translate(0,-168)" x="210" y="210">☽</text>
+        <text transform="rotate(240 210 210) translate(0,-168)" x="210" y="210">Φ</text>
+        <text transform="rotate(270 210 210) translate(0,-168)" x="210" y="210">⌘</text>
+        <text transform="rotate(300 210 210) translate(0,-168)" x="210" y="210">Ж</text>
+        <text transform="rotate(330 210 210) translate(0,-168)" x="210" y="210">Λ</text>
+      </g>
+
+      <circle cx="210" cy="210" r="150" fill="none" stroke="url(#goldShimmer2)" stroke-width="1" stroke-opacity="0.6"/>
+      <circle cx="210" cy="210" r="145" fill="#070708" fill-opacity="0.95"/>
+
+      <!-- Triangle logo -->
+      <polygon points="210,105 265,192 155,192" fill="none" stroke="url(#goldText2)" stroke-width="2.5" filter="url(#glow2)"/>
+      <polygon points="210,175 237,132 183,132" fill="none" stroke="url(#goldText2)" stroke-width="1.5"/>
+      <circle cx="210" cy="152" r="3" fill="url(#goldText2)"/>
+
+      <!-- TAMĠA text -->
+      <text x="210" y="242"
+            font-family="'Cinzel Decorative', 'Cinzel', serif"
+            font-size="34" font-weight="700"
+            fill="url(#goldText2)" text-anchor="middle" letter-spacing="8" filter="url(#glow2)">TAMĠA</text>
+
+      <line x1="135" y1="252" x2="285" y2="252" stroke="url(#goldShimmer2)" stroke-width="0.8" stroke-opacity="0.5"/>
+
+      <text x="210" y="270" font-family="'Cinzel', serif" font-size="8"
+            fill="#9A7520" text-anchor="middle" letter-spacing="4">TOKEN · 2025</text>
+
+      <polygon points="210,290 215,295 210,300 205,295" fill="url(#goldShimmer2)" opacity="0.6"/>
+    </svg>
+    <div class="token-label">TAMĠA · COIN SIZE</div>
+  </div>
+
+  <!-- Tiny Token (icon size) -->
+  <div class="token-container">
+    <svg width="80" height="80" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="coinBg3" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#1a1a12"/>
+          <stop offset="100%" stop-color="#050505"/>
+        </radialGradient>
+        <linearGradient id="rimGold3" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8CC7A"/>
+          <stop offset="50%" stop-color="#C5A550"/>
+          <stop offset="100%" stop-color="#7A5510"/>
+        </linearGradient>
+        <linearGradient id="goldText3" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#F0D882"/>
+          <stop offset="100%" stop-color="#8B6914"/>
+        </linearGradient>
+      </defs>
+      <circle cx="210" cy="210" r="203" fill="url(#rimGold3)"/>
+      <circle cx="210" cy="210" r="188" fill="url(#coinBg3)"/>
+      <polygon points="210,110 265,195 155,195" fill="none" stroke="url(#goldText3)" stroke-width="4"/>
+      <polygon points="210,178 237,135 183,135" fill="none" stroke="url(#goldText3)" stroke-width="2.5"/>
+      <circle cx="210" cy="154" r="5" fill="url(#goldText3)"/>
+      <text x="210" y="258" font-family="'Cinzel Decorative', 'Cinzel', serif"
+            font-size="42" font-weight="900"
+            fill="url(#goldText3)" text-anchor="middle" letter-spacing="6">TAMĠA</text>
+    </svg>
+    <div class="token-label">ICON SIZE</div>
+  </div>
+</div>
+
+<!-- Color Palette Reference -->
+<div style="display:flex; gap:12px; margin-top:20px; align-items:center; flex-wrap:wrap; justify-content:center;">
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#F0D882;border-radius:50%;border:1px solid #333;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#F0D882</div>
+  </div>
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#C5A550;border-radius:50%;border:1px solid #333;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#C5A550</div>
+  </div>
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#9A7520;border-radius:50%;border:1px solid #333;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#9A7520</div>
+  </div>
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#8B6914;border-radius:50%;border:1px solid #333;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#8B6914</div>
+  </div>
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#1a1a12;border-radius:50%;border:1px solid #555;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#1A1A12</div>
+  </div>
+  <div style="text-align:center">
+    <div style="width:50px;height:50px;background:#050505;border-radius:50%;border:1px solid #444;"></div>
+    <div style="color:#666;font-size:10px;margin-top:6px;letter-spacing:1px">#050505</div>
+  </div>
+</div>
+
+<div style="color:#3a3a2a;font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;margin-top:30px;text-align:center;">
+  TAMĠA TOKEN DESIGN · 2025 · КАЗАХСКИЕ ПЛЕМЕНА
+</div>
+
+</body>
+</html>
