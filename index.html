@@ -2764,7 +2764,7 @@
             const [profile, setProfile] = useState(() => {
                 try {
                     const saved = JSON.parse(localStorage.getItem('shejire_profile') || 'null');
-                    if (!saved) {
+                    if (!saved || !saved.lineage) {
                         localStorage.setItem('shejire_profile', JSON.stringify(ASET_PROFILE));
                         return ASET_PROFILE;
                     }
