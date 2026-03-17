@@ -2744,26 +2744,43 @@
         }
 
         // ── Жеке кабинет (Personal Cabinet) ──
+        // Профиль Әсет — полная цепочка рода
+        const ASET_PROFILE = {
+            name: 'Әсет',
+            tribe: 'alimuly',
+            lineage: 'Әсет\nҚайрат\nӘліби\nҚойлыбай\nОтар\nКүнәш\nЖуас\nТанас\nБайтемір\nАғым\nСүйір\nАмантай\nҚұламан\nАқпан\nҚараш\nҚарамашақ\nӘлімұлы\nҚайырбай-Қарақесек\nКіші жүз\nАлаш',
+            dna: true,
+            createdAt: new Date().toISOString(),
+        };
+
         const MOCK_TOKENS = [
-            { id: 'tamga',    icon: '⩔',  name: 'ТАМҒА TOKEN',     desc: 'Родовой идентификатор · NFT',      status: 'active', color: '#C5A55A' },
-            { id: 'shejire',  icon: '🌳', name: 'ШЕЖІРЕ NFT',      desc: 'Цифровая родословная на блокчейне', status: 'active', color: '#4ade80' },
-            { id: 'dna',      icon: '🧬', name: 'ДНК СЕРТИФИКАТ',  desc: 'Требует сдачи ДНК-теста',           status: 'locked', color: '#8888ff' },
-            { id: 'kurultai', icon: '🏛️', name: 'КУРУЛТАЙ ACCESS', desc: 'Голос в родовом DAO',               status: 'locked', color: '#ff8844' },
+            { id: 'tamga',    icon: '⩔',  name: 'ТАМҒА TOKEN',     desc: 'Родовой идентификатор · Қарамашақ',  status: 'active', color: '#C5A55A' },
+            { id: 'shejire',  icon: '🌳', name: 'ШЕЖІРЕ NFT',      desc: '20 ұрпақ · Цифровая родословная',    status: 'active', color: '#4ade80' },
+            { id: 'dna',      icon: '🧬', name: 'ДНК СЕРТИФИКАТ',  desc: 'R1b · Казахстан · Верифицирован',     status: 'active', color: '#8888ff' },
+            { id: 'kurultai', icon: '🏛️', name: 'КУРУЛТАЙ ACCESS', desc: 'Голос в Цифровом Курултае · DAO',     status: 'active', color: '#ff8844' },
         ];
 
         function ProfileScreen({ onBack }) {
             const [profile, setProfile] = useState(() => {
-                try { return JSON.parse(localStorage.getItem('shejire_profile') || 'null'); } catch { return null; }
+                try {
+                    const saved = JSON.parse(localStorage.getItem('shejire_profile') || 'null');
+                    if (!saved) {
+                        localStorage.setItem('shejire_profile', JSON.stringify(ASET_PROFILE));
+                        return ASET_PROFILE;
+                    }
+                    return saved;
+                } catch { return ASET_PROFILE; }
             });
-            const [step, setStep]       = useState(0);
-            const [form, setForm]       = useState({ name: '', tribe: '', lineage: '' });
-            const [tab,  setTab]        = useState('tree');
+            const [step, setStep]         = useState(0);
+            const [form, setForm]         = useState({ name: '', tribe: '', lineage: '' });
+            const [tab,  setTab]          = useState('tree');
             const [showCert, setShowCert] = useState(false);
+            const [editing, setEditing]   = useState(false);
 
             const saveProfile = () => {
                 const p = { ...form, createdAt: new Date().toISOString() };
                 localStorage.setItem('shejire_profile', JSON.stringify(p));
-                setProfile(p);
+                setProfile(p); setEditing(false);
             };
             const logout = () => {
                 localStorage.removeItem('shejire_profile');
@@ -2884,7 +2901,13 @@
                     {/* Top bar */}
                     <div className="flex items-center justify-between mb-10">
                         <button onClick={onBack} className="text-[#444] hover:text-[#C5A55A] transition-colors text-[10px] tracking-widest uppercase flex items-center gap-2">← Назад</button>
-                        <button onClick={logout} className="text-[10px] tracking-widest text-[#333] hover:text-[#888] transition-colors uppercase border border-[#1a1a1a] px-3 py-1.5 rounded-full hover:border-[#333]">Шығу</button>
+                        <div className="flex gap-2">
+                            <button onClick={() => { setEditing(true); setForm({ name: profile.name, tribe: profile.tribe||'', lineage: profile.lineage||'' }); setStep(0); setProfile(null); }}
+                                className="text-[10px] tracking-widest text-[#C5A55A] transition-colors uppercase border border-[#C5A55A30] px-3 py-1.5 rounded-full hover:border-[#C5A55A] hover:bg-[#C5A55A0A]">
+                                ✏ Өзгерту
+                            </button>
+                            <button onClick={logout} className="text-[10px] tracking-widest text-[#333] hover:text-[#666] transition-colors uppercase border border-[#1a1a1a] px-3 py-1.5 rounded-full hover:border-[#333]">Шығу</button>
+                        </div>
                     </div>
 
                     {/* ── Profile card ── */}
@@ -2911,7 +2934,9 @@
                                     <div className="flex flex-wrap justify-center md:justify-start gap-2">
                                         <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#C5A55A40] text-[#C5A55A]">✓ Тіркелген</span>
                                         <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#4ade8030] text-[#4ade80]">🌳 {lineageLines.length} ұрпақ</span>
-                                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#8888ff30] text-[#8888ff]">🧬 ДНК — күтілуде</span>
+                                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border" style={{ borderColor:'rgba(136,136,255,0.4)', color:'#8888ff', background:'rgba(136,136,255,0.07)' }}>
+                                            🧬 {profile.dna ? 'ДНК · R1b · ✓' : 'ДНК — күтілуде'}
+                                        </span>
                                         {lineageLines.length >= 7 && <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#C5A55A40] text-[#C5A55A]">⩔ Жеті ата ✓</span>}
                                     </div>
                                 </div>
@@ -2958,11 +2983,109 @@
                         const nftId   = String(profile.name?.charCodeAt(0) * 17 + lineageLines.length).padStart(4,'0');
 
                         const openNftPrint = () => {
-                            document.getElementById('nft-print-area').style.display = 'flex';
-                            setTimeout(() => {
-                                window.print();
-                                setTimeout(() => { document.getElementById('nft-print-area').style.display = 'none'; }, 1000);
-                            }, 200);
+                            const rows = lineageLines.map((name, i) => {
+                                const isYou  = i === 0;
+                                const isJeti = i === 6;
+                                const isFade = i > 6;
+                                const divider = isJeti && i < lineageLines.length - 1 ? `
+                                    <tr><td colspan="3" style="padding:6px 0 4px;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <div style="height:1px;flex:1;background:linear-gradient(to right,transparent,rgba(197,165,90,0.3));"></div>
+                                            <span style="font-size:8px;color:rgba(197,165,90,0.5);letter-spacing:.3em;">ЖЕТІ АТА</span>
+                                            <div style="height:1px;flex:1;background:linear-gradient(to left,transparent,rgba(197,165,90,0.3));"></div>
+                                        </div>
+                                    </td></tr>` : '';
+                                return `
+                                    <tr>
+                                        <td style="width:24px;text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#333;">${i+1}</td>
+                                        <td style="padding:6px 12px;border-radius:10px;
+                                            background:${isYou?'linear-gradient(135deg,rgba(197,165,90,0.2),rgba(139,105,20,0.08))':isFade?'transparent':'rgba(255,255,255,0.02)'};
+                                            border:1px solid ${isYou?'rgba(197,165,90,0.6)':isJeti?'rgba(197,165,90,0.25)':'rgba(255,255,255,0.04)'};
+                                            font-size:${isYou?13:11}px;font-weight:${isYou?700:400};
+                                            color:${isYou?'#C5A55A':isFade?'#2a2a2a':'#888'};letter-spacing:.02em;">
+                                            ${name}
+                                        </td>
+                                        <td style="padding:4px 0 4px 8px;font-size:8px;color:rgba(197,165,90,0.5);letter-spacing:.2em;">
+                                            ${isYou?'СІЗ':isJeti?'VII':''}
+                                        </td>
+                                    </tr>
+                                    ${i < lineageLines.length-1 ? `<tr><td></td><td style="padding:1px 12px;"><div style="width:1px;height:10px;background:${isFade?'rgba(255,255,255,0.04)':'linear-gradient(to bottom,rgba(197,165,90,0.4),rgba(197,165,90,0.1))'};margin:0 auto;"></div><div style="width:4px;height:4px;border-radius:50%;background:${isFade?'#111':'rgba(197,165,90,0.35)'};margin:0 auto;"></div></td><td></td></tr>` : ''}
+                                    ${divider}
+                                `;
+                            }).join('');
+
+                            const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;}
+  @page{margin:0;size:A4 portrait;}
+  body{margin:0;padding:0;background:#080808;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:serif;}
+  @keyframes none{}
+</style>
+</head><body>
+<div style="width:520px;position:relative;background:#080808;border:1px solid rgba(197,165,90,0.5);border-radius:20px;padding:40px 36px;overflow:hidden;">
+  <!-- corner ornaments -->
+  <div style="position:absolute;top:10px;left:10px;width:28px;height:28px;border-top:1.5px solid rgba(197,165,90,0.7);border-left:1.5px solid rgba(197,165,90,0.7);"></div>
+  <div style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-top:1.5px solid rgba(197,165,90,0.7);border-right:1.5px solid rgba(197,165,90,0.7);"></div>
+  <div style="position:absolute;bottom:10px;left:10px;width:28px;height:28px;border-bottom:1.5px solid rgba(197,165,90,0.7);border-left:1.5px solid rgba(197,165,90,0.7);"></div>
+  <div style="position:absolute;bottom:10px;right:10px;width:28px;height:28px;border-bottom:1.5px solid rgba(197,165,90,0.7);border-right:1.5px solid rgba(197,165,90,0.7);"></div>
+
+  <!-- header -->
+  <div style="text-align:center;margin-bottom:20px;">
+    <p style="color:rgba(197,165,90,0.4);font-size:8px;letter-spacing:.6em;text-transform:uppercase;margin:0 0 6px;">SHEJIRE AI · DIGITAL KURULTAI · 2026</p>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="height:1px;flex:1;background:linear-gradient(to right,transparent,rgba(197,165,90,0.4));"></div>
+      <span style="color:rgba(197,165,90,0.5);font-size:12px;">✦</span>
+      <div style="height:1px;flex:1;background:linear-gradient(to left,transparent,rgba(197,165,90,0.4));"></div>
+    </div>
+  </div>
+
+  <!-- NFT id + tamga -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div>
+      <p style="color:rgba(197,165,90,0.35);font-size:8px;letter-spacing:.4em;text-transform:uppercase;margin:0 0 2px;">ШЕЖІРЕ NFT</p>
+      <p style="color:rgba(197,165,90,0.7);font-size:12px;letter-spacing:.2em;font-weight:bold;margin:0;">#${nftId}</p>
+    </div>
+    <div style="font-size:56px;color:#C5A55A;text-shadow:0 0 30px rgba(197,165,90,0.7);line-height:1;">${tribe?.tamga||'⩔'}</div>
+  </div>
+
+  <!-- identity -->
+  <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(197,165,90,0.1);">
+    <h2 style="font-size:24px;color:#fff;margin:0 0 4px;letter-spacing:.05em;">${profile.name}</h2>
+    <p style="color:#C5A55A;font-size:11px;letter-spacing:.3em;margin:0;">${tribe?.name||'—'} · ${tribe?.juz||''}</p>
+  </div>
+
+  <!-- lineage -->
+  <p style="color:rgba(197,165,90,0.35);font-size:8px;letter-spacing:.5em;text-transform:uppercase;margin:0 0 12px;">${hasJeti?'ШЕЖІРЕ ТІЗБЕГІ · ЖЕТІ АТА ✓':'ШЕЖІРЕ ТІЗБЕГІ'}</p>
+  <table style="width:100%;border-collapse:collapse;">${rows}</table>
+
+  <!-- stats -->
+  <div style="display:flex;justify-content:center;gap:24px;padding:14px 0;margin-top:14px;border-top:1px solid rgba(197,165,90,0.1);">
+    <div style="text-align:center;">
+      <p style="font-size:26px;color:#C5A55A;margin:0;line-height:1;">${lineageLines.length}</p>
+      <p style="font-size:8px;color:#333;letter-spacing:.3em;text-transform:uppercase;margin:3px 0 0;">Ұрпақ</p>
+    </div>
+    <div style="width:1px;background:#111;"></div>
+    <div style="text-align:center;">
+      <p style="font-size:26px;color:${hasJeti?'#C5A55A':'#333'};margin:0;line-height:1;">${hasJeti?'✓':'—'}</p>
+      <p style="font-size:8px;color:#333;letter-spacing:.3em;text-transform:uppercase;margin:3px 0 0;">Жеті ата</p>
+    </div>
+    <div style="width:1px;background:#111;"></div>
+    <div style="text-align:center;">
+      <p style="font-size:26px;color:#C5A55A;margin:0;line-height:1;">${tribe?.tamga||'⩔'}</p>
+      <p style="font-size:8px;color:#333;letter-spacing:.3em;text-transform:uppercase;margin:3px 0 0;">Тамға</p>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <p style="text-align:center;color:#1a1a1a;font-size:8px;letter-spacing:.4em;text-transform:uppercase;margin:10px 0 0;">
+    ${new Date().toLocaleDateString('ru-RU')} · SHEJIRE.AI · TAMGA TOKEN · #${nftId}
+  </p>
+</div>
+<script>window.onload=function(){window.print();setTimeout(function(){window.close();},1500);};<\/script>
+</body></html>`;
+                            const w = window.open('', '_blank', 'width=620,height=900');
+                            if (w) { w.document.write(html); w.document.close(); }
                         };
 
                         const NftCard = ({ forPrint }) => (
@@ -3131,11 +3254,6 @@
                                 {/* NFT card preview */}
                                 <div className="rounded-3xl overflow-hidden mb-6">
                                     <NftCard forPrint={false} />
-                                </div>
-
-                                {/* Hidden print version */}
-                                <div id="nft-print-area" style={{ display:'none', position:'fixed', inset:0, zIndex:9999, background:'#080808', alignItems:'center', justifyContent:'center' }}>
-                                    <NftCard forPrint={true} />
                                 </div>
 
                                 {/* Download button */}
