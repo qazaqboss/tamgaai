@@ -140,6 +140,22 @@
         .tree-node-main  { animation: pulseGold 3.2s ease-in-out infinite; }
         .tree-line-main  { animation: lineGlow  2.5s ease-in-out infinite; }
         .tree-dot-main   { animation: dotPulse  2s   ease-in-out infinite; }
+
+        /* ── Print / PDF certificate ── */
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { background: #080808 !important; }
+            #root > div > * { display: none !important; }
+            #cert-printable { display: flex !important; }
+            @page { margin: 0; size: A4 portrait; }
+        }
+        #cert-printable { display: none; }
+
+        /* Profile gradient ring */
+        .profile-ring {
+            background: conic-gradient(#C5A55A 0%, #8B6914 40%, #C5A55A10 60%, #C5A55A 100%);
+            padding: 2px; border-radius: 9999px;
+        }
     </style>
 </head>
 
@@ -185,7 +201,7 @@
             jetyru: { name: "ЖЕТІРУ", juz: ZHUZES.KISHI, tamga: "⧗", tamgaName: "Жеті", color: "#C5A55A", story: "Жетыру — союз семи родов, созданный по преданиям Тауке-ханом для укрепления обороноспособности степи." },
         };
 
-        const SCREENS = { HOME: 'home', FLOW: 'flow', TREE: 'tree', CUSTOMS: 'customs', TOKEN_INFO: 'token', STORIES: 'stories', GAMES: 'games', FOOD: 'food', DNA: 'dna', CHAT: 'chat' };
+        const SCREENS = { HOME: 'home', FLOW: 'flow', TREE: 'tree', CUSTOMS: 'customs', TOKEN_INFO: 'token', STORIES: 'stories', GAMES: 'games', FOOD: 'food', DNA: 'dna', CHAT: 'chat', PROFILE: 'profile' };
 
         // ── База знаний для чата по каждому роду ──
         const TRIBES_KNOWLEDGE = {
@@ -2710,6 +2726,457 @@
             );
         }
 
+        // ── Жеке кабинет (Personal Cabinet) ──
+        const MOCK_TOKENS = [
+            { id: 'tamga',    icon: '⩔',  name: 'ТАМҒА TOKEN',     desc: 'Родовой идентификатор · NFT',      status: 'active', color: '#C5A55A' },
+            { id: 'shejire',  icon: '🌳', name: 'ШЕЖІРЕ NFT',      desc: 'Цифровая родословная на блокчейне', status: 'active', color: '#4ade80' },
+            { id: 'dna',      icon: '🧬', name: 'ДНК СЕРТИФИКАТ',  desc: 'Требует сдачи ДНК-теста',           status: 'locked', color: '#8888ff' },
+            { id: 'kurultai', icon: '🏛️', name: 'КУРУЛТАЙ ACCESS', desc: 'Голос в родовом DAO',               status: 'locked', color: '#ff8844' },
+        ];
+
+        function ProfileScreen({ onBack }) {
+            const [profile, setProfile] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('shejire_profile') || 'null'); } catch { return null; }
+            });
+            const [step, setStep]       = useState(0);
+            const [form, setForm]       = useState({ name: '', tribe: '', lineage: '' });
+            const [tab,  setTab]        = useState('tree');
+            const [showCert, setShowCert] = useState(false);
+
+            const saveProfile = () => {
+                const p = { ...form, createdAt: new Date().toISOString() };
+                localStorage.setItem('shejire_profile', JSON.stringify(p));
+                setProfile(p);
+            };
+            const logout = () => {
+                localStorage.removeItem('shejire_profile');
+                setProfile(null); setStep(0); setForm({ name: '', tribe: '', lineage: '' });
+            };
+
+            const lineageLines = (profile?.lineage || '').split('\n').filter(Boolean);
+            const tribe = profile?.tribe ? TRIBES_DB[profile.tribe] : null;
+
+            const openPrint = () => {
+                setShowCert(true);
+                setTimeout(() => window.print(), 400);
+            };
+
+            /* ── Onboarding flow ── */
+            if (!profile) return (
+                <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative">
+                    <button onClick={onBack} className="fixed top-6 left-6 text-[#444] hover:text-[#C5A55A] transition-colors text-[10px] tracking-widest uppercase z-10">← Назад</button>
+
+                    {/* Step dots */}
+                    <div className="flex gap-2 mb-14">
+                        {[0,1,2].map(i => (
+                            <div key={i} className="transition-all duration-500 rounded-full"
+                                style={{ width: step === i ? 28 : 8, height: 8, background: step >= i ? '#C5A55A' : '#1a1a1a' }} />
+                        ))}
+                    </div>
+
+                    {/* Step 0 — name */}
+                    {step === 0 && (
+                        <div className="max-w-md w-full text-center space-y-10 animate-fadeIn">
+                            <div>
+                                <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-5">ЖЕКЕ КАБИНЕТ · ЛИЧНЫЙ КАБИНЕТ</p>
+                                <h2 className="text-5xl font-serif mb-4">Атыңыз кім?</h2>
+                                <p className="text-[#444] text-sm leading-relaxed">Как вас зовут? Это отобразится в профиле и PDF-сертификате.</p>
+                            </div>
+                            <input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))}
+                                onKeyDown={e => e.key === 'Enter' && form.name.trim() && setStep(1)}
+                                placeholder="Аты-жөніңіз..."
+                                autoFocus
+                                className="w-full bg-transparent border-b-2 text-center text-3xl py-3 text-white outline-none transition-colors placeholder-[#222]"
+                                style={{ borderColor: form.name ? '#C5A55A' : '#1a1a1a' }} />
+                            <button onClick={() => form.name.trim() && setStep(1)} disabled={!form.name.trim()}
+                                className="w-full py-4 rounded-2xl font-bold text-sm tracking-widest transition-all duration-300 hover:scale-105 active:scale-95"
+                                style={{ background: form.name.trim() ? 'linear-gradient(135deg,#C5A55A,#8B6914)' : '#111', color: form.name.trim() ? '#000' : '#333' }}>
+                                КЕЛЕСІ →
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Step 1 — tribe */}
+                    {step === 1 && (
+                        <div className="max-w-2xl w-full space-y-10">
+                            <div className="text-center">
+                                <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-5">РУДЫ ТАҢДА · ВЫБЕРИТЕ РОД</p>
+                                <h2 className="text-5xl font-serif mb-4">Қай рудансыз?</h2>
+                                <p className="text-[#444] text-sm">Ваш род — основа шежіре и цифровой идентичности.</p>
+                            </div>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                {Object.entries(TRIBES_DB).map(([key, t]) => (
+                                    <button key={key} onClick={() => setForm(f => ({...f, tribe: key}))}
+                                        className="flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 hover:scale-105"
+                                        style={{
+                                            borderColor: form.tribe === key ? '#C5A55A' : '#1a1a1a',
+                                            background:  form.tribe === key ? 'rgba(197,165,90,0.1)' : 'transparent',
+                                            color:       form.tribe === key ? '#C5A55A' : '#444',
+                                        }}>
+                                        <span className="text-2xl">{t.tamga}</span>
+                                        <span className="text-[9px] tracking-wide font-semibold text-center leading-tight">{t.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setStep(0)} className="flex-1 py-3.5 rounded-2xl border border-[#1a1a1a] text-[#444] text-xs tracking-widest hover:border-[#333] transition-colors">← АРТҚА</button>
+                                <button onClick={() => form.tribe && setStep(2)} disabled={!form.tribe}
+                                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-widest transition-all hover:scale-105"
+                                    style={{ background: form.tribe ? 'linear-gradient(135deg,#C5A55A,#8B6914)' : '#111', color: form.tribe ? '#000' : '#333' }}>
+                                    КЕЛЕСІ →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 2 — lineage */}
+                    {step === 2 && (
+                        <div className="max-w-lg w-full space-y-8">
+                            <div className="text-center">
+                                <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-5">ШЕЖІРЕ ТІЗБЕГІ · ЦЕПОЧКА ПРЕДКОВ</p>
+                                <h2 className="text-5xl font-serif mb-4">Ата-баба тізбегі</h2>
+                                <p className="text-[#444] text-sm leading-relaxed">Введите предков по одному на строку — от себя к первому предку.<br/>Вы → Отец → Дед → ...</p>
+                            </div>
+                            <div className="relative">
+                                <textarea value={form.lineage} onChange={e => setForm(f => ({...f, lineage: e.target.value}))}
+                                    placeholder={"Сіздің атыңыз\nӘкеңіздің аты\nАтаңыздың аты\nАтаның атасы\n..."}
+                                    rows={9}
+                                    className="w-full rounded-2xl px-6 py-5 text-sm text-white outline-none transition-colors resize-none leading-relaxed"
+                                    style={{ background: '#0d0d0d', border: '1px solid #1e1e1e', caretColor: '#C5A55A' }} />
+                                <div className="absolute top-4 right-4 text-[#333] text-[10px] tracking-widest">
+                                    {form.lineage.split('\n').filter(Boolean).length} ата
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setStep(1)} className="flex-1 py-3.5 rounded-2xl border border-[#1a1a1a] text-[#444] text-xs tracking-widest hover:border-[#333] transition-colors">← АРТҚА</button>
+                                <button onClick={saveProfile}
+                                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm tracking-widest transition-all hover:scale-105"
+                                    style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>
+                                    ПРОФИЛЬ ЖАСАУ ✓
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            /* ── Dashboard ── */
+            return (
+                <div className="max-w-5xl mx-auto px-4 py-10 min-h-screen">
+
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between mb-10">
+                        <button onClick={onBack} className="text-[#444] hover:text-[#C5A55A] transition-colors text-[10px] tracking-widest uppercase flex items-center gap-2">← Назад</button>
+                        <button onClick={logout} className="text-[10px] tracking-widest text-[#333] hover:text-[#888] transition-colors uppercase border border-[#1a1a1a] px-3 py-1.5 rounded-full hover:border-[#333]">Шығу</button>
+                    </div>
+
+                    {/* ── Profile card ── */}
+                    <div className="rounded-3xl p-px mb-8 overflow-hidden" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,0.4),rgba(139,105,20,0.1),rgba(197,165,90,0.2))' }}>
+                        <div className="rounded-3xl p-7 md:p-10 relative overflow-hidden" style={{ background: '#0d0d0d' }}>
+                            {/* Glow bg */}
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(197,165,90,0.07) 0%, transparent 60%)' }} />
+
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-7 relative z-10">
+                                {/* Avatar ring */}
+                                <div className="profile-ring shrink-0">
+                                    <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl" style={{ background: '#0d0d0d' }}>
+                                        {tribe?.tamga || '⩔'}
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 text-center md:text-left">
+                                    <p className="text-[#C5A55A60] text-[9px] tracking-[0.5em] uppercase mb-2">ЖЕКЕ КАБИНЕТ</p>
+                                    <h2 className="text-3xl md:text-4xl font-serif text-white mb-1">{profile.name}</h2>
+                                    <p className="text-[#666] text-sm tracking-widest mb-5">
+                                        {tribe?.name || '—'} · {tribe?.juz || ''}
+                                    </p>
+                                    {/* Badges */}
+                                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#C5A55A40] text-[#C5A55A]">✓ Тіркелген</span>
+                                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#4ade8030] text-[#4ade80]">🌳 {lineageLines.length} ұрпақ</span>
+                                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#8888ff30] text-[#8888ff]">🧬 ДНК — күтілуде</span>
+                                        {lineageLines.length >= 7 && <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] tracking-widest border border-[#C5A55A40] text-[#C5A55A]">⩔ Жеті ата ✓</span>}
+                                    </div>
+                                </div>
+
+                                {/* Stats mini */}
+                                <div className="flex gap-6 md:flex-col md:gap-4 shrink-0 text-center">
+                                    <div>
+                                        <p className="text-2xl font-serif text-[#C5A55A]">{lineageLines.length}</p>
+                                        <p className="text-[#333] text-[8px] tracking-widest uppercase">Ұрпақ</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-serif text-[#C5A55A]">2</p>
+                                        <p className="text-[#333] text-[8px] tracking-widest uppercase">Токен</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Tabs ── */}
+                    <div className="flex gap-2 mb-8 overflow-x-auto pb-1">
+                        {[
+                            { key: 'tree',   icon: '🌳', label: 'Шежіре ағашы' },
+                            { key: 'tokens', icon: '🪙', label: 'Токендер & NFT' },
+                            { key: 'cert',   icon: '📜', label: 'Сертификат' },
+                        ].map(t => (
+                            <button key={t.key} onClick={() => setTab(t.key)}
+                                className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-widest uppercase transition-all duration-300"
+                                style={{
+                                    border:  `1px solid ${tab === t.key ? '#C5A55A' : '#1a1a1a'}`,
+                                    color:   tab === t.key ? '#C5A55A' : '#444',
+                                    background: tab === t.key ? 'rgba(197,165,90,0.07)' : 'transparent',
+                                }}>
+                                {t.icon} {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* ── Tab: Шежіре ── */}
+                    {tab === 'tree' && (
+                        <div className="rounded-3xl p-px" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,0.2),transparent)' }}>
+                            <div className="rounded-3xl p-7 md:p-10" style={{ background: '#0d0d0d' }}>
+                                <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                                    <div>
+                                        <h3 className="text-xl font-serif text-[#C5A55A] mb-1">Шежіре тізбегі</h3>
+                                        <p className="text-[#333] text-xs tracking-widest">Цепочка предков — от вас к началу рода</p>
+                                    </div>
+                                    <button onClick={openPrint}
+                                        className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-xs tracking-widest transition-all hover:scale-105 active:scale-95"
+                                        style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000', boxShadow: '0 4px 20px rgba(197,165,90,0.3)' }}>
+                                        ⬇ PDF жүктеу
+                                    </button>
+                                </div>
+
+                                {lineageLines.length > 0 ? (
+                                    <div className="flex flex-col items-center">
+                                        {lineageLines.map((name, i) => {
+                                            const isYou  = i === 0;
+                                            const isRoot = i === lineageLines.length - 1;
+                                            return (
+                                                <div key={i} className="flex flex-col items-center w-full max-w-xs">
+                                                    <div className="w-full flex items-center gap-3 px-5 py-3 rounded-xl transition-all"
+                                                        style={{
+                                                            background: isYou ? 'linear-gradient(135deg,rgba(197,165,90,0.15),rgba(139,105,20,0.05))' : isRoot ? 'rgba(255,255,255,0.02)' : 'transparent',
+                                                            border: `1px solid ${isYou ? 'rgba(197,165,90,0.5)' : '#111'}`,
+                                                        }}>
+                                                        <span className="text-[#333] text-[9px] w-5 shrink-0">{i + 1}</span>
+                                                        <span className="flex-1 text-sm font-medium" style={{ color: isYou ? '#C5A55A' : isRoot ? '#555' : '#aaa' }}>{name}</span>
+                                                        {isYou  && <span className="text-[8px] text-[#C5A55A80] tracking-widest">СІЗ</span>}
+                                                        {isRoot && <span className="text-[8px] text-[#44444480] tracking-widest">АТА</span>}
+                                                    </div>
+                                                    {i < lineageLines.length - 1 && (
+                                                        <div className="flex flex-col items-center gap-0 my-0.5">
+                                                            <div className="w-px h-4" style={{ background: 'linear-gradient(to bottom,rgba(197,165,90,0.3),rgba(197,165,90,0.05))' }} />
+                                                            <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(197,165,90,0.3)' }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-16 text-[#222]">
+                                        <p className="text-5xl mb-4">🌳</p>
+                                        <p className="text-sm text-[#333]">Шежіре тізбегі толтырылмаған</p>
+                                        <button onClick={logout} className="mt-4 text-[#C5A55A] text-xs tracking-widest">Профильді жаңарту →</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Tab: Tokens ── */}
+                    {tab === 'tokens' && (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            {MOCK_TOKENS.map(tok => (
+                                <div key={tok.id} className="rounded-2xl p-px overflow-hidden transition-all hover:scale-[1.01]"
+                                    style={{ background: tok.status === 'active' ? `linear-gradient(135deg,${tok.color}30,transparent)` : 'linear-gradient(135deg,#1a1a1a,transparent)' }}>
+                                    <div className="rounded-2xl p-6 h-full relative overflow-hidden" style={{ background: '#0d0d0d' }}>
+                                        {/* BG glow */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
+                                            style={{ background: `radial-gradient(${tok.color}20, transparent)`, transform: 'translate(40%,-40%)' }} />
+                                        <div className="flex items-start gap-4 relative z-10">
+                                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                                                style={{ background: `${tok.color}12`, border: `1px solid ${tok.color}30` }}>
+                                                {tok.icon}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold tracking-widest text-sm mb-1" style={{ color: tok.status === 'active' ? '#fff' : '#333' }}>{tok.name}</p>
+                                                <p className="text-xs text-[#333] mb-4">{tok.desc}</p>
+                                                <span className="text-[9px] tracking-widest px-3 py-1.5 rounded-full font-medium"
+                                                    style={{
+                                                        background: tok.status === 'active' ? `${tok.color}18` : '#111',
+                                                        border:     `1px solid ${tok.status === 'active' ? tok.color + '40' : '#1a1a1a'}`,
+                                                        color:      tok.status === 'active' ? tok.color : '#333',
+                                                    }}>
+                                                    {tok.status === 'active' ? '✓ БЕЛСЕНДІ · ACTIVE' : '🔒 ҚҰЛЫПТАЛҒАН · LOCKED'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* ── Tab: Certificate ── */}
+                    {tab === 'cert' && (
+                        <div className="flex flex-col items-center gap-6">
+                            {/* Preview */}
+                            <div className="w-full max-w-sm rounded-3xl p-px" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914,#C5A55A40)' }}>
+                                <div className="rounded-3xl overflow-hidden" style={{ background: '#080808' }}>
+                                    <div className="p-8 text-center space-y-5 relative">
+                                        {/* Corner ornaments */}
+                                        {[[3,3,'tl'],[3,'auto','tr'],['auto',3,'bl'],['auto','auto','br']].map(([t,r,id]) => (
+                                            <div key={id} className="absolute w-7 h-7 pointer-events-none"
+                                                style={{ top: t === 3 ? 12 : 'auto', bottom: t === 'auto' ? 12 : 'auto', left: r === 3 ? 12 : 'auto', right: r === 'auto' ? 12 : 'auto',
+                                                    borderTop: id.startsWith('t') ? '1px solid rgba(197,165,90,0.5)' : 'none',
+                                                    borderBottom: id.startsWith('b') ? '1px solid rgba(197,165,90,0.5)' : 'none',
+                                                    borderLeft:  id.endsWith('l') ? '1px solid rgba(197,165,90,0.5)' : 'none',
+                                                    borderRight: id.endsWith('r') ? '1px solid rgba(197,165,90,0.5)' : 'none',
+                                                }} />
+                                        ))}
+                                        <p className="text-[#C5A55A50] text-[7px] tracking-[0.5em] uppercase">SHEJIRE AI · DIGITAL KURULTAI</p>
+                                        <div className="text-6xl text-[#C5A55A]" style={{ textShadow: '0 0 30px rgba(197,165,90,0.5)' }}>{tribe?.tamga || '⩔'}</div>
+                                        <div>
+                                            <p className="text-[#444] text-[8px] tracking-[0.4em] uppercase mb-3">ШЕЖІРЕ СЕРТИФИКАТЫ</p>
+                                            <h3 className="text-2xl font-serif text-white mb-1">{profile.name}</h3>
+                                            <p className="text-[#C5A55A] text-[10px] tracking-widest">{tribe?.name || '—'} · {tribe?.juz || ''}</p>
+                                        </div>
+                                        <div className="border-t border-b border-[#C5A55A15] py-4 flex justify-center gap-8">
+                                            <div className="text-center">
+                                                <p className="text-2xl font-serif text-[#C5A55A]">{lineageLines.length}</p>
+                                                <p className="text-[#333] text-[8px] uppercase tracking-widest">Ұрпақ</p>
+                                            </div>
+                                            <div className="w-px bg-[#1a1a1a]" />
+                                            <div className="text-center">
+                                                <p className="text-2xl font-serif text-[#C5A55A]">{lineageLines.length >= 7 ? '✓' : '—'}</p>
+                                                <p className="text-[#333] text-[8px] uppercase tracking-widest">Жеті ата</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[#222] text-[8px] tracking-widest">{new Date().toLocaleDateString('ru-RU')} · SHEJIRE.AI</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onClick={openPrint}
+                                className="w-full max-w-sm py-4 rounded-2xl font-bold text-sm tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+                                style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000', boxShadow: '0 8px 32px rgba(197,165,90,0.35)' }}>
+                                ⬇ PDF ЖҮКТЕУ — СКАЧАТЬ PDF
+                            </button>
+                            <p className="text-[#2a2a2a] text-[10px] tracking-widest text-center">Нажмите «Сохранить как PDF» в диалоге печати</p>
+                        </div>
+                    )}
+
+                    {/* ── Print overlay (hidden in screen, shown in print) ── */}
+                    {showCert && (
+                        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 print:bg-[#080808] print:p-0"
+                            onClick={() => setShowCert(false)}>
+                            <div onClick={e => e.stopPropagation()} className="w-full max-w-md print:max-w-none print:w-full print:min-h-screen print:flex print:items-center print:justify-center">
+
+                                {/* Certificate */}
+                                <div id="cert-printable" className="print:flex w-full" style={{ display: 'block' }}>
+                                    <div className="relative rounded-3xl print:rounded-none overflow-hidden"
+                                        style={{ background: '#080808', border: '1px solid rgba(197,165,90,0.35)', padding: '40px 36px' }}>
+                                        {/* Corners */}
+                                        {[{top:12,left:12,bTop:1,bLeft:1},{top:12,right:12,bTop:1,bRight:1},{bottom:12,left:12,bBot:1,bLeft:1},{bottom:12,right:12,bBot:1,bRight:1}].map((c,ci) => (
+                                            <div key={ci} className="absolute w-8 h-8 pointer-events-none" style={{
+                                                top:c.top, bottom:c.bottom, left:c.left, right:c.right,
+                                                borderTop:    c.bTop  ? '1.5px solid rgba(197,165,90,0.6)' : 'none',
+                                                borderBottom: c.bBot  ? '1.5px solid rgba(197,165,90,0.6)' : 'none',
+                                                borderLeft:   c.bLeft ? '1.5px solid rgba(197,165,90,0.6)' : 'none',
+                                                borderRight:  c.bRight? '1.5px solid rgba(197,165,90,0.6)' : 'none',
+                                            }} />
+                                        ))}
+
+                                        <div className="text-center space-y-6">
+                                            {/* Header */}
+                                            <div className="space-y-2">
+                                                <p className="text-[#C5A55A50] text-[8px] tracking-[0.6em] uppercase">SHEJIRE AI · DIGITAL KURULTAI · 2026</p>
+                                                <div className="flex items-center gap-3 justify-center">
+                                                    <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(197,165,90,0.4))' }} />
+                                                    <span className="text-[#C5A55A40] text-sm">✦</span>
+                                                    <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(197,165,90,0.4))' }} />
+                                                </div>
+                                            </div>
+
+                                            {/* Tamga */}
+                                            <div className="text-8xl text-[#C5A55A]" style={{ textShadow: '0 0 50px rgba(197,165,90,0.6)', lineHeight: 1 }}>
+                                                {tribe?.tamga || '⩔'}
+                                            </div>
+
+                                            {/* Identity */}
+                                            <div>
+                                                <p className="text-[#444] text-[9px] tracking-[0.5em] uppercase mb-4">ШЕЖІРЕ СЕРТИФИКАТЫ · РОДОСЛОВНАЯ</p>
+                                                <h2 className="text-4xl font-serif text-white mb-2">{profile.name}</h2>
+                                                <p className="text-[#C5A55A] text-sm tracking-[0.3em]">{tribe?.name || '—'}</p>
+                                                <p className="text-[#444] text-xs tracking-widest">{tribe?.juz || ''}</p>
+                                            </div>
+
+                                            {/* Lineage chain */}
+                                            <div className="border-t border-b border-[#C5A55A15] py-6">
+                                                <p className="text-[#333] text-[8px] uppercase tracking-[0.5em] mb-5">ШЕЖІРЕ ТІЗБЕГІ · ЦЕПОЧКА ПРЕДКОВ</p>
+                                                {lineageLines.length > 0 ? (
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        {lineageLines.map((name, i) => (
+                                                            <div key={i} className="flex items-center gap-2 text-xs">
+                                                                <span className="text-[#222] text-[9px] w-5 text-right">{i + 1}</span>
+                                                                <span style={{ color: i === 0 ? '#C5A55A' : i === lineageLines.length-1 ? '#444' : '#777' }}>
+                                                                    {i === 0 ? '● ' : i === lineageLines.length-1 ? '◌ ' : '· '}{name}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-[#2a2a2a] text-xs">Шежіре тізбегі жоқ</p>
+                                                )}
+                                            </div>
+
+                                            {/* Stats */}
+                                            <div className="flex justify-center gap-10">
+                                                <div className="text-center">
+                                                    <p className="text-4xl font-serif text-[#C5A55A]">{lineageLines.length}</p>
+                                                    <p className="text-[#333] text-[8px] uppercase tracking-widest mt-1">Ұрпақ</p>
+                                                </div>
+                                                <div className="w-px bg-[#1a1a1a]" />
+                                                <div className="text-center">
+                                                    <p className="text-4xl font-serif text-[#C5A55A]">{lineageLines.length >= 7 ? '✓' : '—'}</p>
+                                                    <p className="text-[#333] text-[8px] uppercase tracking-widest mt-1">Жеті ата</p>
+                                                </div>
+                                                <div className="w-px bg-[#1a1a1a]" />
+                                                <div className="text-center">
+                                                    <p className="text-4xl font-serif text-[#C5A55A]">⩔</p>
+                                                    <p className="text-[#333] text-[8px] uppercase tracking-widest mt-1">Тамға</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Footer */}
+                                            <p className="text-[#1e1e1e] text-[8px] tracking-[0.4em] uppercase">{new Date().toLocaleDateString('ru-RU')} · SHEJIRE.AI · TAMGA TOKEN</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Buttons (hidden in print) */}
+                                <div className="flex gap-3 mt-4 print:hidden">
+                                    <button onClick={() => setShowCert(false)}
+                                        className="flex-1 py-3 rounded-2xl border border-[#1a1a1a] text-[#555] text-xs tracking-widest hover:border-[#333] transition-colors">
+                                        ЖАБУ
+                                    </button>
+                                    <button onClick={() => window.print()}
+                                        className="flex-1 py-3 rounded-2xl font-bold text-xs tracking-widest transition-all hover:scale-105"
+                                        style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>
+                                        ⬇ PDF САҚТАУ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         // ── Чат по истории рода ──
         const SUGGESTIONS = {
             history:     [{ label: '⩔ Тамғасы', q: 'тамга' }, { label: '🌟 Батырлары', q: 'известные люди' }, { label: '🗺 Мекені', q: 'где жили' }],
@@ -3018,6 +3485,11 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
+            const goToProfile = () => {
+                setCurrentScreen(SCREENS.PROFILE);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
             const goHome = () => {
                 setCurrentScreen(SCREENS.HOME);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3027,8 +3499,16 @@
                 <div className="relative z-10 min-h-screen">
                     <Background />
 
+                    {/* Floating profile button */}
+                    <button onClick={goToProfile}
+                        className="fixed top-5 right-5 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                        style={{ background: 'rgba(197,165,90,0.12)', border: '1px solid rgba(197,165,90,0.3)', color: '#C5A55A', backdropFilter: 'blur(8px)' }}
+                        title="Жеке кабинет">
+                        <span className="text-base">👤</span>
+                    </button>
+
                     {currentScreen === SCREENS.HOME ? (
-                        <HomeScreen onTribeSelect={handleTribeClick} onTreeClick={goToTree} onCustomsClick={goToCustoms} onTokenClick={goToTokenInfo} onStoriesClick={goToStories} onGamesClick={goToGames} onFoodClick={goToFood} onDnaClick={goToDna} onChatClick={goToChat} />
+                        <HomeScreen onTribeSelect={handleTribeClick} onTreeClick={goToTree} onCustomsClick={goToCustoms} onTokenClick={goToTokenInfo} onStoriesClick={goToStories} onGamesClick={goToGames} onFoodClick={goToFood} onDnaClick={goToDna} onChatClick={goToChat} onProfileClick={goToProfile} />
                     ) : currentScreen === SCREENS.FLOW ? (
                         <InteractiveFlow tribeKey={selectedTribe} onBack={goHome} onTreeFinish={goToTree} />
                     ) : currentScreen === SCREENS.TREE ? (
@@ -3047,6 +3527,8 @@
                         <DnaScreen onBack={goHome} />
                     ) : currentScreen === SCREENS.CHAT ? (
                         <ChatScreen onBack={goHome} />
+                    ) : currentScreen === SCREENS.PROFILE ? (
+                        <ProfileScreen onBack={goHome} />
                     ) : null}
 
                     <footer className="py-12 border-t border-[#1a1a1a] text-center text-[#444] text-xs uppercase tracking-widest">
@@ -3068,7 +3550,7 @@
 
         // --- Home Page ---
 
-        function HomeScreen({ onTribeSelect, onTreeClick, onCustomsClick, onTokenClick, onStoriesClick, onGamesClick, onFoodClick, onDnaClick, onChatClick }) {
+        function HomeScreen({ onTribeSelect, onTreeClick, onCustomsClick, onTokenClick, onStoriesClick, onGamesClick, onFoodClick, onDnaClick, onChatClick, onProfileClick }) {
             const allTamgas = useMemo(() => Object.values(TRIBES_DB), []);
             const [tamgaIdx, setTamgaIdx] = React.useState(0);
             const [tamgaVisible, setTamgaVisible] = React.useState(true);
@@ -3129,6 +3611,11 @@
                             </button>
                             <button onClick={onChatClick} className="px-8 py-3 border border-[#C5A55A] text-[#C5A55A] rounded-full text-xs tracking-widest uppercase hover:bg-[#C5A55A1A] transition-all duration-500" style={{boxShadow:'0 0 20px rgba(197,165,90,0.15)'}}>
                                 💬 Ру Чаты
+                            </button>
+                            <button onClick={onProfileClick}
+                                className="px-8 py-3 rounded-full text-xs tracking-widest uppercase font-bold transition-all duration-300 hover:scale-105 active:scale-95"
+                                style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000', boxShadow: '0 4px 24px rgba(197,165,90,0.4)' }}>
+                                👤 Жеке кабинет
                             </button>
                         </div>
                     </header>
