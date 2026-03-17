@@ -141,15 +141,32 @@
         .tree-line-main  { animation: lineGlow  2.5s ease-in-out infinite; }
         .tree-dot-main   { animation: dotPulse  2s   ease-in-out infinite; }
 
-        /* ── Print / PDF certificate ── */
+        /* ── Print / PDF ── */
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            body { background: #080808 !important; }
+            body { background: #080808 !important; margin:0; padding:0; }
             #root > div > * { display: none !important; }
-            #cert-printable { display: flex !important; }
+            #cert-printable  { display: flex !important; }
+            #nft-print-area  { display: flex !important; }
             @page { margin: 0; size: A4 portrait; }
         }
         #cert-printable { display: none; }
+        #nft-print-area { display: none; }
+
+        /* NFT card shimmer */
+        @keyframes shimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position:  200% center; }
+        }
+        .nft-shimmer {
+            background: linear-gradient(90deg, transparent 0%, rgba(197,165,90,0.08) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes starPulse {
+            0%,100% { opacity:.15; transform:scale(1); }
+            50%      { opacity:.6;  transform:scale(1.3); }
+        }
 
         /* Profile gradient ring */
         .profile-ring {
@@ -2934,58 +2951,203 @@
                     </div>
 
                     {/* ── Tab: Шежіре ── */}
-                    {tab === 'tree' && (
-                        <div className="rounded-3xl p-px" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,0.2),transparent)' }}>
-                            <div className="rounded-3xl p-7 md:p-10" style={{ background: '#0d0d0d' }}>
-                                <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-                                    <div>
-                                        <h3 className="text-xl font-serif text-[#C5A55A] mb-1">Шежіре тізбегі</h3>
-                                        <p className="text-[#333] text-xs tracking-widest">Цепочка предков — от вас к началу рода</p>
+                    {tab === 'tree' && (() => {
+                        const jetiAta = lineageLines.slice(0, 7);
+                        const rest    = lineageLines.slice(7);
+                        const hasJeti = lineageLines.length >= 7;
+                        const nftId   = String(profile.name?.charCodeAt(0) * 17 + lineageLines.length).padStart(4,'0');
+
+                        const openNftPrint = () => {
+                            document.getElementById('nft-print-area').style.display = 'flex';
+                            setTimeout(() => {
+                                window.print();
+                                setTimeout(() => { document.getElementById('nft-print-area').style.display = 'none'; }, 1000);
+                            }, 200);
+                        };
+
+                        const NftCard = ({ forPrint }) => (
+                            <div style={{
+                                background: '#080808',
+                                border: '1px solid rgba(197,165,90,0.5)',
+                                borderRadius: forPrint ? 0 : 24,
+                                padding: forPrint ? '48px 56px' : '32px 28px',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                width: forPrint ? '100%' : 'auto',
+                                minHeight: forPrint ? '100vh' : 'auto',
+                            }}>
+                                {/* Starfield bg */}
+                                {[...Array(18)].map((_,si) => (
+                                    <div key={si} className="absolute rounded-full pointer-events-none"
+                                        style={{
+                                            width: si%3===0?3:si%3===1?2:1,
+                                            height: si%3===0?3:si%3===1?2:1,
+                                            background:'#C5A55A',
+                                            top: `${(si*17+11)%95}%`,
+                                            left:`${(si*23+7)%95}%`,
+                                            animation:`starPulse ${2+si%3}s ease-in-out ${si*0.3}s infinite`,
+                                        }} />
+                                ))}
+
+                                {/* Shimmer overlay */}
+                                <div className="nft-shimmer absolute inset-0 pointer-events-none" />
+
+                                {/* Corner ornaments */}
+                                {[{t:8,l:8,bt:1,bl:1},{t:8,r:8,bt:1,br:1},{b:8,l:8,bb:1,bl:1},{b:8,r:8,bb:1,br:1}].map((c,ci)=>(
+                                    <div key={ci} className="absolute w-7 h-7 pointer-events-none" style={{
+                                        top:c.t, bottom:c.b, left:c.l, right:c.r,
+                                        borderTop:    c.bt?'1.5px solid rgba(197,165,90,0.7)':'none',
+                                        borderBottom: c.bb?'1.5px solid rgba(197,165,90,0.7)':'none',
+                                        borderLeft:   c.bl?'1.5px solid rgba(197,165,90,0.7)':'none',
+                                        borderRight:  c.br?'1.5px solid rgba(197,165,90,0.7)':'none',
+                                    }} />
+                                ))}
+
+                                <div style={{ position:'relative', zIndex:2 }}>
+                                    {/* Header */}
+                                    <div style={{ textAlign:'center', marginBottom:20 }}>
+                                        <p style={{ color:'rgba(197,165,90,0.4)', fontSize:8, letterSpacing:'0.5em', textTransform:'uppercase', marginBottom:6 }}>
+                                            SHEJIRE AI · DIGITAL KURULTAI · 2026
+                                        </p>
+                                        <div style={{ display:'flex', alignItems:'center', gap:10, justifyContent:'center' }}>
+                                            <div style={{ height:1, flex:1, background:'linear-gradient(to right,transparent,rgba(197,165,90,0.4))' }} />
+                                            <span style={{ color:'rgba(197,165,90,0.5)', fontSize:12 }}>✦</span>
+                                            <div style={{ height:1, flex:1, background:'linear-gradient(to left,transparent,rgba(197,165,90,0.4))' }} />
+                                        </div>
                                     </div>
-                                    <button onClick={openPrint}
-                                        className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-xs tracking-widest transition-all hover:scale-105 active:scale-95"
-                                        style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000', boxShadow: '0 4px 20px rgba(197,165,90,0.3)' }}>
-                                        ⬇ PDF жүктеу
-                                    </button>
+
+                                    {/* NFT # + Tamga */}
+                                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+                                        <div>
+                                            <p style={{ color:'rgba(197,165,90,0.35)', fontSize:8, letterSpacing:'0.4em', textTransform:'uppercase' }}>ШЕЖІРЕ NFT</p>
+                                            <p style={{ color:'rgba(197,165,90,0.6)', fontSize:11, letterSpacing:'0.2em', fontWeight:'bold' }}>#{nftId}</p>
+                                        </div>
+                                        <div style={{ textAlign:'right' }}>
+                                            <div style={{ fontSize:48, color:'#C5A55A', textShadow:'0 0 30px rgba(197,165,90,0.6)', lineHeight:1 }}>
+                                                {tribe?.tamga || '⩔'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Name + Tribe */}
+                                    <div style={{ marginBottom:20, paddingBottom:16, borderBottom:'1px solid rgba(197,165,90,0.1)' }}>
+                                        <h3 style={{ fontSize:22, fontFamily:'serif', color:'#fff', marginBottom:4, letterSpacing:'0.05em' }}>{profile.name}</h3>
+                                        <p style={{ color:'#C5A55A', fontSize:11, letterSpacing:'0.3em' }}>{tribe?.name || '—'} · {tribe?.juz || ''}</p>
+                                    </div>
+
+                                    {/* Tree chain */}
+                                    <div style={{ marginBottom:16 }}>
+                                        <p style={{ color:'rgba(197,165,90,0.35)', fontSize:8, letterSpacing:'0.5em', textTransform:'uppercase', marginBottom:14 }}>
+                                            ШЕЖІРЕ ТІЗБЕГІ {hasJeti ? '· ЖЕТІ АТА ✓' : ''}
+                                        </p>
+
+                                        {lineageLines.length > 0 ? (
+                                            <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                                                {lineageLines.map((name, i) => {
+                                                    const isYou  = i === 0;
+                                                    const isJeti = i === 6;
+                                                    const isFade = i > 6;
+                                                    return (
+                                                        <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'100%', maxWidth:340 }}>
+                                                            {/* Node */}
+                                                            <div style={{
+                                                                display:'flex', alignItems:'center', gap:10,
+                                                                width:'100%', padding:'8px 14px', borderRadius:12,
+                                                                background: isYou ? 'linear-gradient(135deg,rgba(197,165,90,0.2),rgba(139,105,20,0.08))' : isFade ? 'transparent' : 'rgba(255,255,255,0.02)',
+                                                                border: `1px solid ${isYou ? 'rgba(197,165,90,0.6)' : isJeti ? 'rgba(197,165,90,0.25)' : 'rgba(255,255,255,0.04)'}`,
+                                                            }}>
+                                                                {/* Gen dot */}
+                                                                <div style={{
+                                                                    width:20, height:20, borderRadius:'50%', flexShrink:0,
+                                                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                                                    background: isYou ? 'rgba(197,165,90,0.3)' : isFade ? 'transparent' : 'rgba(197,165,90,0.08)',
+                                                                    border: `1px solid ${isYou ? '#C5A55A' : isFade ? '#1a1a1a' : 'rgba(197,165,90,0.2)'}`,
+                                                                    fontSize:9, color: isYou ? '#C5A55A' : '#444',
+                                                                }}>{i+1}</div>
+
+                                                                <span style={{
+                                                                    flex:1, fontSize: isYou ? 14 : 12, fontWeight: isYou ? 700 : 400,
+                                                                    color: isYou ? '#C5A55A' : isFade ? '#333' : '#999',
+                                                                    letterSpacing:'0.02em',
+                                                                }}>{name}</span>
+
+                                                                {isYou  && <span style={{ fontSize:8, color:'rgba(197,165,90,0.6)', letterSpacing:'0.2em' }}>СІЗ</span>}
+                                                                {isJeti && <span style={{ fontSize:8, color:'rgba(197,165,90,0.5)', letterSpacing:'0.1em' }}>VII</span>}
+                                                            </div>
+
+                                                            {/* Connector */}
+                                                            {i < lineageLines.length - 1 && (
+                                                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', margin:'2px 0' }}>
+                                                                    <div style={{ width:1, height:14, background: isFade ? 'rgba(255,255,255,0.04)' : 'linear-gradient(to bottom,rgba(197,165,90,0.4),rgba(197,165,90,0.1))' }} />
+                                                                    <div style={{ width:5, height:5, borderRadius:'50%', background: isFade ? '#111' : 'rgba(197,165,90,0.35)' }} />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Жеті ата divider */}
+                                                            {isJeti && i < lineageLines.length - 1 && (
+                                                                <div style={{ display:'flex', alignItems:'center', gap:8, width:'100%', maxWidth:340, margin:'6px 0' }}>
+                                                                    <div style={{ height:1, flex:1, background:'linear-gradient(to right,transparent,rgba(197,165,90,0.3))' }} />
+                                                                    <span style={{ fontSize:8, color:'rgba(197,165,90,0.5)', letterSpacing:'0.3em', textTransform:'uppercase' }}>ЖЕТІ АТА</span>
+                                                                    <div style={{ height:1, flex:1, background:'linear-gradient(to left,transparent,rgba(197,165,90,0.3))' }} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p style={{ color:'#222', textAlign:'center', fontSize:12 }}>Шежіре тізбегі жоқ</p>
+                                        )}
+                                    </div>
+
+                                    {/* Stats bar */}
+                                    <div style={{ display:'flex', justifyContent:'center', gap:20, paddingTop:14, borderTop:'1px solid rgba(197,165,90,0.1)', marginBottom:14 }}>
+                                        <div style={{ textAlign:'center' }}>
+                                            <p style={{ fontSize:24, fontFamily:'serif', color:'#C5A55A', lineHeight:1 }}>{lineageLines.length}</p>
+                                            <p style={{ fontSize:8, color:'#333', letterSpacing:'0.3em', textTransform:'uppercase', marginTop:3 }}>Ұрпақ</p>
+                                        </div>
+                                        <div style={{ width:1, background:'#111' }} />
+                                        <div style={{ textAlign:'center' }}>
+                                            <p style={{ fontSize:24, fontFamily:'serif', color: hasJeti ? '#C5A55A' : '#333', lineHeight:1 }}>{hasJeti ? '✓' : '—'}</p>
+                                            <p style={{ fontSize:8, color:'#333', letterSpacing:'0.3em', textTransform:'uppercase', marginTop:3 }}>Жеті ата</p>
+                                        </div>
+                                        <div style={{ width:1, background:'#111' }} />
+                                        <div style={{ textAlign:'center' }}>
+                                            <p style={{ fontSize:24, fontFamily:'serif', color:'#C5A55A', lineHeight:1 }}>{tribe?.tamga || '⩔'}</p>
+                                            <p style={{ fontSize:8, color:'#333', letterSpacing:'0.3em', textTransform:'uppercase', marginTop:3 }}>Тамға</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <p style={{ textAlign:'center', color:'#1a1a1a', fontSize:8, letterSpacing:'0.4em', textTransform:'uppercase' }}>
+                                        {new Date().toLocaleDateString('ru-RU')} · SHEJIRE.AI · TAMGA TOKEN · #{nftId}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+
+                        return (
+                            <div>
+                                {/* NFT card preview */}
+                                <div className="rounded-3xl overflow-hidden mb-6">
+                                    <NftCard forPrint={false} />
                                 </div>
 
-                                {lineageLines.length > 0 ? (
-                                    <div className="flex flex-col items-center">
-                                        {lineageLines.map((name, i) => {
-                                            const isYou  = i === 0;
-                                            const isRoot = i === lineageLines.length - 1;
-                                            return (
-                                                <div key={i} className="flex flex-col items-center w-full max-w-xs">
-                                                    <div className="w-full flex items-center gap-3 px-5 py-3 rounded-xl transition-all"
-                                                        style={{
-                                                            background: isYou ? 'linear-gradient(135deg,rgba(197,165,90,0.15),rgba(139,105,20,0.05))' : isRoot ? 'rgba(255,255,255,0.02)' : 'transparent',
-                                                            border: `1px solid ${isYou ? 'rgba(197,165,90,0.5)' : '#111'}`,
-                                                        }}>
-                                                        <span className="text-[#333] text-[9px] w-5 shrink-0">{i + 1}</span>
-                                                        <span className="flex-1 text-sm font-medium" style={{ color: isYou ? '#C5A55A' : isRoot ? '#555' : '#aaa' }}>{name}</span>
-                                                        {isYou  && <span className="text-[8px] text-[#C5A55A80] tracking-widest">СІЗ</span>}
-                                                        {isRoot && <span className="text-[8px] text-[#44444480] tracking-widest">АТА</span>}
-                                                    </div>
-                                                    {i < lineageLines.length - 1 && (
-                                                        <div className="flex flex-col items-center gap-0 my-0.5">
-                                                            <div className="w-px h-4" style={{ background: 'linear-gradient(to bottom,rgba(197,165,90,0.3),rgba(197,165,90,0.05))' }} />
-                                                            <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(197,165,90,0.3)' }} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16 text-[#222]">
-                                        <p className="text-5xl mb-4">🌳</p>
-                                        <p className="text-sm text-[#333]">Шежіре тізбегі толтырылмаған</p>
-                                        <button onClick={logout} className="mt-4 text-[#C5A55A] text-xs tracking-widest">Профильді жаңарту →</button>
-                                    </div>
-                                )}
+                                {/* Hidden print version */}
+                                <div id="nft-print-area" style={{ display:'none', position:'fixed', inset:0, zIndex:9999, background:'#080808', alignItems:'center', justifyContent:'center' }}>
+                                    <NftCard forPrint={true} />
+                                </div>
+
+                                {/* Download button */}
+                                <button onClick={openNftPrint}
+                                    className="w-full py-4 rounded-2xl font-bold text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+                                    style={{ background:'linear-gradient(135deg,#C5A55A,#8B6914)', color:'#000', boxShadow:'0 8px 32px rgba(197,165,90,0.35)' }}>
+                                    ⬇ NFT ШЕЖІРЕ ЖҮКТЕУ — СКАЧАТЬ
+                                </button>
+                                <p className="text-center text-[#222] text-[10px] tracking-widest mt-3">В диалоге печати выберите «Сохранить как PDF»</p>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* ── Tab: Tokens ── */}
                     {tab === 'tokens' && (
