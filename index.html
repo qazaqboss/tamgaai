@@ -2985,7 +2985,7 @@
                         const openNftPrint = () => {
                             const rows = lineageLines.map((name, i) => {
                                 const isYou  = i === 0;
-                                const isJeti = i === 6;
+                                const isJeti = i === 7;
                                 const isFade = i > 6;
                                 const divider = isJeti && i < lineageLines.length - 1 ? `
                                     <tr><td colspan="3" style="padding:6px 0 4px;">
@@ -3168,7 +3168,7 @@
                                             <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
                                                 {lineageLines.map((name, i) => {
                                                     const isYou  = i === 0;
-                                                    const isJeti = i === 6;
+                                                    const isJeti = i === 7;
                                                     const isFade = i > 6;
                                                     return (
                                                         <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'100%', maxWidth:340 }}>
