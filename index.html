@@ -2411,8 +2411,145 @@
             );
         }
 
+        // ── Submit Shejire Modal ──────────────────────────────────────────
+        function SubmitShejireModal({ onClose }) {
+            const [contact, setContact] = useState('');
+            const [nameInput, setNameInput] = useState('');
+            const [chain, setChain] = useState([]);
+            const [note, setNote] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+            const [error, setError] = useState('');
+            const inputRef = React.useRef(null);
+
+            const addName = () => {
+                const v = nameInput.trim();
+                if (!v) return;
+                setChain(c => [...c, v]);
+                setNameInput('');
+                inputRef.current && inputRef.current.focus();
+            };
+
+            const removeName = (i) => setChain(c => c.filter((_, idx) => idx !== i));
+
+            const handleKey = (e) => { if (e.key === 'Enter') addName(); };
+
+            const handleSubmit = () => {
+                if (!contact.trim()) { setError('Укажите контакт'); return; }
+                if (chain.length < 2) { setError('Добавьте минимум 2 имени'); return; }
+                const chainText = chain.join(' → ');
+                const body = encodeURIComponent(
+                    `Шежіре:\n${chainText}\n\nКонтакт: ${contact}\n\nПримечание: ${note || '—'}`
+                );
+                window.open(`mailto:shejire@tamgaai.kz?subject=Шежіре на проверку&body=${body}`);
+                setSubmitted(true);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[999] flex items-end md:items-center justify-center p-4"
+                    style={{background:'rgba(0,0,0,0.85)', backdropFilter:'blur(8px)'}}>
+                    <div className="w-full max-w-md rounded-3xl border border-[#C5A55A30] overflow-hidden"
+                        style={{background:'#080808', maxHeight:'90vh', overflowY:'auto'}}>
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-[#111]">
+                            <div>
+                                <div className="font-serif text-[#C5A55A] tracking-widest text-sm">ШЕЖІРЕ ЖІБЕРУ</div>
+                                <div className="text-[9px] text-[#444] tracking-[0.2em] uppercase mt-0.5">Модераторға тексеруге</div>
+                            </div>
+                            <button onClick={onClose} className="w-8 h-8 rounded-full border border-[#222] flex items-center justify-center text-[#555] hover:text-[#C5A55A] hover:border-[#C5A55A40] transition-colors text-xs">✕</button>
+                        </div>
+
+                        {submitted ? (
+                            <div className="px-6 py-14 text-center">
+                                <div className="text-5xl mb-6" style={{filter:'drop-shadow(0 0 20px rgba(197,165,90,0.5))'}}>✓</div>
+                                <div className="font-serif text-[#C5A55A] text-xl mb-3 tracking-wider">Жіберілді</div>
+                                <div className="text-xs text-[#555] leading-relaxed mb-8">Ваша родословная отправлена на проверку модератору. Мы свяжемся с вами по указанному контакту.</div>
+                                <button onClick={onClose} className="gold-pill px-8 py-3 rounded-full text-xs tracking-widest uppercase">Жабу</button>
+                            </div>
+                        ) : (
+                            <div className="px-6 py-6 space-y-6">
+
+                                {/* Contact */}
+                                <div>
+                                    <label className="text-[9px] text-[#C5A55A] tracking-[0.25em] uppercase block mb-2">Контакт (Telegram / телефон / имя)</label>
+                                    <input value={contact} onChange={e => { setContact(e.target.value); setError(''); }}
+                                        className="w-full bg-[#0d0d0d] border border-[#222] focus:border-[#C5A55A60] rounded-xl px-4 py-3 text-sm outline-none transition placeholder-[#333]"
+                                        placeholder="@username или +7..." />
+                                </div>
+
+                                {/* Chain builder */}
+                                <div>
+                                    <label className="text-[9px] text-[#C5A55A] tracking-[0.25em] uppercase block mb-3">Шежіре тізбегі (от себя к предкам)</label>
+
+                                    {/* Input row */}
+                                    <div className="flex gap-2 mb-4">
+                                        <input ref={inputRef} value={nameInput}
+                                            onChange={e => setNameInput(e.target.value)}
+                                            onKeyDown={handleKey}
+                                            className="flex-1 bg-[#0d0d0d] border border-[#222] focus:border-[#C5A55A60] rounded-xl px-4 py-3 text-sm outline-none transition placeholder-[#333]"
+                                            placeholder={chain.length === 0 ? 'Ваше имя...' : `Предок ${chain.length}...`} />
+                                        <button onClick={addName}
+                                            className="w-12 h-12 rounded-xl border border-[#C5A55A40] text-[#C5A55A] hover:bg-[#C5A55A15] transition-colors flex items-center justify-center text-lg flex-shrink-0">+</button>
+                                    </div>
+
+                                    {/* Chain visualization */}
+                                    {chain.length > 0 && (
+                                        <div className="space-y-0 relative">
+                                            <div className="absolute left-4 top-4 bottom-4 w-[1px]"
+                                                style={{background:'linear-gradient(to bottom, #C5A55A60, transparent)'}} />
+                                            {chain.map((name, i) => (
+                                                <div key={i} className="flex items-center gap-3 pl-1 py-1">
+                                                    <div className="w-8 h-8 rounded-full flex-shrink-0 z-10 flex items-center justify-center text-[9px] font-bold"
+                                                        style={{background: i === 0 ? '#C5A55A' : '#111', color: i === 0 ? '#000' : '#C5A55A66', border: `1px solid ${i === 0 ? '#C5A55A' : '#222'}`}}>
+                                                        {i + 1}
+                                                    </div>
+                                                    <div className="flex-1 flex items-center justify-between py-2 px-3 rounded-xl"
+                                                        style={{background:'#0d0d0d', border:'1px solid #161616'}}>
+                                                        <span className="text-sm" style={{color: i === 0 ? '#C5A55A' : '#888'}}>{name}</span>
+                                                        <button onClick={() => removeName(i)}
+                                                            className="text-[#333] hover:text-[#666] text-xs ml-2 transition-colors">✕</button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {chain.length === 0 && (
+                                        <div className="text-center py-6 rounded-xl border border-dashed border-[#1a1a1a]">
+                                            <div className="text-[#333] text-xs tracking-widest">Добавьте имена последовательно</div>
+                                            <div className="text-[9px] text-[#222] mt-1">от себя → к предкам</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Note */}
+                                <div>
+                                    <label className="text-[9px] text-[#555] tracking-[0.25em] uppercase block mb-2">Примечание (необязательно)</label>
+                                    <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                                        className="w-full bg-[#0d0d0d] border border-[#222] focus:border-[#C5A55A40] rounded-xl px-4 py-3 text-sm outline-none transition placeholder-[#333] resize-none"
+                                        placeholder="Дополнительная информация о роде..." />
+                                </div>
+
+                                {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+
+                                <button onClick={handleSubmit}
+                                    className="w-full gold-pill py-4 rounded-2xl font-bold tracking-[0.3em] uppercase text-sm transition hover:scale-[1.01]">
+                                    МОДЕРАТОРҒА ЖІБЕРУ →
+                                </button>
+
+                                <p className="text-center text-[9px] text-[#333] tracking-wider">
+                                    Проверка занимает 1–3 рабочих дня
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         function App() {
             const [currentScreen, setCurrentScreen] = useState(SCREENS.HOME);
+            const [showSubmitModal, setShowSubmitModal] = useState(false);
             const [selectedTribe, setSelectedTribe] = useState(null);
 
             const handleTribeClick = (key) => {
@@ -2488,6 +2625,16 @@
                     <footer className="py-12 border-t border-[#1a1a1a] text-center text-[#444] text-xs uppercase tracking-widest">
                         <p>© 2026 SHEJIRE AI · Цифровой Курултай</p>
                     </footer>
+
+                    {/* Floating submit button */}
+                    <button onClick={() => setShowSubmitModal(true)}
+                        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
+                        style={{background:'linear-gradient(135deg,#C5A55A,#8B6914)', boxShadow:'0 4px 24px rgba(197,165,90,0.4)', color:'#000'}}>
+                        <span className="text-base font-bold leading-none">+</span>
+                        <span className="text-[10px] font-bold tracking-widest uppercase">Шежіре жіберу</span>
+                    </button>
+
+                    {showSubmitModal && <SubmitShejireModal onClose={() => setShowSubmitModal(false)} />}
                 </div>
             );
         }
