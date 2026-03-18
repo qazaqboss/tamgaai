@@ -2744,13 +2744,23 @@
         }
 
         // ── Жеке кабинет (Personal Cabinet) ──
-        // Профиль Әсет — полная цепочка рода
         const ASET_PROFILE = {
             name: 'Әсет',
             tribe: 'alimuly',
             lineage: 'Әсет\nҚайрат\nӘліби\nҚойлыбай\nОтар\nКүнәш\nЖуас\nТанас\nБайтемір\nАғым\nСүйір\nАмантай\nҚұламан\nАқпан\nҚараш\nҚарамашақ\nӘлімұлы\nҚайырбай-Қарақесек\nКіші жүз\nАлаш',
             dna: true,
             createdAt: new Date().toISOString(),
+        };
+        const ARSEN_PROFILE = {
+            name: 'Арсен',
+            tribe: 'alimuly',
+            lineage: 'Арсен\nҚайрат\nӘліби\nҚойлыбай\nОтар\nКүнәш\nЖуас\nТанас\nБайтемір\nАғым\nСүйір\nАмантай\nҚұламан\nАқпан\nҚараш\nҚарамашақ\nӘлімұлы\nҚайырбай-Қарақесек\nКіші жүз\nАлаш',
+            dna: false,
+            createdAt: new Date().toISOString(),
+        };
+        const CABINET_USERS = {
+            aset:  { login: 'aset',  pass: 'aset2026',  profile: ASET_PROFILE  },
+            arsen: { login: 'arsen', pass: 'arsen2026', profile: ARSEN_PROFILE },
         };
 
         const MOCK_TOKENS = [
@@ -2761,31 +2771,120 @@
         ];
 
         function ProfileScreen({ onBack }) {
+            // ── Login state ──
+            const [loggedUser, setLoggedUser] = useState(() => localStorage.getItem('shejire_user') || null);
+            const [loginForm,  setLoginForm]  = useState({ login: '', pass: '' });
+            const [loginErr,   setLoginErr]   = useState('');
+
+            const doLogin = () => {
+                const u = Object.values(CABINET_USERS).find(u => u.login === loginForm.login.trim() && u.pass === loginForm.pass);
+                if (!u) { setLoginErr('Логин немесе пароль қате · Неверный логин или пароль'); return; }
+                localStorage.setItem('shejire_user', u.login);
+                localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
+                setLoggedUser(u.login);
+                setLoginErr('');
+            };
+            const doLogout = () => {
+                localStorage.removeItem('shejire_user');
+                setLoggedUser(null);
+                setLoginForm({ login: '', pass: '' });
+                setProfile(null); setStep(0); setForm({ name: '', tribe: '', lineage: '' });
+            };
+
+            // ── Profile state (per-user) ──
             const [profile, setProfile] = useState(() => {
+                const u = localStorage.getItem('shejire_user');
+                if (!u) return null;
                 try {
-                    const saved = JSON.parse(localStorage.getItem('shejire_profile') || 'null');
-                    if (!saved || !saved.lineage) {
-                        localStorage.setItem('shejire_profile', JSON.stringify(ASET_PROFILE));
-                        return ASET_PROFILE;
-                    }
-                    return saved;
-                } catch { return ASET_PROFILE; }
+                    const saved = JSON.parse(localStorage.getItem('shejire_profile_' + u) || 'null');
+                    if (saved && saved.lineage) return saved;
+                    const def = CABINET_USERS[u]?.profile;
+                    if (def) { localStorage.setItem('shejire_profile_' + u, JSON.stringify(def)); return def; }
+                } catch {}
+                return null;
             });
+
             const [step, setStep]         = useState(0);
             const [form, setForm]         = useState({ name: '', tribe: '', lineage: '' });
             const [tab,  setTab]          = useState('tree');
             const [showCert, setShowCert] = useState(false);
             const [editing, setEditing]   = useState(false);
 
+            // Sync profile when loggedUser changes
+            React.useEffect(() => {
+                if (!loggedUser) { setProfile(null); return; }
+                try {
+                    const saved = JSON.parse(localStorage.getItem('shejire_profile_' + loggedUser) || 'null');
+                    if (saved && saved.lineage) { setProfile(saved); return; }
+                    const def = CABINET_USERS[loggedUser]?.profile;
+                    if (def) { localStorage.setItem('shejire_profile_' + loggedUser, JSON.stringify(def)); setProfile(def); }
+                } catch {}
+            }, [loggedUser]);
+
             const saveProfile = () => {
                 const p = { ...form, createdAt: new Date().toISOString() };
-                localStorage.setItem('shejire_profile', JSON.stringify(p));
+                localStorage.setItem('shejire_profile_' + loggedUser, JSON.stringify(p));
                 setProfile(p); setEditing(false);
             };
-            const logout = () => {
-                localStorage.removeItem('shejire_profile');
-                setProfile(null); setStep(0); setForm({ name: '', tribe: '', lineage: '' });
-            };
+            const logout = doLogout;
+
+            // ── Login screen ──
+            if (!loggedUser) return (
+                <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative">
+                    <button onClick={onBack} className="fixed top-6 left-6 text-[#444] hover:text-[#C5A55A] transition-colors text-[10px] tracking-widest uppercase z-10">← Назад</button>
+                    <div className="max-w-sm w-full space-y-8">
+                        <div className="text-center">
+                            <div className="text-5xl mb-4 tamga-glow" style={{fontFamily:"'Cinzel',serif"}}>⩔</div>
+                            <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-3">ЖЕКЕ КАБИНЕТ · ЛИЧНЫЙ КАБИНЕТ</p>
+                            <h2 className="text-4xl font-serif text-white">Кіру</h2>
+                            <p className="text-[#444] text-xs mt-2 tracking-wide">Войдите в свой аккаунт</p>
+                        </div>
+
+                        <div className="rounded-2xl p-px" style={{background:'linear-gradient(135deg,rgba(197,165,90,0.3),rgba(139,105,20,0.1))'}}>
+                            <div className="rounded-2xl p-7 space-y-5" style={{background:'#0d0d0d'}}>
+                                <div>
+                                    <p className="text-[#C5A55A60] text-[9px] tracking-widest uppercase mb-2">ЛОГИН</p>
+                                    <input value={loginForm.login}
+                                        onChange={e => { setLoginForm(f=>({...f,login:e.target.value})); setLoginErr(''); }}
+                                        onKeyDown={e => e.key==='Enter' && doLogin()}
+                                        placeholder="aset / arsen"
+                                        autoFocus
+                                        className="w-full bg-transparent border-b text-white text-lg outline-none py-2 placeholder-[#222] transition-colors"
+                                        style={{borderColor: loginForm.login ? '#C5A55A' : '#1a1a1a'}} />
+                                </div>
+                                <div>
+                                    <p className="text-[#C5A55A60] text-[9px] tracking-widest uppercase mb-2">ПАРОЛЬ</p>
+                                    <input value={loginForm.pass} type="password"
+                                        onChange={e => { setLoginForm(f=>({...f,pass:e.target.value})); setLoginErr(''); }}
+                                        onKeyDown={e => e.key==='Enter' && doLogin()}
+                                        placeholder="••••••••"
+                                        className="w-full bg-transparent border-b text-white text-lg outline-none py-2 placeholder-[#222] transition-colors"
+                                        style={{borderColor: loginForm.pass ? '#C5A55A' : '#1a1a1a'}} />
+                                </div>
+                                {loginErr && <p className="text-red-400 text-[10px] tracking-wide text-center">{loginErr}</p>}
+                                <button onClick={doLogin}
+                                    className="w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all hover:scale-105 active:scale-95 mt-2"
+                                    style={{background:'linear-gradient(135deg,#C5A55A,#8B6914)',color:'#000'}}>
+                                    КІРУ →
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="text-center space-y-2">
+                            <p className="text-[#2a2a2a] text-[9px] tracking-widest uppercase">Аккаунттар</p>
+                            <div className="flex justify-center gap-4">
+                                {Object.values(CABINET_USERS).map(u => (
+                                    <button key={u.login} onClick={() => setLoginForm({login:u.login, pass:''})}
+                                        className="px-4 py-2 rounded-full border text-[10px] tracking-widest transition-all hover:border-[#C5A55A] hover:text-[#C5A55A]"
+                                        style={{borderColor:'#1a1a1a', color:'#333'}}>
+                                        {CABINET_USERS[u.login]?.profile?.name || u.login}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
 
             const lineageLines = (profile?.lineage || '').split('\n').filter(Boolean);
             const tribe = profile?.tribe ? TRIBES_DB[profile.tribe] : null;
