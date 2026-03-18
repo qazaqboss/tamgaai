@@ -2792,21 +2792,6 @@
             const [loginForm,  setLoginForm]  = useState({ login: '', pass: '' });
             const [loginErr,   setLoginErr]   = useState('');
 
-            const doLogin = () => {
-                const u = Object.values(CABINET_USERS).find(u => u.login === loginForm.login.trim() && u.pass === loginForm.pass);
-                if (!u) { setLoginErr('Логин немесе пароль қате · Неверный логин или пароль'); return; }
-                localStorage.setItem('shejire_user', u.login);
-                localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
-                setLoggedUser(u.login);
-                setLoginErr('');
-            };
-            const doLogout = () => {
-                localStorage.removeItem('shejire_user');
-                setLoggedUser(null);
-                setLoginForm({ login: '', pass: '' });
-                setProfile(null); setStep(0); setForm({ name: '', tribe: '', lineage: '' });
-            };
-
             // ── Profile state (per-user) ──
             const [profile, setProfile] = useState(() => {
                 const u = localStorage.getItem('shejire_user');
@@ -2826,16 +2811,22 @@
             const [showCert, setShowCert] = useState(false);
             const [editing, setEditing]   = useState(false);
 
-            // Sync profile when loggedUser changes
-            React.useEffect(() => {
-                if (!loggedUser) { setProfile(null); return; }
-                try {
-                    const saved = JSON.parse(localStorage.getItem('shejire_profile_' + loggedUser) || 'null');
-                    if (saved && saved.lineage) { setProfile(saved); return; }
-                    const def = CABINET_USERS[loggedUser]?.profile;
-                    if (def) { localStorage.setItem('shejire_profile_' + loggedUser, JSON.stringify(def)); setProfile(def); }
-                } catch {}
-            }, [loggedUser]);
+            const doLogin = () => {
+                const u = Object.values(CABINET_USERS).find(u => u.login === loginForm.login.trim() && u.pass === loginForm.pass.trim());
+                if (!u) { setLoginErr('Логин немесе пароль қате · Неверный логин или пароль'); return; }
+                localStorage.setItem('shejire_user', u.login);
+                localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
+                setProfile(u.profile);
+                setLoggedUser(u.login);
+                setLoginErr('');
+            };
+            const doLogout = () => {
+                localStorage.removeItem('shejire_user');
+                setLoggedUser(null);
+                setProfile(null);
+                setLoginForm({ login: '', pass: '' });
+                setStep(0); setForm({ name: '', tribe: '', lineage: '' });
+            };
 
             const saveProfile = () => {
                 const p = { ...form, createdAt: new Date().toISOString() };
@@ -2886,14 +2877,23 @@
                             </div>
                         </div>
 
-                        <div className="text-center space-y-2">
-                            <p className="text-[#2a2a2a] text-[9px] tracking-widest uppercase">Аккаунттар</p>
-                            <div className="flex justify-center gap-4">
+                        <div className="text-center space-y-3">
+                            <p className="text-[#2a2a2a] text-[9px] tracking-widest uppercase">Немесе тікелей кіріңіз</p>
+                            <div className="grid grid-cols-2 gap-2">
                                 {Object.values(CABINET_USERS).map(u => (
-                                    <button key={u.login} onClick={() => setLoginForm({login:u.login, pass:''})}
-                                        className="px-4 py-2 rounded-full border text-[10px] tracking-widest transition-all hover:border-[#C5A55A] hover:text-[#C5A55A]"
-                                        style={{borderColor:'#1a1a1a', color:'#333'}}>
-                                        {CABINET_USERS[u.login]?.profile?.name || u.login}
+                                    <button key={u.login} onClick={() => {
+                                        localStorage.setItem('shejire_user', u.login);
+                                        localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
+                                        setProfile(u.profile);
+                                        setLoggedUser(u.login);
+                                    }}
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all hover:border-[#C5A55A] hover:bg-[#C5A55A0A] text-left"
+                                        style={{borderColor:'#1a1a1a'}}>
+                                        <span className="text-xl">{TRIBES_DB[u.profile?.tribe]?.tamga || '⩔'}</span>
+                                        <div>
+                                            <p className="text-white text-sm font-semibold">{u.profile?.name}</p>
+                                            <p className="text-[#444] text-[9px] tracking-wide">{u.login} · {u.pass}</p>
+                                        </div>
                                     </button>
                                 ))}
                             </div>
