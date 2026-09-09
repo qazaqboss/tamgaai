@@ -133,6 +133,10 @@
             from { opacity: 0; transform: translateY(-14px) scale(0.93); }
             to   { opacity: 1; transform: translateY(0)     scale(1); }
         }
+        @keyframes sibIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         @keyframes dotPulse {
             0%, 100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
             50%       { transform: translate(-50%,-50%) scale(1.6); opacity: 1; }
@@ -952,19 +956,19 @@
                                                             children: [{
                                                                 id: "agym", name: "Ағым", gen: 11, isMainLine: true,
                                                                 children: [{
-                                                                    id: "baitemir", name: "Байтемір", gen: 12, isMainLine: true,
+                                                                    id: "baitemir", name: "Байтемір", gen: 12, isMainLine: true, siblings: ["Қосқұлақ", "Қосақ", "Досақ", "Жантемір", "Байторы"],
                                                                     children: [{
-                                                                        id: "tanas", name: "Танас", gen: 13, isMainLine: true,
+                                                                        id: "tanas", name: "Танас", gen: 13, isMainLine: true, siblings: ["Мырзабай", "Ерше"],
                                                                         children: [{
-                                                                            id: "zhuas", name: "Жуас", gen: 14, isMainLine: true,
+                                                                            id: "zhuas", name: "Жуас", gen: 14, isMainLine: true, siblings: ["Құдас", "Манабай", "Жанабай"],
                                                                             children: [{
-                                                                                id: "kunash", name: "Күнәш", gen: 15, isMainLine: true,
+                                                                                id: "kunash", name: "Күнәш", gen: 15, isMainLine: true, siblings: ["Белес", "Жұлдыз", "Шеген", "Байсымақ"],
                                                                                 children: [{
-                                                                                    id: "otar", name: "Отар", gen: 16, isMainLine: true,
+                                                                                    id: "otar", name: "Отар", gen: 16, isMainLine: true, siblings: ["Теңізбай", "Ниәз", "Ырғызбай", "Отаралы"],
                                                                                     children: [{
-                                                                                        id: "qoilybai", name: "Қойлыбай", gen: 17, isMainLine: true,
+                                                                                        id: "qoilybai", name: "Қойлыбай", gen: 17, isMainLine: true, siblings: ["Тәжі", "Тәкеш"],
                                                                                         children: [{
-                                                                                            id: "alibi", name: "Әліби", gen: 18, isMainLine: true,
+                                                                                            id: "alibi", name: "Әліби", gen: 18, isMainLine: true, siblings: ["Қали", "Ағытай", "Тәбілбай", "Байжан", "Лайық"],
                                                                                             children: [
                                                                                                 {
                                                                                                     id: "qairat", name: "Қайрат", gen: 19, isMainLine: true, highlight: true,
@@ -1113,6 +1117,8 @@
             }, [node.gen]);
 
             const hasKids = node.children && node.children.length > 0;
+            const hasSibs = node.siblings && node.siblings.length > 0;
+            const canOpen = hasKids || hasSibs;
             const isOpen  = expanded.has(node.id);
             const isSmall = node.gen >= 8;
             const isMain  = node.isMainLine;
@@ -1128,14 +1134,14 @@
                     }}
                 >
                     <div
-                        onClick={() => hasKids && onToggle(node.id)}
+                        onClick={() => canOpen && onToggle(node.id)}
                         className={`flex flex-col items-center relative overflow-hidden group transition-all duration-300${isMain ? ' tree-node-main' : ''}`}
                         style={{
                             padding:      isSmall ? '9px 13px' : '13px 18px',
                             width:        isSmall ? 140 : 168,
                             minHeight:    node.gen <= 2 ? 82 : 58,
                             borderRadius: 14,
-                            cursor:       hasKids ? 'pointer' : 'default',
+                            cursor:       canOpen ? 'pointer' : 'default',
                             background:   isHL ? 'rgba(197,165,90,0.13)' : isMain ? 'rgba(197,165,90,0.07)' : '#0D0D0D',
                             border:       isHL ? '1px solid rgba(197,165,90,0.6)' : isMain ? '1px solid rgba(197,165,90,0.3)' : '1px solid #1c1c1c',
                             boxSizing:    'border-box',
@@ -1177,7 +1183,7 @@
                         )}
 
                         {/* Expand arrow */}
-                        {hasKids && (
+                        {canOpen && (
                             <div className="mt-1.5 transition-all duration-400" style={{
                                 fontSize: 9,
                                 color: isOpen ? 'rgba(197,165,90,0.3)' : '#555',
@@ -1185,6 +1191,29 @@
                             }}>▾</div>
                         )}
                     </div>
+
+                    {/* Ағайындары — brothers of this ancestor */}
+                    {hasSibs && isOpen && (
+                        <div className="mt-1.5" style={{width: isSmall ? 140 : 168}}>
+                            <div className="text-center font-serif" style={{fontSize:7.5, color:'rgba(197,165,90,0.35)', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:4}}>
+                                Ағайындары
+                            </div>
+                            <div className="flex flex-wrap justify-center" style={{gap:4}}>
+                                {node.siblings.map((sib, i) => (
+                                    <div key={sib} className="font-serif" style={{
+                                        background:   'rgba(197,165,90,0.04)',
+                                        border:       '1px solid rgba(197,165,90,0.13)',
+                                        borderRadius: 7,
+                                        padding:      '3px 8px',
+                                        fontSize:     9.5,
+                                        color:        '#8a8578',
+                                        whiteSpace:   'nowrap',
+                                        animation:    `sibIn 0.32s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s both`,
+                                    }}>{sib}</div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
