@@ -1263,8 +1263,9 @@
                             minHeight:    node.gen <= 2 ? 82 : 58,
                             borderRadius: 14,
                             cursor:       canOpen ? 'pointer' : 'default',
-                            background:   isHL ? 'rgba(197,165,90,0.13)' : isMain ? 'rgba(197,165,90,0.07)' : '#0D0D0D',
-                            border:       isHL ? '1px solid rgba(197,165,90,0.6)' : isMain ? '1px solid rgba(197,165,90,0.3)' : '1px solid #1c1c1c',
+                            background:   isHL ? 'rgba(197,165,90,0.13)' : isMain ? 'rgba(197,165,90,0.07)' : node.more ? 'rgba(56,189,168,0.10)' : '#0D0D0D',
+                            border:       isHL ? '1px solid rgba(197,165,90,0.6)' : isMain ? '1px solid rgba(197,165,90,0.3)' : node.more ? '1px solid rgba(56,189,168,0.75)' : '1px solid #1c1c1c',
+                            boxShadow:    node.more ? '0 0 14px rgba(56,189,168,0.25)' : undefined,
                             boxSizing:    'border-box',
                         }}
                     >
@@ -1286,9 +1287,10 @@
                             fontWeight:    isHL ? 600 : isMain ? 500 : 400,
                             letterSpacing: '0.01em',
                         }}>
-                            {node.name}{node.more && <span title="tumalas.kz-те жалғасы бар" style={{ color: '#666' }}> …</span>}
+                            {node.name}{node.more && <span title="tumalas.kz-те жалғасы бар" style={{ color: '#5eead4' }}> …</span>}
                         </div>
                         {hasKids && !isOpen && <div style={{ fontSize: 8, color: 'rgba(197,165,90,0.55)', marginTop: 2 }}>+{countAllKids(node)}</div>}
+                        {node.more && <div style={{ fontSize: 8, color: '#5eead4', marginTop: 3, letterSpacing: '0.08em', textTransform: 'uppercase' }}>↗ жалғасы бар</div>}
 
                         {/* Era */}
                         {node.era && node.gen <= 6 && (
@@ -1340,6 +1342,7 @@
             );
         }
 
+        let _moreCount = null; const MORE_COUNT = () => { if (_moreCount == null) { let c = 0; const w = n => { if (n.more) c++; (n.children || []).forEach(w); }; w(TREE_DATA); _moreCount = c; } return _moreCount.toLocaleString('ru-RU'); };
         const _kidCount = new WeakMap();
         function countAllKids(n) { if (_kidCount.has(n)) return _kidCount.get(n); const c = (n.children || []).reduce((s, k) => s + 1 + countAllKids(k), 0); _kidCount.set(n, c); return c; }
         function treePathIds(id) { const p = findTreePath(TREE_DATA, id); return p ? p.map(n => n.id) : []; }
@@ -1577,6 +1580,7 @@
                             { color: 'rgba(197,165,90,0.45)', bg: 'rgba(197,165,90,0.05)', label: 'Ата-бабалар жолы' },
                             { color: 'rgba(197,165,90,0.6)',  bg: 'rgba(197,165,90,0.08)', label: 'Туған туыс' },
                             { color: '#1c1c1c',               bg: 'transparent',           label: 'Басқа тармақ' },
+                            { color: 'rgba(56,189,168,0.75)', bg: 'rgba(56,189,168,0.10)', label: `Жалғасы бар · ${MORE_COUNT()}` },
                         ].map(l => (
                             <div key={l.label} className="flex items-center gap-2 text-[#555]">
                                 <div style={{width: 10, height: 10, borderRadius: 3, border: `1px solid ${l.color}`, background: l.bg}} />
@@ -4618,7 +4622,7 @@
                     const makeNode = (r) => {
                         const n = r.n, imp = n.isMainLine || n.highlight || r.depth <= 2;
                         const rad = r.depth === 0 ? 0.75 : n.highlight ? 0.36 : imp ? 0.3 : 0.22;
-                        const col = n.highlight ? 0xF0D882 : imp ? GOLD3 : 0xa58f5e;
+                        const col = n.highlight ? 0xF0D882 : imp ? GOLD3 : n.more ? 0x38bda8 : 0xa58f5e;
                         const g = new T.Group(); scene.add(g); r.g = g; r.rad = rad;
                         const m = new T.Mesh(sphG, new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: n.highlight ? 0.45 : 0.22, roughness: 0.3, metalness: 0.65 }));
                         m.scale.setScalar(rad); m.userData.rec = r; g.add(m); r.mesh = m;
@@ -4626,7 +4630,7 @@
                         ring.rotation.x = Math.PI / 2; g.add(ring); r.ring = ring;
                         const gl = new T.Sprite(new T.SpriteMaterial({ map: glow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: n.highlight ? 0.6 : imp ? 0.35 : 0.18 }));
                         gl.scale.setScalar(rad * 5); g.add(gl); r.glow = gl;
-                        const s = makeTextSprite(T, n.name + (n.more ? ' …' : ''), { size: r.depth === 0 ? 1.15 : imp ? 0.62 : 0.5, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : '#d6c59a', weight: imp ? 700 : 600, bg: 'rgba(10,8,4,0.8)', res: 2 });
+                        const s = makeTextSprite(T, n.name + (n.more ? ' ↗' : ''), { size: r.depth === 0 ? 1.15 : imp ? 0.62 : 0.5, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : n.more ? '#5eead4' : '#d6c59a', weight: imp ? 700 : 600, bg: 'rgba(10,8,4,0.8)', res: 2 });
                         s.position.set(0, rad + 0.62, 0); s.userData.rec = r; g.add(s); r.label = s;
                         if (n.label) { const l2 = makeTextSprite(T, n.label, { size: 0.32, color: '#C5A55A', res: 1.6 }); l2.position.set(0, rad + 1.15, 0); g.add(l2); }
                         // ағайындар — маленькие зелёные «листья» вокруг
@@ -4777,6 +4781,7 @@
                         <p><span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: '#C5A55A' }} />Негізгі тармақ · главная линия</p>
                         <p><span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: '#7a6a45' }} />Басқа рулар · другие роды</p>
                         <p><span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: '#3d6b45' }} />Ағайындар · братья предков</p>
+                        <p><span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: '#38bda8', boxShadow: '0 0 8px #38bda8' }} />Жалғасы бар · есть продолжение</p>
                     </div>
 
                     {/* карточка выбранного */}
@@ -4891,10 +4896,10 @@
                                         style={{ background: isSel ? 'rgba(197,165,90,.22)' : isHit ? 'rgba(74,222,128,.12)' : 'transparent' }}>
                                         <span className="w-4 text-center text-[#C5A55A] text-xs">{has ? (open ? '▾' : '▸') : '·'}</span>
                                         <span className="text-[#555] text-[10px] w-5 text-right tabular-nums">{r.d}</span>
-                                        <span className={`text-sm whitespace-nowrap ${isMain ? 'font-semibold' : ''}`} style={{ color: n.highlight ? '#FFF3C4' : isMain ? '#F0D882' : '#e6dcc4' }}>{n.name}</span>
+                                        <span className={`text-sm whitespace-nowrap ${isMain ? 'font-semibold' : ''}`} style={{ color: n.highlight ? '#FFF3C4' : isMain ? '#F0D882' : n.more ? '#5eead4' : '#e6dcc4' }}>{n.name}</span>
                                         {n.label && <span className="text-[10px] text-[#C5A55A]">{n.label}</span>}
                                         {has && !open && <span className="text-[10px] px-1.5 rounded-full bg-[#C5A55A26] text-[#C5A55A]">+{descCache[n.id]}</span>}
-                                        {n.more && <span className="text-[10px] text-[#777]" title="Продолжение на tumalas.kz">…</span>}
+                                        {n.more && <span className="text-[10px] px-1.5 rounded-full" style={{ color: '#5eead4', background: 'rgba(56,189,168,.15)', border: '1px solid rgba(56,189,168,.5)' }} title="Продолжение на tumalas.kz">↗ жалғасы бар</span>}
                                     </button>
                                 </div>; })}
                         </div>
