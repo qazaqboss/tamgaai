@@ -82,6 +82,7 @@
             text-shadow: 0 0 15px rgba(197, 165, 90, 0.6);
         }
 
+        @keyframes eqbar { from { height: 4px; } to { height: 16px; } }
         @keyframes float {
 
             0%,
@@ -4246,6 +4247,8 @@
                     <Background />
 
                     <ThemeToggle />
+                    <MusicToggle />
+                    <GuideWidget screen={currentScreen} />
                     {/* Floating profile button */}
                     <button onClick={goToProfile}
                         className="fixed top-5 right-5 z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
@@ -4681,7 +4684,7 @@
                             <h2 className="text-3xl md:text-5xl font-serif text-white">Шежіре ағашы</h2>
                             <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, түйінді басыңыз.</p>
                         </div>
-                        <div className="pointer-events-auto flex flex-col items-end gap-2 mr-24">
+                        <div className="pointer-events-auto flex flex-col items-end gap-2 mr-40">
                             <form onSubmit={e => { e.preventDefault(); if (!api.current.find?.(q)) setHover({ name: 'Табылмады · Не найдено', x: 20, y: 120 }); }} className="flex gap-2">
                                 <input value={q} onChange={e => setQ(e.target.value)} placeholder="Атын іздеу · Поиск"
                                     className="bg-[#0d0d0dcc] border border-[#2a2a2a] focus:border-[#C5A55A] rounded-full px-4 py-2 text-xs text-white outline-none w-44" />
@@ -4918,7 +4921,7 @@
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D АТЛАС · ОҚУ ҚҰРАЛЫ</p>
                             <h2 className="text-3xl md:text-5xl font-serif text-white">{({ yurt: 'Киіз үй анатомиясы', tamga: 'Тамға мөрі', zhuz: 'Үш жүз', dombra: 'Домбыра', asyq: 'Асық', saddle: 'Ер-тұрман' })[mode]}</h2>
                         </div>
-                        <div className="pointer-events-auto flex gap-2 h-fit overflow-x-auto max-w-full pb-1 md:flex-wrap md:justify-end md:mr-24 md:max-w-[560px]">
+                        <div className="pointer-events-auto flex gap-2 h-fit overflow-x-auto max-w-full pb-1 md:flex-wrap md:justify-end md:mr-40 md:max-w-[560px]">
                             {[['yurt', '⌂ Киіз үй'], ['dombra', '♪ Домбыра'], ['asyq', '🦴 Асық'], ['saddle', '🐎 Ер-тұрман'], ['tamga', '⩔ Тамға'], ['zhuz', '◎ Үш жүз']].map(([k, l]) =>
                                 <button key={k} className={btn3d} style={btnStyle(mode === k)} onClick={() => setMode(k)}>{l}</button>)}
                         </div>
@@ -7718,6 +7721,139 @@
                         ))}
                     </div>
                 </section>
+            );
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  ГИД «АТА» и ФОНОВАЯ МУЗЫКА
+        //  Голос: OmniVoice (движок VoiceStudio), предзаписан в audio/guide/*.mp3
+        //  Музыка: «Дала самалы» — оригинальная петля (домбыра, бурдон, ветер)
+        // ═════════════════════════════════════════════════════════════════════
+        const GUIDE_STORIES = /*GUIDE_DATA*/[{"id": "intro", "icon": "🧓", "kk": "Сәлем, балам!", "ru": "Знакомство с гидом", "topic": "home", "dur": 6.9, "lines": [{"t": 0.25, "text": "Ассалаумағалейкум, балам!"}, {"t": 2.53, "text": "Меня зовут Ата. Я буду твоим проводником по Великой степи."}]}]/*END_GUIDE_DATA*/;
+        const SCREEN_TOPIC = { home: 'home', tree: 'tree', flow: 'tree', customs: 'customs', games: 'games', atlas: 'atlas', profile: 'profile', learn: 'home', stories: 'customs', food: 'customs', dna: 'tree', chat: 'tree', token: 'home' };
+        const AUDIO_BASE = (() => { try { return new URL('audio/', document.baseURI).href; } catch { return 'audio/'; } })();
+
+        // единый аудио-движок: музыка + голос гида, «приглушение» музыки во время рассказа
+        const SoundBus = (() => {
+            const music = new Audio(AUDIO_BASE + 'music/dala.mp3'); music.loop = true; music.preload = 'none'; music.volume = 0;
+            const voice = new Audio(); voice.preload = 'auto';
+            let ctx = null, analyser = null, data = null, target = 0.32, fadeRaf = 0, wanted = false;
+            const listeners = new Set(); const emit = () => listeners.forEach(f => f());
+            const ensureCtx = () => { if (ctx) return; try { ctx = new (window.AudioContext || window.webkitAudioContext)(); const src = ctx.createMediaElementSource(voice);
+                analyser = ctx.createAnalyser(); analyser.fftSize = 512; data = new Uint8Array(analyser.fftSize); src.connect(analyser); analyser.connect(ctx.destination); } catch (e) { ctx = null; } };
+            const fadeTo = (v) => { cancelAnimationFrame(fadeRaf); const step = () => { const d = v - music.volume; if (Math.abs(d) < 0.01) { music.volume = v; if (v === 0 && !wanted) music.pause(); return; } music.volume = Math.max(0, Math.min(1, music.volume + Math.sign(d) * 0.012)); fadeRaf = requestAnimationFrame(step); }; step(); };
+            const duck = () => fadeTo(wanted ? (!voice.paused ? 0.08 : target) : 0);
+            voice.addEventListener('play', () => { duck(); emit(); }); voice.addEventListener('pause', () => { duck(); emit(); }); voice.addEventListener('ended', () => { duck(); emit(); });
+            return {
+                music, voice, listeners,
+                get musicOn() { return wanted; },
+                setMusic(on) { wanted = on; try { localStorage.setItem('shejire_music', on ? 'on' : 'off'); } catch {}
+                    if (on) { music.play().then(duck).catch(() => { wanted = false; emit(); }); } else fadeTo(0); emit(); },
+                playVoice(src) { ensureCtx(); ctx?.resume?.(); voice.src = src; voice.currentTime = 0; return voice.play(); },
+                level() { if (!analyser || voice.paused) return 0; analyser.getByteTimeDomainData(data); let s = 0; for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; s += v * v; } return Math.min(1, Math.sqrt(s / data.length) * 4); },
+            };
+        })();
+        function useSoundBus() { const [, f] = useState(0); useEffect(() => { const h = () => f(n => n + 1); SoundBus.listeners.add(h); return () => SoundBus.listeners.delete(h); }, []); return SoundBus; }
+
+        // при первом касании страницы включаем музыку, если пользователь её не выключал
+        (() => { let pref = 'on'; try { pref = localStorage.getItem('shejire_music') || 'on'; } catch {}
+            if (pref !== 'on') return; const go = (e) => { if (e.target.closest?.('[data-music-toggle]')) return; SoundBus.setMusic(true); ['pointerdown', 'keydown'].forEach(t => removeEventListener(t, go, true)); };
+            ['pointerdown', 'keydown'].forEach(t => addEventListener(t, go, true)); })();
+
+        function MusicToggle() {
+            const bus = useSoundBus(); const on = bus.musicOn;
+            return (
+                <button data-music-toggle onClick={() => bus.setMusic(!on)} title={on ? 'Музыканы өшіру · Выключить музыку' : 'Музыка · Включить музыку'}
+                    className="theme-toggle fixed top-5 right-[7.5rem] z-50 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 outline-none"
+                    style={{ background: 'rgba(197,165,90,0.12)', border: '1px solid rgba(197,165,90,0.3)', color: '#C5A55A', backdropFilter: 'blur(8px)' }}>
+                    <span className="flex items-end gap-[2px] h-4">{[0, 1, 2, 3].map(i => <span key={i} className="w-[3px] rounded-sm bg-current" style={{ height: on ? undefined : 4, animation: on ? `eqbar .9s ease-in-out ${i * 0.15}s infinite alternate` : 'none' }} />)}</span>
+                </button>
+            );
+        }
+
+        // аватар-ақсақал (SVG), рот и свечение следуют за голосом
+        function AtaAvatar({ size = 56, talking = false }) {
+            const mouth = useRef(null), halo = useRef(null);
+            useEffect(() => { let raf; const tick = () => { const l = SoundBus.level(); if (mouth.current) mouth.current.setAttribute('ry', (0.6 + l * 5).toFixed(2));
+                if (halo.current) halo.current.style.boxShadow = `0 0 ${8 + l * 30}px rgba(240,216,130,${0.25 + l * 0.6})`; raf = requestAnimationFrame(tick); }; tick(); return () => cancelAnimationFrame(raf); }, []);
+            return (
+                <div ref={halo} className="rounded-full shrink-0" style={{ width: size, height: size, background: 'radial-gradient(circle at 40% 35%,#3a2a12,#120d06)', border: '2px solid #C5A55A', transition: 'box-shadow .08s' }}>
+                    <svg viewBox="0 0 64 64" width={size - 4} height={size - 4}>
+                        <path d="M14 30 Q32 0 50 30 Z" fill="#f4efe4" /><path d="M15 29 Q32 24 49 29 L49 32 Q32 27 15 32 Z" fill="#1a1a1a" />
+                        <path d="M32 3 L33.5 9 L30.5 9 Z" fill="#C5A55A" />
+                        <ellipse cx="32" cy="38" rx="12" ry="12.5" fill="#d9a77c" />
+                        <path d="M20 40 Q22 60 32 62 Q42 60 44 40 Q40 50 32 50 Q24 50 20 40 Z" fill="#f2f0ea" />
+                        <path d="M24 44 Q32 41 40 44 Q36 46 32 45 Q28 46 24 44 Z" fill="#e8e4da" />
+                        <path d="M25 33 q3 -2 6 0" stroke="#efe9de" strokeWidth="2" fill="none" /><path d="M33 33 q3 -2 6 0" stroke="#efe9de" strokeWidth="2" fill="none" />
+                        <circle cx="28" cy="36" r="1.3" fill="#2a1a10" /><circle cx="36" cy="36" r="1.3" fill="#2a1a10" />
+                        <ellipse ref={mouth} cx="32" cy="47.5" rx="2.6" ry="0.6" fill="#5a2a1a" />
+                    </svg>
+                </div>
+            );
+        }
+
+        function GuideWidget({ screen }) {
+            const bus = useSoundBus();
+            const [open, setOpen] = useState(false); const [cur, setCur] = useState(null); const [t, setT] = useState(0); const [hello, setHello] = useState(false);
+            const topic = SCREEN_TOPIC[screen] || 'home';
+            const story = GUIDE_STORIES.find(s => s.id === cur);
+            const playing = story && !bus.voice.paused;
+            useEffect(() => { let seen = false; try { seen = localStorage.getItem('shejire_guide_seen'); } catch {}
+                if (!seen) { const a = setTimeout(() => setHello(true), 2500), b = setTimeout(() => setHello(false), 11000); return () => { clearTimeout(a); clearTimeout(b); }; } }, []);
+            useEffect(() => { const v = bus.voice; const u = () => setT(v.currentTime); const end = () => {
+                    const i = GUIDE_STORIES.findIndex(s => s.id === cur); const next = GUIDE_STORIES.slice(i + 1).find(s => s.topic === topic) || null; setT(0); if (next && open) setTimeout(() => play(next.id), 900); };
+                v.addEventListener('timeupdate', u); v.addEventListener('ended', end); return () => { v.removeEventListener('timeupdate', u); v.removeEventListener('ended', end); }; }, [cur, topic, open]);
+            const play = (id) => { const s = GUIDE_STORIES.find(x => x.id === id); if (!s) return; setCur(id); setT(0); bus.playVoice(AUDIO_BASE + 'guide/' + s.id + '.mp3').catch(() => {}); try { localStorage.setItem('shejire_guide_seen', '1'); } catch {} setHello(false); };
+            const toggle = () => { if (!story) return play((GUIDE_STORIES.find(s => s.topic === topic) || GUIDE_STORIES[0]).id); bus.voice.paused ? bus.voice.play() : bus.voice.pause(); };
+            const line = story ? story.lines.reduce((acc, l, i) => (t >= l.t - 0.05 ? i : acc), 0) : 0;
+            const sorted = [...GUIDE_STORIES].sort((a, b) => (b.topic === topic) - (a.topic === topic));
+            if (!GUIDE_STORIES.length) return null;
+            return (
+                <>
+                    {/* кнопка-медальон */}
+                    <button onClick={() => setOpen(o => !o)} className="fixed bottom-6 left-6 z-50 flex items-center gap-3 rounded-full pr-4 pl-1 py-1 transition-all hover:scale-105 active:scale-95"
+                        style={{ background: 'rgba(12,10,6,0.85)', border: '1px solid rgba(197,165,90,0.45)', backdropFilter: 'blur(8px)', boxShadow: '0 8px 30px rgba(0,0,0,.45)' }}>
+                        <AtaAvatar size={46} />
+                        <span className="text-left hidden sm:block"><span className="block text-[#F0D882] text-sm font-serif leading-tight">Ата · гид</span><span className="block text-[#bfae80] text-[9px] tracking-widest uppercase">{playing ? 'әңгімелеп тұр…' : 'тыңдау'}</span></span>
+                    </button>
+                    {hello && !open && <div className="fixed bottom-24 left-6 z-50 max-w-[240px] rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-[#2a1f0e]" style={{ background: '#F0D882', boxShadow: '0 10px 30px rgba(0,0,0,.4)', animation: 'nodeReveal .5s ease both' }}>
+                        Сәлем, балам! Мен — Ата. Казахские роды, тамги, обычаи — хочешь, расскажу? <button onClick={() => { setOpen(true); play('intro'); }} className="underline font-semibold ml-1">Тыңдау ▶</button></div>}
+
+                    {/* панель */}
+                    {open && (
+                        <div className="keep-dark fixed z-[55] left-3 right-3 bottom-24 sm:right-auto sm:left-6 sm:w-[400px] rounded-3xl p-px" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,.6),rgba(139,105,20,.15))', animation: 'nodeReveal .35s ease both' }}>
+                            <div className="rounded-3xl overflow-hidden" style={{ background: 'rgba(12,10,6,0.96)', backdropFilter: 'blur(12px)' }}>
+                                <div className="flex items-center gap-4 p-5 pb-3">
+                                    <AtaAvatar size={64} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[#C5A55A] text-[9px] tracking-[0.4em] uppercase">Дала шежіресі · гид</p>
+                                        <h3 className="text-2xl font-serif text-[#F0D882] leading-tight">Ата әңгімелейді</h3>
+                                        <p className="text-[#888] text-[11px]">Нажмите историю — Ата расскажет её вслух.</p>
+                                    </div>
+                                    <button onClick={() => setOpen(false)} className="text-[#777] hover:text-[#F0D882] text-xl self-start">×</button>
+                                </div>
+                                {story && <div className="mx-5 mb-3 rounded-2xl p-4" style={{ background: 'rgba(197,165,90,.08)', border: '1px solid rgba(197,165,90,.25)' }}>
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={toggle} className="w-11 h-11 rounded-full shrink-0 text-black font-bold" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>{playing ? '❚❚' : '▶'}</button>
+                                        <div className="flex-1 min-w-0"><p className="text-[#F0D882] font-serif text-lg leading-tight truncate">{story.icon} {story.kk}</p><p className="text-[#888] text-[10px] tracking-widest uppercase">{story.ru}</p>
+                                            <div className="h-1 rounded-full bg-[#2a2418] mt-2 overflow-hidden"><div className="h-full bg-[#C5A55A]" style={{ width: `${Math.min(100, t / story.dur * 100)}%` }} /></div></div>
+                                    </div>
+                                    <p key={line} className="text-[#efe6d2] text-[15px] leading-relaxed mt-3 font-serif italic min-h-[3.2em]" style={{ animation: 'nodeReveal .4s ease both' }}>«{story.lines[line]?.text}»</p>
+                                </div>}
+                                <div className="max-h-[38vh] overflow-y-auto px-3 pb-4">
+                                    {sorted.map(s => { const rec = s.topic === topic, on = s.id === cur;
+                                        return <button key={s.id} onClick={() => play(s.id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors hover:bg-[#C5A55A14]" style={{ background: on ? 'rgba(197,165,90,.14)' : 'transparent' }}>
+                                            <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[#F0D882]" style={{ border: '1px solid rgba(197,165,90,.4)' }}>{s.icon}</span>
+                                            <span className="flex-1 min-w-0"><span className="block text-[#efe6d2] text-sm truncate">{s.kk} <span className="text-[#888]">· {s.ru}</span></span>
+                                                <span className="block text-[10px] text-[#777]">{Math.round(s.dur)} с{rec ? <span className="text-[#C5A55A]"> · осы бөлімге</span> : ''}</span></span>
+                                            <span className="text-[#C5A55A] text-xs">{on && playing ? '♪' : '▶'}</span>
+                                        </button>; })}
+                                    <p className="text-[#555] text-[9px] text-center mt-3 tracking-wider">Голос: OmniVoice (VoiceStudio) · Музыка: «Дала самалы»</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
             );
         }
 
