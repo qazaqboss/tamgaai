@@ -4540,25 +4540,15 @@
         // ═════════════════════════════════════════════════════════════════════
         //  3D ШЕЖІРЕ — Бәйтерек
         // ═════════════════════════════════════════════════════════════════════
-        // Классическое шежіре сверху вниз: x — по листьям (аккуратное дерево), y — поколение
-        const TREE_UNIT = 1.9, TREE_GAP = 2.6;
-        function layoutTree3D(T, root) {
-            const nodes = [], edges = []; let cursor = 0, maxDepth = 0;
-            const walk = (n, parent, depth) => {
-                const rec = { n, parent, depth, path: parent ? [...parent.path, n] : [n], kids: [] };
-                nodes.push(rec); if (parent) { edges.push({ a: parent, b: rec }); parent.kids.push(rec); }
-                maxDepth = Math.max(maxDepth, depth);
-                const kids = n.children || [];
-                if (!kids.length) { rec.x = cursor * TREE_UNIT; cursor += 1 + Math.min(2, (n.siblings || []).length ? 0.4 : 0); }
-                else { kids.forEach(k => walk(k, rec, depth + 1)); rec.x = (rec.kids[0].x + rec.kids[rec.kids.length - 1].x) / 2; }
-                return rec;
-            };
-            walk(root, null, 0);
-            const cx = nodes.reduce((m, r) => Math.max(m, r.x), 0) / 2;
-            nodes.forEach(r => { const main = r.n.isMainLine || r.n.highlight; r.pos = new T.Vector3(r.x - cx, -r.depth * TREE_GAP, main ? 0.5 : 0); });
-            const xs = nodes.map(r => r.pos.x);
-            return { nodes, edges, maxDepth, minX: Math.min(...xs), maxX: Math.max(...xs) };
+        // ── Спиральное шежіре: Алаш в центре, поколения — витки спирали, узлы раскрываются по клику ──
+        const SP = { R: 2.9, POW: 0.82, TWIST: 0.23, DY: 0.85 };
+        const spiralRadius = d => d === 0 ? 0 : SP.R * Math.pow(d, SP.POW) + 1.2;
+        function buildTreeRecs(root) {
+            const all = [], byId = {};
+            const walk = (n, parent, depth) => { const r = { n, parent, depth, kids: [], path: parent ? [...parent.path, n] : [n] }; all.push(r); byId[n.id] = r; if (parent) parent.kids.push(r); (n.children || []).forEach(c => walk(c, r, depth + 1)); return r; };
+            walk(root, null, 0); return { all, byId, root: all[0] };
         }
+        const countDesc = r => r.kids.reduce((s, k) => s + 1 + countDesc(k), 0);
 
         function Tree3DScreen({ onBack, onClassic }) {
             const mountRef = useRef(null);
@@ -4572,114 +4562,134 @@
             const me = (() => { try { return localStorage.getItem('shejire_user'); } catch { return null; } })();
 
             const err = useThree(mountRef, {
-                opts: { distance: 60, target: [0, -22, 0], maxDist: 160, minDist: 3, autoRotate: false, fog: false, panPrimary: true },
+                opts: { distance: 46, target: [0, -6, 0], maxDist: 170, minDist: 3, autoRotate: false, fog: false },
                 run: (S) => {
-                    const { T, scene } = S; stageRef.current = S; S.st.theta = 0; S.st.phi = Math.PI / 2 - 0.08;
-                    addStarDust(T, scene, 900, 90);
-                    const { nodes, edges, maxDepth, minX, maxX } = layoutTree3D(T, TREE_DATA);
-                    const byId = {}; nodes.forEach(r => byId[r.n.id] = r);
-                    const pickables = [];
-                    const glow = glowTexture(T);
-                    const sphG = new T.SphereGeometry(1, 32, 20);
-                    const H = maxDepth * TREE_GAP, W = maxX - minX;
-                    const fitDist = () => { const tn = Math.tan(S.camera.fov * Math.PI / 360), asp = S.camera.aspect; return Math.min(155, Math.max((H + 6) / (2 * tn), (W + 10) / (2 * tn * asp)) * 1.04); };
-                    api.current.home = () => S.flyTo(new T.Vector3(0, -H / 2 + 1, 0), fitDist());
-                    S.st.target.set(0, -H / 2 + 1, 0); S.st.dist = fitDist();
+                    const { T, scene } = S; stageRef.current = S; S.st.theta = 0.35; S.st.phi = 0.78;
+                    addStarDust(T, scene, 1400, 110);
+                    const { all, byId, root } = buildTreeRecs(TREE_DATA);
+                    const glow = glowTexture(T), sphG = new T.SphereGeometry(1, 32, 20);
+                    const expanded = new Set([root.n.id, ...root.kids.map(k => k.n.id)]);
+                    const meRec = me && byId[me];
+                    if (meRec) meRec.path.forEach(n => expanded.add(n.id));
+                    let pickables = [], ringsGroup = new T.Group(); scene.add(ringsGroup);
 
-                    // линейка поколений слева и тонкие направляющие
-                    for (let d = 0; d <= maxDepth; d++) {
-                        const y = -d * TREE_GAP;
-                        const s = makeTextSprite(T, d === 0 ? 'Түп ата' : `${d}-буын`, { size: 0.55, color: '#8a7a55', weight: 600, res: 1.5 });
-                        s.position.set(minX - 3.2, y, 0); scene.add(s);
-                        const ln = new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(minX - 2, y, -0.6), new T.Vector3(maxX + 2, y, -0.6)]), new T.LineBasicMaterial({ color: 0xC5A55A, transparent: true, opacity: d % 7 === 0 ? 0.16 : 0.05 }));
-                        scene.add(ln);
-                        if (d && d % 7 === 0) { const b = makeTextSprite(T, '— ЖЕТІ АТА —', { size: 0.45, color: '#C5A55A', res: 1.5 }); b.position.set(maxX + 3.4, y, 0); scene.add(b); }
-                    }
+                    // ── объекты узла создаются по требованию ──
+                    const makeNode = (r) => {
+                        const n = r.n, imp = n.isMainLine || n.highlight || r.depth <= 2;
+                        const rad = r.depth === 0 ? 0.75 : n.highlight ? 0.36 : imp ? 0.3 : 0.22;
+                        const col = n.highlight ? 0xF0D882 : imp ? GOLD3 : 0xa58f5e;
+                        const g = new T.Group(); scene.add(g); r.g = g; r.rad = rad;
+                        const m = new T.Mesh(sphG, new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: n.highlight ? 0.45 : 0.22, roughness: 0.3, metalness: 0.65 }));
+                        m.scale.setScalar(rad); m.userData.rec = r; g.add(m); r.mesh = m;
+                        const ring = new T.Mesh(new T.TorusGeometry(rad * 1.4, rad * 0.08, 8, 40), new T.MeshBasicMaterial({ color: n.highlight ? 0xFFF3C4 : 0xC5A55A, transparent: true, opacity: imp ? 0.85 : 0.5 }));
+                        ring.rotation.x = Math.PI / 2; g.add(ring); r.ring = ring;
+                        const gl = new T.Sprite(new T.SpriteMaterial({ map: glow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: n.highlight ? 0.6 : imp ? 0.35 : 0.18 }));
+                        gl.scale.setScalar(rad * 5); g.add(gl); r.glow = gl;
+                        const s = makeTextSprite(T, n.name, { size: r.depth === 0 ? 1.15 : imp ? 0.62 : 0.5, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : '#d6c59a', weight: imp ? 700 : 600, bg: 'rgba(10,8,4,0.8)', res: 2 });
+                        s.position.set(0, rad + 0.62, 0); s.userData.rec = r; g.add(s); r.label = s;
+                        if (n.label) { const l2 = makeTextSprite(T, n.label, { size: 0.32, color: '#C5A55A', res: 1.6 }); l2.position.set(0, rad + 1.15, 0); g.add(l2); }
+                        // ағайындар — маленькие зелёные «листья» вокруг
+                        const sib = (n.siblings || []).filter(x => x !== n.name).slice(0, 6); r.sibLabels = [];
+                        sib.forEach((sb, i) => { const a = (i / sib.length) * Math.PI * 2 + 0.4; const p = new T.Vector3(Math.cos(a) * (rad + 0.9), -0.35, Math.sin(a) * (rad + 0.9));
+                            const leaf = new T.Mesh(sphG, new T.MeshStandardMaterial({ color: 0x5f9a6a, emissive: 0x1d3b22, roughness: 0.5 })); leaf.scale.setScalar(0.1); leaf.position.copy(p); g.add(leaf);
+                            g.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(), p]), new T.LineBasicMaterial({ color: 0x5f9a6a, transparent: true, opacity: 0.4 })));
+                            const sl = makeTextSprite(T, sb, { size: 0.26, color: '#8fc49a', weight: 500, res: 1.6 }); sl.position.copy(p).add(new T.Vector3(0, -0.3, 0)); g.add(sl); r.sibLabels.push(sl); });
+                        // значок «+N» для свёрнутых
+                        const nd = countDesc(r);
+                        if (nd) { const b = makeTextSprite(T, `+${nd}`, { size: 0.36, color: '#000', bg: 'rgba(240,216,130,0.95)', weight: 700, res: 1.6 }); b.position.set(rad + 0.55, rad * 0.3, 0); b.userData.rec = r; g.add(b); r.badge = b; }
+                        r.cur = r.parent?.cur ? r.parent.cur.clone() : new T.Vector3(); r.tgt = r.cur.clone(); g.position.copy(r.cur);
+                    };
+                    // ── рёбра: дуга по спирали между полярными координатами ──
+                    const edgeMat = (main) => new T.MeshStandardMaterial({ color: main ? 0xC5A55A : 0x8a7444, emissive: main ? 0x4a3608 : 0x1a1408, roughness: 0.4, metalness: 0.6 });
+                    const polar = v => ({ a: Math.atan2(v.z, v.x), r: Math.hypot(v.x, v.z), y: v.y });
+                    const rebuildEdge = (r) => {
+                        if (!r.parent) return; const A = polar(r.parent.cur), B = polar(r.cur);
+                        let da = B.a - A.a; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+                        const a0 = A.r < 0.01 ? B.a : A.a, pts = [];
+                        for (let i = 0; i <= 20; i++) { const t = i / 20, e = t * t * (3 - 2 * t);
+                            const a = A.r < 0.01 ? B.a : a0 + da * e, rr = A.r + (B.r - A.r) * t, y = A.y + (B.y - A.y) * e;
+                            pts.push(new T.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr)); }
+                        const main = (r.n.isMainLine || r.n.highlight) && (r.parent.n.isMainLine || r.parent.depth === 0);
+                        const geo = new T.TubeGeometry(new T.CatmullRomCurve3(pts), 24, main ? 0.075 : 0.04, 7, false);
+                        if (!r.edge) { r.edge = new T.Mesh(geo, edgeMat(main)); r.edge.userData.main = main; scene.add(r.edge); } else { r.edge.geometry.dispose(); r.edge.geometry = geo; }
+                    };
 
-                    // ветви — «колена» как в родословной
-                    const edgeMeshes = {};
-                    const matMain = () => new T.MeshStandardMaterial({ color: 0xC5A55A, emissive: 0x4a3608, roughness: 0.35, metalness: 0.7 });
-                    const matSide = () => new T.MeshStandardMaterial({ color: 0x8a7444, emissive: 0x1a1408, roughness: 0.5, metalness: 0.4 });
-                    edges.forEach(({ a, b }) => {
-                        const ym = a.pos.y - TREE_GAP * 0.5, path = new T.CurvePath();
-                        const p0 = a.pos.clone(), p1 = new T.Vector3(a.pos.x, ym, a.pos.z), p2 = new T.Vector3(b.pos.x, ym, b.pos.z), p3 = b.pos.clone();
-                        const rr = Math.min(0.5, Math.abs(p2.x - p1.x) / 2);
-                        if (rr > 0.05) {
-                            const dir = Math.sign(p2.x - p1.x);
-                            path.add(new T.LineCurve3(p0, new T.Vector3(p1.x, ym + rr, p1.z)));
-                            path.add(new T.QuadraticBezierCurve3(new T.Vector3(p1.x, ym + rr, p1.z), p1, new T.Vector3(p1.x + dir * rr, ym, (p1.z + p2.z) / 2)));
-                            path.add(new T.LineCurve3(new T.Vector3(p1.x + dir * rr, ym, (p1.z + p2.z) / 2), new T.Vector3(p2.x - dir * rr, ym, p2.z)));
-                            path.add(new T.QuadraticBezierCurve3(new T.Vector3(p2.x - dir * rr, ym, p2.z), p2, new T.Vector3(p2.x, ym - rr, p2.z)));
-                            path.add(new T.LineCurve3(new T.Vector3(p2.x, ym - rr, p2.z), p3));
-                        } else path.add(new T.LineCurve3(p0, p3));
-                        const main = (b.n.isMainLine || b.n.highlight) && (a.n.isMainLine || a.depth === 0);
-                        const m = new T.Mesh(new T.TubeGeometry(path, 48, main ? 0.075 : 0.035, 8, false), main ? matMain() : matSide());
-                        scene.add(m); edgeMeshes[b.n.id] = m; m.userData.main = main;
-                    });
+                    // ── раскладка видимого дерева ──
+                    let visible = [], animT = 0;
+                    const layout = () => {
+                        visible = []; const leaves = [];
+                        const walk = (r) => { visible.push(r); const open = expanded.has(r.n.id) && r.kids.length; r.open = open; if (open) r.kids.forEach(walk); else leaves.push(r); };
+                        walk(root);
+                        let cur = 0; const total = Math.max(1, leaves.length);
+                        const slot = (r) => { if (!r.open) { r.slot = cur + 0.5; cur += 1; return r.slot; } const sl = r.kids.map(slot); r.slot = (sl[0] + sl[sl.length - 1]) / 2; return r.slot; };
+                        slot(root);
+                        visible.forEach(r => { if (!r.g) makeNode(r);
+                            const a = (r.slot / total) * Math.PI * 2 + r.depth * SP.TWIST, rr = spiralRadius(r.depth);
+                            r.tgt = new T.Vector3(Math.cos(a) * rr, -r.depth * SP.DY, Math.sin(a) * rr);
+                            r.g.visible = true; if (r.edge) r.edge.visible = true;
+                            if (r.badge) r.badge.visible = !r.open; });
+                        const vis = new Set(visible);
+                        all.forEach(r => { if (r.g && !vis.has(r)) { r.hiding = true; } else r.hiding = false; });
+                        pickables = visible.flatMap(r => [r.mesh, r.label, r.badge].filter(Boolean));
+                        // кольца-«орбиты» поколений
+                        ringsGroup.children.slice().forEach(c => { c.geometry.dispose(); ringsGroup.remove(c); });
+                        const depths = [...new Set(visible.map(r => r.depth))].filter(d => d > 0);
+                        depths.forEach(d => { const rr = spiralRadius(d); const m = new T.Mesh(new T.RingGeometry(rr - 0.02, rr + 0.02, 160), new T.MeshBasicMaterial({ color: 0xC5A55A, transparent: true, opacity: d % 7 === 0 ? 0.22 : 0.07, side: T.DoubleSide, depthWrite: false }));
+                            m.rotation.x = -Math.PI / 2; m.position.y = -d * SP.DY; ringsGroup.add(m); });
+                        animT = 1.2;
+                    };
+                    const fit = (fly = true) => { let R = 4, ymin = 0; visible.forEach(r => { R = Math.max(R, Math.hypot(r.tgt.x, r.tgt.z)); ymin = Math.min(ymin, r.tgt.y); });
+                        const c = new T.Vector3(0, ymin / 2, 0), d = Math.min(165, (R * 2 + 6) / (2 * Math.tan(S.camera.fov * Math.PI / 360) * Math.min(1, S.camera.aspect)) * 0.95);
+                        if (fly) S.flyTo(c, d); else { S.st.target.copy(c); S.st.dist = d; } };
+                    layout();
+                    visible.forEach(r => { r.cur.copy(r.tgt); r.g.position.copy(r.cur); rebuildEdge(r); });
+                    fit(false);
 
-                    // узлы
-                    const labelSprites = [];
-                    nodes.forEach(r => {
-                        const n = r.n; const imp = n.isMainLine || n.highlight || r.depth <= 2;
-                        const rad = r.depth === 0 ? 0.6 : n.highlight ? 0.34 : imp ? 0.27 : 0.18;
-                        const col = n.highlight ? 0xF0D882 : imp ? GOLD3 : 0x9a8658;
-                        const m = new T.Mesh(sphG, new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: n.highlight ? 0.45 : 0.2, roughness: 0.3, metalness: 0.65 }));
-                        m.scale.setScalar(rad); m.position.copy(r.pos); m.userData.rec = r; scene.add(m); pickables.push(m); r.mesh = m;
-                        const ring = new T.Mesh(new T.TorusGeometry(rad * 1.35, rad * 0.08, 8, 40), new T.MeshBasicMaterial({ color: n.highlight ? 0xFFF3C4 : 0xC5A55A, transparent: true, opacity: imp ? 0.8 : 0.4 }));
-                        ring.position.copy(r.pos); scene.add(ring);
-                        const g = new T.Sprite(new T.SpriteMaterial({ map: glow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: n.highlight ? 0.55 : imp ? 0.3 : 0.12 }));
-                        g.scale.setScalar(rad * 4.5); r.glowBase = rad * 4.5; g.position.copy(r.pos); scene.add(g); r.glow = g;
-                        const s = makeTextSprite(T, n.name, { size: r.depth === 0 ? 1.05 : imp ? 0.62 : 0.46, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : '#c9b78a', weight: imp ? 700 : 500, bg: 'rgba(10,8,4,0.78)', res: 2 });
-                        s.position.copy(r.pos).add(new T.Vector3(0, -(rad + 0.55), 0.3)); scene.add(s); r.label = s; s.userData.imp = imp; labelSprites.push(s);
-                        if (n.label) { const l2 = makeTextSprite(T, n.label, { size: 0.3, color: '#C5A55A', res: 1.6 }); l2.position.copy(r.pos).add(new T.Vector3(0, -(rad + 1.05), 0.3)); scene.add(l2); labelSprites.push(l2); l2.userData.imp = true; }
-                        // ағайындар — маленькие зелёные узлы позади линии, веером в стороны
-                        const sib = (n.siblings || []).filter(x => x !== n.name).slice(0, 6);
-                        sib.forEach((sb, i) => {
-                            const side = i % 2 ? 1 : -1, k = Math.floor(i / 2) + 1;
-                            const p = r.pos.clone().add(new T.Vector3(side * (0.75 + k * 0.62), 0.25 * (k % 2 ? 1 : -1), -1.1));
-                            const leaf = new T.Mesh(sphG, new T.MeshStandardMaterial({ color: 0x5f9a6a, emissive: 0x1d3b22, roughness: 0.5 }));
-                            leaf.scale.setScalar(0.1); leaf.position.copy(p); scene.add(leaf);
-                            scene.add(new T.Line(new T.BufferGeometry().setFromPoints([r.pos, p]), new T.LineBasicMaterial({ color: 0x5f9a6a, transparent: true, opacity: 0.35 })));
-                            const sl = makeTextSprite(T, sb, { size: 0.26, color: '#8fc49a', weight: 500, res: 1.6 }); sl.position.copy(p).add(new T.Vector3(0, -0.28, 0)); scene.add(sl); sl.userData.sib = true; labelSprites.push(sl);
-                        });
-                    });
-
-                    // подписи исчезают вдали, важные видны всегда
+                    // ── кадр: анимация разлёта, подписи, пульс ──
                     const tmp = new T.Vector3();
                     S.onFrame((dt, t) => {
-                        labelSprites.forEach(s => {
-                            const d = tmp.copy(s.position).distanceTo(S.camera.position);
-                            const vis = api.current.labels !== false;
-                            s.material.opacity = !vis ? 0 : s.userData.sib ? Math.max(0, Math.min(0.9, (26 - d) / 8)) : s.userData.imp ? 1 : Math.max(0, Math.min(1, (70 - d) / 20));
-                        });
-                        nodes.forEach(r => { if (r.n.highlight) r.glow.scale.setScalar(r.glowBase * (1 + Math.sin(t * 2.4 + r.depth) * 0.15)); });
+                        if (animT > 0) { animT -= dt; const k = Math.min(1, dt * 5);
+                            all.forEach(r => { if (!r.g) return;
+                                if (r.hiding) { const p = r.parent; let anc = p; while (anc && anc.hiding) anc = anc.parent; r.cur.lerp(anc ? anc.cur : new T.Vector3(), k); if (animT <= 0.1 || r.cur.distanceTo(anc ? anc.cur : tmp.set(0, 0, 0)) < 0.2) { r.g.visible = false; if (r.edge) r.edge.visible = false; } }
+                                else r.cur.lerp(r.tgt, k);
+                                r.g.position.copy(r.cur); });
+                            all.forEach(r => { if (r.g && r.g.visible && r.parent) rebuildEdge(r); });
+                        }
+                        const lab = api.current.labels !== false;
+                        visible.forEach(r => { const d = tmp.copy(r.cur).distanceTo(S.camera.position);
+                            r.label.material.opacity = lab ? Math.max(0.25, Math.min(1, (110 - d) / 40)) : 0;
+                            r.sibLabels.forEach(s => s.material.opacity = lab ? Math.max(0, Math.min(0.9, (24 - d) / 8)) : 0);
+                            if (r.n.highlight) r.glow.scale.setScalar(r.rad * 5 * (1 + Math.sin(t * 2.4 + r.depth) * 0.15));
+                            r.ring.rotation.z = t * 0.3; });
                     });
 
                     const highlightPath = (rec) => {
-                        Object.values(edgeMeshes).forEach(m => { m.material.emissive.setHex(m.userData.main ? 0x4a3608 : 0x1a1408); });
-                        nodes.forEach(r => { r.mesh.material.emissiveIntensity = r.n.highlight ? 0.45 : 0.2; });
+                        all.forEach(r => { if (r.edge) r.edge.material.emissive.setHex(r.edge.userData.main ? 0x4a3608 : 0x1a1408); if (r.mesh) r.mesh.material.emissiveIntensity = r.n.highlight ? 0.45 : 0.22; });
                         if (!rec) return;
-                        rec.path.forEach(n => { const m = edgeMeshes[n.id]; if (m) m.material.emissive.setHex(0xF0D882); const r = byId[n.id]; if (r) r.mesh.material.emissiveIntensity = 0.75; });
+                        rec.path.forEach(n => { const r = byId[n.id]; if (r?.edge) r.edge.material.emissive.setHex(0xF0D882); if (r?.mesh) r.mesh.material.emissiveIntensity = 0.8; });
                     };
                     const select = (rec, fly = true) => {
                         highlightPath(rec);
-                        setSel(rec ? { id: rec.n.id, name: rec.n.name, era: rec.n.era, label: rec.n.label, gen: rec.n.gen, siblings: rec.n.siblings || [], kids: (rec.n.children || []).map(c => c.name), path: rec.path.map(p => p.name) } : null);
-                        if (rec && fly) S.flyTo(rec.pos.clone().add(new T.Vector3(0, -1.5, 0)), 20);
+                        setSel(rec ? { id: rec.n.id, name: rec.n.name, era: rec.n.era, label: rec.n.label, gen: rec.n.gen, siblings: rec.n.siblings || [], kids: rec.kids.map(c => c.n.name), kidIds: rec.kids.map(c => c.n.id), open: expanded.has(rec.n.id), nd: countDesc(rec), path: rec.path.map(p => p.name), pathIds: rec.path.map(p => p.id) } : null);
+                        if (rec && fly) setTimeout(() => S.flyTo(rec.tgt.clone(), Math.max(14, Math.min(S.st.dist, 26))), 60);
                     };
-                    S.onClick(e => { const h = S.pick(e, pickables); select(h ? h.object.userData.rec : null); });
-                    S.el.addEventListener('pointermove', e => {
-                        if (e.buttons) return;
+                    const toggle = (rec) => { if (!rec.kids.length) return select(rec);
+                        if (expanded.has(rec.n.id) && rec !== root) { const close = r => { expanded.delete(r.n.id); r.kids.forEach(close); }; close(rec); } else expanded.add(rec.n.id);
+                        layout(); select(rec); };
+                    const openPath = (rec) => { rec.path.slice(0, -1).forEach(n => expanded.add(n.id)); layout(); select(rec); };
+                    S.onClick(e => { const h = S.pick(e, pickables); if (h) toggle(h.object.userData.rec); else select(null, false); });
+                    S.el.addEventListener('pointermove', e => { if (e.buttons) return;
                         const h = S.pick(e, pickables); S.el.style.cursor = h ? 'pointer' : 'grab';
-                        setHover(h ? { name: h.object.userData.rec.n.name, x: e.offsetX, y: e.offsetY } : null);
-                    });
-                    api.current.find = (txt) => {
-                        const s = txt.trim().toLowerCase(); if (!s) return false;
-                        const r = nodes.find(r => r.n.name.toLowerCase() === s) || nodes.find(r => r.n.name.toLowerCase().includes(s));
-                        if (r) select(r); return !!r;
-                    };
-                    api.current.byId = (id) => { const r = byId[id]; if (r) select(r); return !!r; };
-                    api.current.reset = () => { select(null, false); S.st.theta = 0; S.st.phi = Math.PI / 2 - 0.08; api.current.home(); };
-                    api.current.count = nodes.length;
+                        setHover(h ? { name: h.object.userData.rec.n.name + (h.object.userData.rec.kids.length ? (expanded.has(h.object.userData.rec.n.id) ? '  ⊖' : `  ⊕ ${countDesc(h.object.userData.rec)}`) : ''), x: e.offsetX, y: e.offsetY } : null); });
+                    api.current.find = (txt) => { const s = txt.trim().toLowerCase(); if (!s) return false;
+                        const r = all.find(r => r.n.name.toLowerCase() === s) || all.find(r => r.n.name.toLowerCase().includes(s)); if (r) openPath(r); return !!r; };
+                    api.current.byId = (id) => { const r = byId[id]; if (r) openPath(r); return !!r; };
+                    api.current.toggleId = (id) => { const r = byId[id]; if (r) toggle(r); };
+                    api.current.openId = (id) => { const r = byId[id]; if (r) { if (!expanded.has(id)) expanded.add(id); openPath(r); } };
+                    api.current.expandAll = () => { all.forEach(r => expanded.add(r.n.id)); layout(); select(null, false); fit(); };
+                    api.current.collapse = () => { expanded.clear(); expanded.add(root.n.id); root.kids.forEach(k => expanded.add(k.n.id)); layout(); select(null, false); fit(); };
+                    api.current.reset = () => { select(null, false); S.st.theta = 0.35; S.st.phi = 0.78; fit(); };
+                    if (meRec) setTimeout(() => highlightPath(meRec), 300);
                 },
             }, []);
 
@@ -4697,7 +4707,7 @@
                             <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-3 block">← Назад</button>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D · БӘЙТЕРЕК</p>
                             <h2 className="text-3xl md:text-5xl font-serif text-white">Шежіре ағашы</h2>
-                            <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін, жоғарыдан төмен. Тартып жылжытыңыз, дөңгелекпен жақындатыңыз, Shift/оң батырма — айналдыру, түйінді басыңыз.</p>
+                            <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін — спираль бойымен. Есімді басыңыз — ұрпақтары ашылады. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, Shift — жылжыту.</p>
                         </div>
                         <div className="pointer-events-auto flex flex-col items-end gap-2 mr-40">
                             <form onSubmit={e => { e.preventDefault(); if (!api.current.find?.(q)) setHover({ name: 'Табылмады · Не найдено', x: 20, y: 120 }); }} className="flex gap-2">
@@ -4709,6 +4719,8 @@
                                 {me && <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.byId?.(me)}>👤 Мен</button>}
                                 <button className={btn3d} style={btnStyle(auto)} onClick={() => setAuto(a => !a)}>⟳ Айналу</button>
                                 <button className={btn3d} style={btnStyle(labels)} onClick={() => setLabels(l => !l)}>Aa Атаулар</button>
+                                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.expandAll?.()}>⊕ Барлығын ашу</button>
+                                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.collapse?.()}>⊖ Жинау</button>
                                 <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.reset?.()}>⌂ Басы</button>
                                 <button className={btn3d} style={btnStyle(false)} onClick={onClassic}>▤ 2D</button>
                             </div>
@@ -4744,13 +4756,14 @@
                                     {sel.path.map((p, i) => (
                                         <React.Fragment key={i}>
                                             {i > 0 && <span className="text-[#3a3a3a] text-[10px]">›</span>}
-                                            <button onClick={() => api.current.find?.(p)} className="text-[11px] px-2 py-0.5 rounded-full border border-[#2a2a2a] hover:border-[#C5A55A]" style={{ color: i === sel.path.length - 1 ? '#F0D882' : '#999' }}>{p}</button>
+                                            <button onClick={() => api.current.byId?.(sel.pathIds[i])} className="text-[11px] px-2 py-0.5 rounded-full border border-[#2a2a2a] hover:border-[#C5A55A]" style={{ color: i === sel.path.length - 1 ? '#F0D882' : '#999' }}>{p}</button>
                                         </React.Fragment>
                                     ))}
                                 </div>
                                 {sel.kids.length > 0 && <>
-                                    <p className="text-[#555] text-[9px] tracking-widest uppercase mt-4 mb-2">Ұрпақтары · Потомки</p>
-                                    <div className="flex flex-wrap gap-1">{sel.kids.map(k => <button key={k} onClick={() => api.current.find?.(k)} className="text-[11px] px-2 py-0.5 rounded-full bg-[#C5A55A14] text-[#C5A55A]">{k}</button>)}</div>
+                                    <div className="flex items-center justify-between mt-4 mb-2"><p className="text-[#555] text-[9px] tracking-widest uppercase">Ұрпақтары · Потомки ({sel.nd})</p>
+                                        <button onClick={() => api.current.toggleId?.(sel.id)} className="text-[10px] px-3 py-1 rounded-full font-bold text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>{sel.open ? '⊖ Жабу' : '⊕ Ашу'}</button></div>
+                                    <div className="flex flex-wrap gap-1">{sel.kids.map((k, i) => <button key={k + i} onClick={() => api.current.openId?.(sel.kidIds[i])} className="text-[11px] px-2 py-0.5 rounded-full bg-[#C5A55A14] text-[#C5A55A] hover:bg-[#C5A55A30]">{k}</button>)}</div>
                                 </>}
                                 {sel.siblings.length > 0 && <>
                                     <p className="text-[#555] text-[9px] tracking-widest uppercase mt-4 mb-2">Ағайындары · Братья / подроды</p>
