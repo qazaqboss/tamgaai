@@ -9,3 +9,7 @@
 - `dombra.glb` — «Kazakh Dombra» (Sketchfab, модель a63fc1872ef94551a1d9b57eae2e84de),
   текстуры из оригинального USDZ. Модель разделена в Blender на детали
   (шанақ, қақпақ, тиек, ішек, мойын, бас, құлақ) и облегчена для веба.
+
+- `images/bodhi_tree.webp` — рендер модели «Bodhi Tree» by [Ashim Shakya](https://sketchfab.com/ashimshakya),
+  https://sketchfab.com/3d-models/bodhi-tree-943594369dc84239bc140e6e7d07a005 — CC BY 4.0.
+  Отрендерено в Blender (Cycles), смягчено и тонировано для постера «Бәйтерек».
