@@ -30,7 +30,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -6516,96 +6516,215 @@
             return { name: profile.name, tribe, juz: tribe?.juz || '', chain, children };
         }
 
-        // ── Постер: рисуем на canvas в виртуальной системе 1000×1414 (пропорции A-формата) ──
+        // ── Постер «Өмір ағашы»: художественная иллюстрация на canvas (виртуально 1000×1414) ──
+        const POSTER_FONT = "'Cormorant Garamond','Playfair Display',Georgia,serif";
+        async function ensurePosterFonts() {
+            try { await Promise.all(['400 20px', '600 20px', '700 20px', 'italic 500 20px', 'italic 700 20px'].map(f => document.fonts.load(`${f} "Cormorant Garamond"`, 'ҚәңөүұғһіАа'))); } catch {}
+        }
         function seeded(seed) { let x = seed; return () => (x = (x * 16807) % 2147483647) / 2147483647; }
         function drawPoster(L, { px = 3508, theme = 'light' } = {}) {
             const W = 1000, H = 1414, sc = px / W;
             const c = document.createElement('canvas'); c.width = px; c.height = Math.round(H * sc);
-            const g = c.getContext('2d'); g.scale(sc, sc);
-            const dark = theme === 'dark';
-            const C = dark ? { bg0: '#16120a', bg1: '#070605', ink: '#F0E6CC', sub: '#bfae80', gold: '#C5A55A', trunk: '#8B6914', leaf: '#6f8f4e', medal: '#1c170e' }
-                           : { bg0: '#fdf8ec', bg1: '#ecdcb8', ink: '#2a1f0e', sub: '#6b5a3a', gold: '#9a7520', trunk: '#5b3a14', leaf: '#5f7f3a', medal: '#fffaf0' };
-            const SERIF = "'Playfair Display','Cinzel',Georgia,'Times New Roman',serif", SANS = "Inter,'Helvetica Neue',Arial,sans-serif";
-            // фон
-            const bg = g.createRadialGradient(W / 2, H * 0.35, 50, W / 2, H / 2, H * 0.8); bg.addColorStop(0, C.bg0); bg.addColorStop(1, C.bg1); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-            const rnd = seeded(7); g.globalAlpha = dark ? 0.06 : 0.05; for (let i = 0; i < 2500; i++) { g.fillStyle = rnd() > .5 ? '#000' : '#fff'; g.fillRect(rnd() * W, rnd() * H, 1.2, 1.2); } g.globalAlpha = 1;
-            // рамка
-            g.strokeStyle = C.gold; g.lineWidth = 3; g.strokeRect(28, 28, W - 56, H - 56); g.lineWidth = 1; g.strokeRect(40, 40, W - 80, H - 80);
-            const horn = (x, y, sx, sy) => { g.save(); g.translate(x, y); g.scale(sx, sy); g.beginPath(); g.moveTo(0, 46); g.bezierCurveTo(0, 10, 10, 0, 46, 0); g.moveTo(10, 46); g.bezierCurveTo(10, 22, 18, 14, 30, 14); g.bezierCurveTo(40, 14, 42, 26, 32, 28); g.moveTo(46, 10); g.bezierCurveTo(22, 10, 14, 18, 14, 30); g.bezierCurveTo(14, 40, 26, 42, 28, 32); g.lineWidth = 2; g.stroke(); g.restore(); };
-            g.strokeStyle = C.gold; horn(48, 48, 1, 1); horn(W - 48, 48, -1, 1); horn(48, H - 48, 1, -1); horn(W - 48, H - 48, -1, -1);
-            // орнаментальная лента вверху и внизу
-            const band = (y) => { g.save(); g.strokeStyle = C.gold; g.globalAlpha = .55; g.lineWidth = 1.2; for (let x = 120; x < W - 120; x += 32) { g.beginPath(); g.moveTo(x, y + 8); g.bezierCurveTo(x, y - 6, x + 14, y - 6, x + 12, y + 2); g.moveTo(x, y + 8); g.bezierCurveTo(x, y - 6, x - 14, y - 6, x - 12, y + 2); g.stroke(); } g.restore(); };
-            band(70); band(H - 78);
-            // заголовок
-            g.textAlign = 'center'; g.textBaseline = 'middle';
-            g.fillStyle = C.gold; g.beginPath(); g.arc(W / 2, 128, 34, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = C.gold; g.stroke();
-            g.font = `40px ${SERIF}`; g.fillText(L.tribe?.tamga || '⩔', W / 2, 130);
-            g.font = `600 11px ${SANS}`; g.fillStyle = C.sub; g.fillText('Ш Е Ж І Р Е   ·   Ө М І Р   А Ғ А Ш Ы', W / 2, 182);
-            g.font = `700 52px ${SERIF}`; g.fillStyle = C.ink; g.fillText(L.name, W / 2, 228);
-            g.font = `italic 17px ${SERIF}`; g.fillStyle = C.gold; g.fillText(`${L.tribe?.name || ''}${L.juz ? ' · ' + L.juz : ''}  —  ${L.chain.length} ұрпақ, Алаштан бүгінге дейін`, W / 2, 268);
-            // дерево
-            const n = L.chain.length, top = L.children.length ? 420 : 360, bottom = H - 190, cx = W / 2;
-            const ys = (i) => bottom - (i / Math.max(1, n - 1)) * (bottom - top);
-            const xs = (i) => cx + Math.sin(i / Math.max(1, n - 1) * Math.PI * 1.6) * 38;
-            // корни
-            g.strokeStyle = C.trunk; g.lineCap = 'round';
-            for (let r = 0; r < 9; r++) { const a = (r / 8 - 0.5) * 2.4; g.lineWidth = 6 - Math.abs(a) * 1.5; g.beginPath(); g.moveTo(cx, bottom); g.bezierCurveTo(cx + Math.sin(a) * 40, bottom + 20, cx + Math.sin(a) * 110, bottom + 30 + Math.abs(a) * 8, cx + Math.sin(a) * 170, bottom + 52 - Math.abs(a) * 6); g.stroke(); }
-            // ствол
-            for (let i = 0; i < n - 1; i++) { g.lineWidth = 26 - (i / n) * 18; g.strokeStyle = C.trunk; g.beginPath(); g.moveTo(xs(i), ys(i)); const my = (ys(i) + ys(i + 1)) / 2; g.bezierCurveTo(xs(i), my, xs(i + 1), my, xs(i + 1), ys(i + 1)); g.stroke(); }
-            // крона-листва вокруг верхушки (детерминированная)
-            const lr = seeded(42);
-            const leaf = (x, y, s, a, col) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, s, s * 0.45, 0, 0, Math.PI * 2); g.fill(); g.restore(); };
-            for (let k = 0; k < 140; k++) { const a = lr() * Math.PI * 2, d = Math.sqrt(lr()); const x = cx + Math.cos(a) * d * 250, y = top + 70 + Math.sin(a) * d * 120; g.globalAlpha = 0.08 + lr() * 0.14; leaf(x, y, 6 + lr() * 8, a + lr(), C.leaf); }
+            const g = c.getContext('2d'); g.scale(sc, sc); g.lineJoin = 'round'; g.lineCap = 'round';
+            const dark = theme === 'dark'; const F = POSTER_FONT;
+            const P = dark
+                ? { paper0: '#1d170e', paper1: '#0c0906', ink: '#F3E7C8', sub: '#cdb889', gold: '#D9B865', goldD: '#8B6914', bark0: '#2b1a0c', bark1: '#7a5426', barkHi: '#b08243', leaf: ['#3f5a2a', '#58773a', '#7d9a49', '#9cb35a'], ribbon: '#2a2214', ribbonEnd: '#1b150b', wash: ['rgba(120,90,30,.10)', 'rgba(60,80,40,.10)'] }
+                : { paper0: '#fbf4e2', paper1: '#ead9b3', ink: '#2c1f0e', sub: '#6e5a37', gold: '#a8822c', goldD: '#7a5a14', bark0: '#3b2410', bark1: '#7a5022', barkHi: '#a77a3f', leaf: ['#4a6a2a', '#62843a', '#86a34c', '#a9be63'], ribbon: '#fffaf0', ribbonEnd: '#e9dcbc', wash: ['rgba(190,150,70,.10)', 'rgba(110,140,70,.09)'] };
+            const R = seeded(1234);
+
+            // ── бумага ──
+            const bg = g.createRadialGradient(W / 2, H * 0.42, 80, W / 2, H / 2, H * 0.78); bg.addColorStop(0, P.paper0); bg.addColorStop(1, P.paper1); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+            for (let i = 0; i < 46; i++) { const x = R() * W, y = R() * H, r = 60 + R() * 220; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, P.wash[i % 2]); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+            g.globalAlpha = dark ? .05 : .07; g.strokeStyle = dark ? '#fff' : '#6b4a1a'; g.lineWidth = .4;
+            for (let i = 0; i < 1600; i++) { const x = R() * W, y = R() * H, a = R() * Math.PI; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * (2 + R() * 6), y + Math.sin(a) * (2 + R() * 6)); g.stroke(); }
             g.globalAlpha = 1;
-            // ветви ағайындар + узлы
+            const vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, dark ? 'rgba(0,0,0,.55)' : 'rgba(110,70,20,.22)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+
+            // ── бордюр с қошқар мүйіз ──
+            g.strokeStyle = P.gold; g.lineWidth = 2.4; g.strokeRect(30, 30, W - 60, H - 60); g.lineWidth = .8; g.strokeRect(38, 38, W - 76, H - 76); g.strokeRect(56, 56, W - 112, H - 112); g.lineWidth = 1.6; g.strokeRect(61, 61, W - 122, H - 122);
+            const scroll = (x, y, s, rot) => { g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s); g.beginPath();
+                g.moveTo(-8, 0); g.bezierCurveTo(-8, -7, -2, -9, 0, -4); g.bezierCurveTo(1, -1, -2, 0, -3, -2);
+                g.moveTo(8, 0); g.bezierCurveTo(8, -7, 2, -9, 0, -4); g.moveTo(8, 0); g.bezierCurveTo(1, -1, 2, 0, 3, -2); g.moveTo(-8, 0); g.lineTo(8, 0); g.stroke(); g.restore(); };
+            g.lineWidth = 1; g.strokeStyle = P.gold;
+            for (let x = 84; x <= W - 84; x += 22) { scroll(x, 51, 1, 0); scroll(x, H - 51, 1, Math.PI); }
+            for (let y = 84; y <= H - 84; y += 22) { scroll(47, y, 1, -Math.PI / 2); scroll(W - 47, y, 1, Math.PI / 2); }
+            const rosette = (x, y) => { g.save(); g.translate(x, y); g.fillStyle = dark ? P.paper1 : P.paper0; g.beginPath(); g.arc(0, 0, 17, 0, Math.PI * 2); g.fill(); g.strokeStyle = P.gold; g.lineWidth = 1.4; g.stroke();
+                for (let k = 0; k < 8; k++) { g.rotate(Math.PI / 4); g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(5, -7, 0, -14); g.quadraticCurveTo(-5, -7, 0, 0); g.stroke(); } g.beginPath(); g.arc(0, 0, 3, 0, Math.PI * 2); g.fillStyle = P.gold; g.fill(); g.restore(); };
+            [[47, 47], [W - 47, 47], [47, H - 47], [W - 47, H - 47]].forEach(([x, y]) => rosette(x, y));
+
+            // ── пейзаж: горы, холмы, юрты (акварельно) ──
+            const groundY = 1150;
+            g.save(); g.globalAlpha = dark ? .35 : .22; g.fillStyle = dark ? '#3a4660' : '#8fa0b8';
+            g.beginPath(); g.moveTo(70, groundY - 30); [[160, 980], [240, 1060], [330, 1000], [420, 1080], [560, 1020], [640, 990], [720, 1060], [820, 970], [930, 1050]].forEach(([x, y]) => g.lineTo(x, y + 40)); g.lineTo(930, groundY); g.lineTo(70, groundY); g.fill(); g.restore();
+            g.save(); g.globalAlpha = dark ? .5 : .35; const hill = g.createLinearGradient(0, groundY - 40, 0, groundY + 60); hill.addColorStop(0, dark ? '#4a5a2a' : '#b9c27a'); hill.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = hill;
+            g.beginPath(); g.moveTo(66, groundY + 10); g.bezierCurveTo(250, groundY - 50, 400, groundY - 10, 500, groundY - 18); g.bezierCurveTo(640, groundY - 30, 780, groundY - 55, 934, groundY + 6); g.lineTo(934, groundY + 120); g.lineTo(66, groundY + 120); g.fill(); g.restore();
+            const yurt = (x, y, s) => { g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = dark ? .55 : .45; g.fillStyle = dark ? '#c9b89a' : '#7a6448';
+                g.beginPath(); g.moveTo(-26, 0); g.lineTo(-26, -18); g.quadraticCurveTo(0, -44, 26, -18); g.lineTo(26, 0); g.closePath(); g.fill(); g.fillStyle = dark ? '#0c0906' : '#4a3520'; g.fillRect(-5, -12, 10, 12); g.restore(); };
+            yurt(150, groundY + 4, 1); yurt(215, groundY + 10, .7); yurt(845, groundY + 2, 1.05);
+
+            // ── геометрия дерева ──
+            const n = L.chain.length, cx = W / 2, rootY = groundY + 6, topY = L.children.length ? 478 : 420;
+            const tAt = i => i / Math.max(1, n - 1);
+            const X = t => cx + Math.sin(t * Math.PI * 1.25 + 0.35) * 26 - Math.sin(0.35) * 26;
+            const Y = t => rootY - t * (rootY - topY);
+            const Wd = t => 9 + 62 * Math.pow(1 - t, 1.25);
+
+            // корни
+            const taper = (pts, w0, w1, fill) => { const left = [], right = [];
+                for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[Math.min(pts.length - 1, i + 1)], o = pts[Math.max(0, i - 1)]; let dx = q[0] - o[0], dy = q[1] - o[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+                    const w = (w0 + (w1 - w0) * (i / (pts.length - 1))) / 2; left.push([p[0] - dy * w, p[1] + dx * w]); right.push([p[0] + dy * w, p[1] - dx * w]); }
+                g.beginPath(); g.moveTo(...left[0]); left.forEach(p => g.lineTo(...p)); right.reverse().forEach(p => g.lineTo(...p)); g.closePath(); g.fillStyle = fill; g.fill(); };
+            const bez = (p0, p1, p2, p3, N = 24) => Array.from({ length: N + 1 }, (_, i) => { const t = i / N, u = 1 - t; return [u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]; });
+            const barkGrad = (x0, x1) => { const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, P.bark0); gr.addColorStop(.42, P.bark1); gr.addColorStop(.55, P.barkHi); gr.addColorStop(1, P.bark0); return gr; };
+            for (let k = 0; k < 9; k++) { const a = (k / 8 - .5) * 2.6 + (R() - .5) * .15, len = 110 + R() * 90 - Math.abs(a) * 10;
+                const p0 = [X(0) + Math.sin(a) * 16, rootY - 6], p3 = [X(0) + Math.sin(a) * len * 1.25, rootY + 28 + Math.cos(a) * 14 + R() * 18];
+                taper(bez(p0, [p0[0] + Math.sin(a) * 30, rootY + 6], [p3[0] - Math.sin(a) * 40, p3[1] - 6], p3), 18 - Math.abs(a) * 3, 1.2, barkGrad(X(0) - 120, X(0) + 120));
+                if (R() > .4) { const m = bez(p0, [p0[0] + Math.sin(a) * 30, rootY + 6], [p3[0] - Math.sin(a) * 40, p3[1] - 6], p3)[14]; taper(bez(m, [m[0] + 10 * Math.sign(a || 1), m[1] + 10], [m[0] + 25 * Math.sign(a || 1), m[1] + 22], [m[0] + 34 * Math.sign(a || 1), m[1] + 30]), 4, .6, P.bark1); } }
+
+            // ствол
+            const N = 140, L2 = [], R2 = [];
+            for (let i = 0; i <= N; i++) { const t = i / N * tAt(n - 1); const x = X(t), y = Y(t), w = Wd(t) / 2 * (1 + (i < 6 ? (6 - i) * .06 : 0)); L2.push([x - w, y]); R2.push([x + w, y]); }
+            g.beginPath(); g.moveTo(...L2[0]); L2.forEach(p => g.lineTo(...p)); [...R2].reverse().forEach(p => g.lineTo(...p)); g.closePath();
+            g.fillStyle = barkGrad(cx - 60, cx + 60); g.fill();
+            // кора — продольные волокна
+            g.save(); g.clip();
+            for (let s = 0; s < 30; s++) { const off = (R() - .5) * 0.95; g.beginPath();
+                for (let i = 0; i <= N; i += 2) { const t = i / N; const x = X(t) + off * Wd(t) / 2 + Math.sin(i * .45 + s) * 1.6, y = Y(t); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+                g.strokeStyle = R() > .5 ? 'rgba(0,0,0,.14)' : (dark ? 'rgba(255,220,150,.09)' : 'rgba(255,235,190,.16)'); g.lineWidth = .5 + R() * 1.1; g.stroke(); }
+            for (let k = 0; k < 6; k++) { const t = .05 + R() * .6, x = X(t) + (R() - .5) * Wd(t) * .4, y = Y(t); g.beginPath(); g.ellipse(x, y, 3 + R() * 3, 6 + R() * 5, 0, 0, Math.PI * 2); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1.2; g.stroke(); }
+            g.restore();
+
+            // лист
+            const leaf = (x, y, len, ang, col, vein = true) => { g.save(); g.translate(x, y); g.rotate(ang);
+                const gr = g.createLinearGradient(0, -len * .3, 0, len * .3); gr.addColorStop(0, col); gr.addColorStop(1, P.leaf[0]);
+                g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(len * .3, -len * .32, len * .72, -len * .26, len, 0); g.bezierCurveTo(len * .72, len * .26, len * .3, len * .32, 0, 0); g.fillStyle = gr; g.fill();
+                if (vein) { g.beginPath(); g.moveTo(len * .06, 0); g.lineTo(len * .92, 0); g.strokeStyle = 'rgba(255,255,220,.35)'; g.lineWidth = .6; g.stroke(); } g.restore(); };
+            const leafCluster = (x, y, n2, spread, sz) => { for (let k = 0; k < n2; k++) { const a = R() * Math.PI * 2; const d = Math.sqrt(R()) * spread; leaf(x + Math.cos(a) * d, y + Math.sin(a) * d * .8, sz * (.7 + R() * .6), a + (R() - .5), P.leaf[1 + Math.floor(R() * 3)]); } };
+
+            // ── крона (позади надписей) ──
+            const crownY = Y(tAt(n - 1)) + 90;
+            g.save(); g.globalAlpha = dark ? .22 : .16; const cg = g.createRadialGradient(cx, crownY, 20, cx, crownY, 300); cg.addColorStop(0, P.leaf[2]); cg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = cg; g.beginPath(); g.ellipse(cx, crownY, 330, 220, 0, 0, Math.PI * 2); g.fill(); g.restore();
+            for (let k = 0; k < 85; k++) { const a = R() * Math.PI * 2, d = Math.sqrt(R()); const x = cx + Math.cos(a) * d * 310, y = crownY + Math.sin(a) * d * 175 - 30; g.globalAlpha = .5 + R() * .5; leafCluster(x, y, 5, 16, 14); }
+            g.globalAlpha = 1;
+            // цветы/ягоды в кроне
+            for (let k = 0; k < 40; k++) { const a = R() * Math.PI * 2, d = Math.sqrt(R()); const x = cx + Math.cos(a) * d * 290, y = crownY + Math.sin(a) * d * 180 - 20;
+                g.fillStyle = R() > .5 ? (dark ? '#e6c46a' : '#c99a2e') : (dark ? '#d06a4a' : '#b5452a'); g.beginPath(); g.arc(x, y, 2 + R() * 2.2, 0, Math.PI * 2); g.fill(); }
+
+            // ── ветви ағайындар ──
+            const branchPts = [];
+            for (let i = 1; i < n - 1; i++) {
+                const node = L.chain[i]; const sibs = node.siblings.filter(s => s !== node.name).slice(0, 4); if (!sibs.length) continue;
+                const t = tAt(i), x = X(t), y = Y(t), side = i % 2 ? -1 : 1, len = 170 + sibs.length * 26;
+                const p0 = [x + side * Wd(t) * .3, y], p3 = [x + side * len, y - 95 - sibs.length * 8];
+                const pts = bez(p0, [x + side * len * .25, y + 8], [x + side * len * .62, y - 12], p3, 30);
+                taper(pts, Math.max(4, Wd(t) * .3), 1.4, barkGrad(x - 200, x + 200));
+                sibs.forEach((s, k) => { const pi = Math.round(8 + (k / Math.max(1, sibs.length - 1 || 1)) * 20); const [bx, by] = pts[Math.min(30, pi)]; const up = k % 2 ? -1 : 1;
+                    const tw = bez([bx, by], [bx + side * 6, by - 8 * up], [bx + side * 14, by - 18 * up], [bx + side * 20, by - 26 * up], 8); taper(tw, 2.2, .6, P.bark1);
+                    leafCluster(bx + side * 20, by - 26 * up, 4, 7, 12);
+                    branchPts.push({ x: bx + side * 22, y: by - 26 * up - (up > 0 ? 12 : -14), text: s, side }); });
+                leafCluster(p3[0], p3[1], 9, 14, 14);
+            }
+            // подписи ағайындар (курсив)
+            g.textBaseline = 'middle';
+            const placed = [];
+            branchPts.forEach(b => { g.font = `italic 500 12.5px ${F}`; const w = g.measureText(b.text).width;
+                for (let k = 0; k < 8; k++) { const x0 = b.side > 0 ? b.x : b.x - w; if (!placed.some(r => x0 < r.x1 + 4 && x0 + w > r.x0 - 4 && Math.abs(b.y - r.y) < 13)) { placed.push({ x0, x1: x0 + w, y: b.y }); break; } b.y += (k % 2 ? -1 : 1) * (k + 1) * 7; }
+                g.textAlign = b.side > 0 ? 'left' : 'right'; g.lineWidth = 3; g.strokeStyle = dark ? 'rgba(12,9,6,.85)' : 'rgba(251,244,226,.9)'; g.strokeText(b.text, b.x, b.y); g.fillStyle = P.sub; g.fillText(b.text, b.x, b.y); });
+
+            // ── лента-свиток с именем ──
+            const ribbon = (x, y, text, { size = 17, weight = 600, italic = false, side = 0, color = P.ink } = {}) => {
+                g.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${F}`; const tw = g.measureText(text).width; const w = tw + size * 1.6, h = size * 1.55;
+                const x0 = side > 0 ? x : side < 0 ? x - w : x - w / 2, y0 = y - h / 2;
+                // хвосты
+                g.fillStyle = P.ribbonEnd; [[x0, -1], [x0 + w, 1]].forEach(([ex, d]) => { g.beginPath(); g.moveTo(ex, y0 + 4); g.lineTo(ex + d * h * .7, y0 + 4); g.lineTo(ex + d * h * .42, y0 + h / 2 + 4); g.lineTo(ex + d * h * .7, y0 + h + 4); g.lineTo(ex, y0 + h + 4); g.closePath(); g.fill(); g.strokeStyle = P.gold; g.lineWidth = .7; g.stroke(); });
+                // полоса с лёгкой волной
+                g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + w / 2, y0 - 3, x0 + w, y0); g.lineTo(x0 + w, y0 + h); g.quadraticCurveTo(x0 + w / 2, y0 + h - 3, x0, y0 + h); g.closePath();
+                g.fillStyle = P.ribbon; g.shadowColor = 'rgba(0,0,0,.18)'; g.shadowBlur = 4; g.shadowOffsetY = 1.5; g.fill(); g.shadowColor = 'transparent'; g.strokeStyle = P.gold; g.lineWidth = 1; g.stroke();
+                g.fillStyle = color; g.textAlign = 'center'; g.fillText(text, x0 + w / 2, y0 + h / 2 + 1); return { x0, w };
+            };
+
+            // ── узлы-предки ──
             for (let i = 0; i < n; i++) {
-                const x = xs(i), y = ys(i), node = L.chain[i], side = i % 2 === 0 ? 1 : -1; // подпись справа/слева
-                const sibs = node.siblings.filter(s => s !== node.name).slice(0, 5);
-                if (sibs.length) {
-                    const dir = -side; const len = 120 + sibs.length * 16;
-                    g.strokeStyle = C.trunk; g.lineWidth = 3; g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + dir * 40, y - 6, x + dir * len * 0.6, y - 26, x + dir * len, y - 34); g.stroke();
-                    sibs.forEach((s, k) => { const t = (k + 1) / (sibs.length + 0.3); const bx = x + dir * len * t, by = y - 8 - 26 * t;
-                        leaf(bx, by - 7, 9, dir > 0 ? -0.6 : 0.6 + Math.PI, C.leaf);
-                        g.font = `10.5px ${SANS}`; g.fillStyle = C.sub; g.textAlign = 'center'; g.fillText(s, bx, by - 22 + (k % 2) * 30 + 8); });
-                }
-                const me = i === n - 1, root = i === 0;
-                const r = me ? 20 : root ? 18 : 12;
-                g.fillStyle = C.medal; g.strokeStyle = C.gold; g.lineWidth = me ? 3 : 2; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.stroke();
-                if (me) { g.globalAlpha = .25; g.beginPath(); g.arc(x, y, r + 10, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; }
-                g.textAlign = 'center'; g.fillStyle = C.gold; g.font = `700 ${me || root ? 12 : 9}px ${SANS}`; g.fillText(root ? '✦' : String(i), x, y + 1);
-                // подпись
-                const lx = x + side * (r + 16); g.textAlign = side > 0 ? 'left' : 'right';
-                g.strokeStyle = C.gold; g.globalAlpha = .5; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x + side * r, y); g.lineTo(lx - side * 4, y); g.stroke(); g.globalAlpha = 1;
-                g.fillStyle = C.ink; g.font = `${me || root ? 700 : 600} ${me ? 22 : root ? 20 : 15}px ${SERIF}`; g.fillText(node.name, lx, y - (node.era ? 5 : 0));
-                if (node.era) { g.fillStyle = C.sub; g.font = `italic 9.5px ${SERIF}`; g.fillText(node.era.slice(0, 48), lx, y + 11); }
+                const t = tAt(i), x = X(t), y = Y(t), node = L.chain[i], me = i === n - 1, root = i === 0;
+                if (root || me) continue;
+                const side = i % 2 ? 1 : -1; const tx = x + side * (Wd(t) / 2 + 26);
+                // сучок
+                taper(bez([x, y], [x + side * 12, y - 2], [x + side * 20, y - 3], [tx, y - 2], 6), 4, 1.6, P.bark1);
+                leaf(tx - side * 4, y - 4, 13, side > 0 ? -.9 : Math.PI + .9, P.leaf[2]);
+                // медальон с номером
+                g.beginPath(); g.arc(tx, y, 9.5, 0, Math.PI * 2); g.fillStyle = P.ribbon; g.fill(); g.strokeStyle = P.gold; g.lineWidth = 1.3; g.stroke();
+                g.fillStyle = P.goldD; g.font = `700 10px ${F}`; g.textAlign = 'center'; g.fillText(String(i), tx, y + .5);
+                ribbon(tx + side * 36, y, node.name, { size: 16.5, side });
+                if (node.era) { g.font = `italic 400 10.5px ${F}`; g.textAlign = side > 0 ? 'left' : 'right'; g.fillStyle = P.sub; g.fillText(node.era.slice(0, 46), tx + side * 44, y + 18); }
             }
-            // дети — «плоды» над вершиной
-            if (L.children.length) {
-                const x0 = xs(n - 1), y0 = ys(n - 1); const m = L.children.length;
-                L.children.forEach((ch, k) => { const a = -Math.PI / 2 + (k - (m - 1) / 2) * 0.95; const x = x0 + Math.cos(a) * 84, y = y0 + Math.sin(a) * 62;
-                    g.strokeStyle = C.trunk; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, y0 - 18); g.quadraticCurveTo(x0, y, x, y); g.stroke();
-                    g.fillStyle = C.gold; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fill();
-                    g.fillStyle = C.ink; g.font = `600 13px ${SERIF}`; g.textAlign = 'center'; g.fillText(ch, x, y - 18); });
-            }
-            // картуши внизу: род и жеті ата
-            const cart = (x, y, w, h, head, lines, big) => {
-                g.save(); g.fillStyle = dark ? 'rgba(28,23,14,.85)' : 'rgba(255,250,238,.8)'; g.strokeStyle = C.gold; g.lineWidth = 1.2;
-                g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, 10) : g.rect(x, y, w, h); g.fill(); g.stroke();
-                g.globalAlpha = .4; g.strokeRect(x + 5, y + 5, w - 10, h - 10); g.globalAlpha = 1;
-                g.textAlign = 'center'; g.fillStyle = C.gold; g.font = `700 9px ${SANS}`; g.fillText(head.split('').join(' '), x + w / 2, y + 22);
-                let yy = y + 44; if (big) { g.font = `34px ${SERIF}`; g.fillText(big, x + w / 2, yy + 8); yy += 44; }
-                lines.forEach(([t, st]) => { g.fillStyle = st === 'b' ? C.ink : C.sub; g.font = st === 'b' ? `700 15px ${SERIF}` : `11px ${SANS}`; g.fillText(t, x + w / 2, yy); yy += st === 'b' ? 20 : 16; });
+
+            // ── вершина: венок, имя, дети-плоды ──
+            const ty = Y(1), tx0 = X(1);
+            if (L.children.length) { const m = L.children.length;
+                L.children.forEach((ch, k) => { const a = -Math.PI / 2 + (k - (m - 1) / 2) * 0.62; const fx = tx0 + Math.cos(a) * 120, fy = ty - 30 + Math.sin(a) * 78;
+                    taper(bez([tx0, ty - 30], [tx0 + (fx - tx0) * .2, fy + 20], [fx, fy + 30], [fx, fy + 12], 12), 5, 1.2, P.bark1);
+                    leaf(fx - 8, fy + 14, 14, -2.4, P.leaf[2]); leaf(fx + 8, fy + 14, 14, -.7, P.leaf[3]);
+                    const fg = g.createRadialGradient(fx - 3, fy - 3, 1, fx, fy, 11); fg.addColorStop(0, '#fff3c4'); fg.addColorStop(.5, '#e0b450'); fg.addColorStop(1, '#8B6914'); g.fillStyle = fg; g.beginPath(); g.arc(fx, fy, 10, 0, Math.PI * 2); g.fill();
+                    g.font = `italic 600 15px ${F}`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = dark ? 'rgba(12,9,6,.85)' : 'rgba(251,244,226,.9)'; g.strokeText(ch, fx, fy - 20); g.fillStyle = P.ink; g.fillText(ch, fx, fy - 20); }); }
+            // лавровый венок
+            const wreath = (x, y, r) => { [-1, 1].forEach(s => { for (let k = 0; k < 11; k++) { const a = Math.PI / 2 + s * (0.25 + k * 0.24); const lx = x + Math.cos(a) * r, ly = y + Math.sin(a) * r * .95; leaf(lx, ly, 15, a + s * 1.9, k % 2 ? P.leaf[2] : P.leaf[3]); } }); };
+            wreath(tx0, ty, 34);
+            const mg = g.createRadialGradient(tx0 - 6, ty - 6, 2, tx0, ty, 26); mg.addColorStop(0, '#fff6d6'); mg.addColorStop(.55, '#e2bb5a'); mg.addColorStop(1, '#8B6914');
+            g.beginPath(); g.arc(tx0, ty, 25, 0, Math.PI * 2); g.fillStyle = mg; g.fill(); g.strokeStyle = P.goldD; g.lineWidth = 1.5; g.stroke();
+            g.fillStyle = '#3a2a0a'; g.font = `30px ${F}`; g.textAlign = 'center'; g.fillText(L.tribe?.tamga || '✦', tx0, ty + 2);
+            { const side = (n - 1) % 2 ? 1 : -1; ribbon(tx0 + side * 62, ty, L.name, { size: 22, weight: 700, italic: true, side }); }
+
+            // ── основание: АЛАШ ──
+            const ax = X(0), ay = rootY + 52;
+            g.save(); g.fillStyle = P.ribbon; g.strokeStyle = P.gold; g.lineWidth = 1.4; g.shadowColor = 'rgba(0,0,0,.2)'; g.shadowBlur = 6;
+            g.beginPath(); g.moveTo(ax - 92, ay - 20); g.quadraticCurveTo(ax, ay - 34, ax + 92, ay - 20); g.lineTo(ax + 104, ay); g.lineTo(ax + 92, ay + 20); g.quadraticCurveTo(ax, ay + 8, ax - 92, ay + 20); g.lineTo(ax - 104, ay); g.closePath(); g.fill(); g.shadowColor = 'transparent'; g.stroke(); g.restore();
+            g.fillStyle = P.ink; g.font = `700 26px ${F}`; g.textAlign = 'center'; g.fillText('А Л А Ш', ax, ay - 3); g.font = `italic 400 10.5px ${F}`; g.fillStyle = P.sub; g.fillText('аңыздағы түп ата · легендарный прародитель', ax, ay + 12);
+            // жуз и первые колена — маленькие надписи у ствола
+            if (n > 2) { g.font = `italic 600 14px ${F}`; g.fillStyle = P.sub; g.textAlign = 'left'; }
+
+            // ── заголовок ──
+            const seal = (x, y, r) => { const sg = g.createRadialGradient(x - r * .3, y - r * .3, 2, x, y, r); sg.addColorStop(0, '#fff3c4'); sg.addColorStop(.6, '#d9b45a'); sg.addColorStop(1, '#7a5a14');
+                g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = sg; g.fill(); g.strokeStyle = P.goldD; g.lineWidth = 1.5; g.stroke(); g.beginPath(); g.arc(x, y, r - 5, 0, Math.PI * 2); g.lineWidth = .8; g.stroke();
+                for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; g.beginPath(); g.arc(x + Math.cos(a) * (r - 2.6), y + Math.sin(a) * (r - 2.6), .9, 0, Math.PI * 2); g.fillStyle = P.goldD; g.fill(); }
+                g.fillStyle = '#3a2a0a'; g.font = `${r * 1.05}px ${F}`; g.textAlign = 'center'; g.fillText(L.tribe?.tamga || '⩔', x, y + 2); };
+            seal(W / 2, 128, 34);
+            g.textBaseline = 'alphabetic';
+            g.fillStyle = P.gold; g.font = `600 13px ${F}`; g.textAlign = 'center'; g.fillText('Ш Е Ж І Р Е   ·   Ө М І Р   А Ғ А Ш Ы', W / 2, 194);
+            g.fillStyle = P.ink; g.font = `italic 700 66px ${F}`; g.fillText(L.name, W / 2, 252);
+            const sub = `${L.tribe?.name ? L.tribe.name.charAt(0) + L.tribe.name.slice(1).toLowerCase() : ''} руы${L.juz ? ' · ' + L.juz : ''}`;
+            g.font = `italic 500 20px ${F}`; g.fillStyle = P.sub; g.fillText(sub, W / 2, 284);
+            const flour = (x, y, d) => { g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + d * 40, y - 10, x + d * 80, y + 10, x + d * 130, y); g.moveTo(x + d * 130, y); g.bezierCurveTo(x + d * 138, y - 6, x + d * 146, y - 2, x + d * 142, y + 3); g.strokeStyle = P.gold; g.lineWidth = 1; g.stroke(); };
+            g.font = `italic 500 20px ${F}`; const sw = g.measureText(sub).width; flour(W / 2 - sw / 2 - 14, 278, -1); flour(W / 2 + sw / 2 + 14, 278, 1);
+            g.font = `500 12px ${F}`; g.fillStyle = P.sub; g.fillText(`${n} ұрпақ — Алаштан бүгінге дейін`, W / 2, 308);
+
+            // ── картуши: ру и жеті ата ──
+            g.textBaseline = 'middle';
+            const cart = (x, y, w, h, head, lines, big) => { g.save();
+                g.fillStyle = dark ? 'rgba(26,20,10,.88)' : 'rgba(255,250,238,.88)'; g.strokeStyle = P.gold; g.lineWidth = 1.2;
+                const r = 14; g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.fill(); g.stroke();
+                g.lineWidth = .6; g.strokeRect(x + 7, y + 7, w - 14, h - 14);
+                g.textAlign = 'center'; g.fillStyle = P.gold; g.font = `700 11px ${F}`; g.fillText(head.split('').join(' '), x + w / 2, y + 24);
+                let yy = y + 46; if (big) { g.font = `34px ${F}`; g.fillText(big, x + w / 2, yy + 6); yy += 40; }
+                lines.forEach(([t, st]) => { g.fillStyle = st === 'b' ? P.ink : P.sub; g.font = st === 'b' ? `700 17px ${F}` : `italic 500 13.5px ${F}`; g.fillText(t, x + w / 2, yy); yy += st === 'b' ? 22 : 18; });
                 g.restore(); };
-            if (L.tribe) cart(80, 900, 210, 190, 'РУ · ТАМҒА', [[L.tribe.name, 'b'], [`тамға «${L.tribe.tamgaName}»`, ''], [L.juz, ''], [(ZHUZ_INFO[L.juz]?.land || '').slice(0, 30), '']], L.tribe.tamga);
+            if (L.tribe) cart(80, 722, 176, 196, 'РУ · ТАМҒА', [[L.tribe.name, 'b'], [`тамға «${L.tribe.tamgaName}»`, ''], [L.juz, ''], [(ZHUZ_INFO[L.juz]?.land || '').slice(0, 28), '']], L.tribe.tamga);
             const seven = L.chain.slice(-8, -1).reverse();
-            if (seven.length >= 3) cart(W - 290, 880, 210, 210, 'ЖЕТІ АТА', seven.map((x, k) => [`${k + 1}. ${x.name}`, k === 0 ? 'b' : '']).slice(0, 7));
-            // подвал
-            g.textAlign = 'center'; g.fillStyle = C.gold; g.font = `italic 18px ${SERIF}`;
-            g.fillText('«Жеті атасын білмеген — жетімдіктің белгісі»', W / 2, H - 132);
-            g.fillStyle = C.sub; g.font = `9px ${SANS}`;
-            g.fillText(`SHEJIRE AI · tamgaai.vercel.app · ${new Date().toLocaleDateString('ru-RU')}`, W / 2, H - 104);
+            if (seven.length >= 3) cart(W - 256, 860, 176, 216, 'ЖЕТІ АТА', seven.map((s, k) => [`${k + 1}. ${s.name}`, k === 0 ? 'b' : '']));
+
+            // ── подвал ──
+            g.textBaseline = 'alphabetic'; g.textAlign = 'center';
+            g.fillStyle = P.gold; g.font = `italic 600 22px ${F}`; g.fillText('«Жеті атасын білмеген — жетімдіктің белгісі»', W / 2, H - 116);
+            g.fillStyle = P.sub; g.font = `500 10.5px ${F}`; g.fillText(`TAMGA AI · tamgaai.vercel.app · ${new Date().toLocaleDateString('ru-RU')}`, W / 2, H - 92);
             return c;
         }
+        const downloadPDF = async (canvas, size, name) => {
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            const dims = { A4: [210, 297], A3: [297, 420], A2: [420, 594] }[size];
+            const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: size.toLowerCase(), compress: true });
+            pdf.setProperties({ title: name.replace(/_/g, ' '), creator: 'TAMGA AI · tamgaai.vercel.app' });
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, dims[0], dims[1], undefined, 'FAST');
+            pdf.save(name + '.pdf');
+        };
         const downloadCanvas = (canvas, name) => new Promise(res => canvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); res(); }, 'image/png'));
         const loadScript = (src) => new Promise((ok, fail) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
 
@@ -6660,7 +6779,7 @@
                     s.addText(n.name, { x: 0.9 + (k % 4) * 3.0, y: 2.7 + Math.floor(k / 4) * 1.9, w: 2.8, h: 0.8, fontSize: 28, color: INK, fontFace: F }); });
                 s.addText('Казахи не вступают в брак в пределах семи колен по отцу — поэтому каждый должен знать своих жеті ата.', { x: 0.9, y: 6.1, w: 11.5, h: 0.5, fontSize: 13, color: SUB, italic: true, fontFace: F }); }
             // Дерево
-            const poster = drawPoster(L, { px: 1600, theme: 'dark' });
+            await ensurePosterFonts(); const poster = drawPoster(L, { px: 1600, theme: 'dark' });
             s = pptx.addSlide(); s.background = { color: '070605' };
             s.addImage({ data: poster.toDataURL('image/png'), x: (13.33 - 7.0 / 1.414) / 2, y: 0.25, w: 7.0 / 1.414, h: 7.0 });
             // Финал
@@ -6674,10 +6793,11 @@
         function DownloadsPanel() {
             const L = useMemo(getMyLineage, []);
             const [theme, setTheme] = useState('light'); const [size, setSize] = useState('A3'); const [busy, setBusy] = useState(''); const [prev, setPrev] = useState(null); const [err, setErr] = useState('');
-            useEffect(() => { if (!L) return; let alive = true; (document.fonts?.ready || Promise.resolve()).then(() => { if (alive) setPrev(drawPoster(L, { px: 700, theme }).toDataURL('image/png')); }); return () => { alive = false; }; }, [theme, L]);
+            useEffect(() => { if (!L) return; let alive = true; ensurePosterFonts().then(() => { if (alive) setPrev(drawPoster(L, { px: 900, theme }).toDataURL('image/png')); }); return () => { alive = false; }; }, [theme, L]);
             if (!L) return null;
             const SZ = { A4: [2480, '21×29,7 см'], A3: [3508, '29,7×42 см'], A2: [4961, '42×59,4 см'] };
-            const poster = async () => { setBusy('poster'); setErr(''); try { await document.fonts?.ready; await new Promise(r => setTimeout(r, 30)); await downloadCanvas(drawPoster(L, { px: SZ[size][0], theme }), `Omir_agashy_${L.name}_${size}.png`); } catch (e) { setErr('Не удалось создать изображение'); } setBusy(''); };
+            const poster = async () => { setBusy('poster'); setErr(''); try { await ensurePosterFonts(); await new Promise(r => setTimeout(r, 30)); await downloadCanvas(drawPoster(L, { px: SZ[size][0], theme }), `Omir_agashy_${L.name}_${size}.png`); } catch (e) { setErr('Не удалось создать изображение'); } setBusy(''); };
+            const pdf = async () => { setBusy('pdf'); setErr(''); try { await ensurePosterFonts(); await new Promise(r => setTimeout(r, 30)); await downloadPDF(drawPoster(L, { px: SZ[size][0], theme }), size, `Omir_agashy_${L.name}_${size}`); } catch (e) { console.error(e); setErr('Не удалось создать PDF (нужен интернет для загрузки библиотеки)'); } setBusy(''); };
             const pres = async () => { setBusy('pptx'); setErr(''); try { await buildPresentation(L); } catch (e) { console.error(e); setErr('Не удалось создать презентацию (нужен интернет для загрузки библиотеки)'); } setBusy(''); };
             return (
                 <div className="rounded-2xl p-px mb-8" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,0.4),rgba(139,105,20,0.08))' }}>
@@ -6695,7 +6815,8 @@
                                 {[['light', 'Пергамент'], ['dark', 'Түнгі']].map(([k, l]) => <button key={k} onClick={() => setTheme(k)} className="px-3 py-1.5 rounded-full border text-[10px] tracking-widest" style={{ borderColor: theme === k ? '#C5A55A' : '#222', color: theme === k ? '#000' : '#999', background: theme === k ? '#C5A55A' : 'transparent' }}>{l}</button>)}
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <button onClick={poster} disabled={!!busy} className="px-6 py-3 rounded-full text-xs font-bold tracking-widest disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>{busy === 'poster' ? 'Дайындалуда…' : `🖼 Өмір ағашы · PNG ${SZ[size][0]}px`}</button>
+                                <button onClick={poster} disabled={!!busy} className="px-6 py-3 rounded-full text-xs font-bold tracking-widest disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>{busy === 'poster' ? 'Дайындалуда…' : `🖼 PNG ${SZ[size][0]}px`}</button>
+                                <button onClick={pdf} disabled={!!busy} className="px-6 py-3 rounded-full text-xs font-bold tracking-widest disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>{busy === 'pdf' ? 'Дайындалуда…' : `📄 Өмір ағашы · PDF ${size}`}</button>
                                 <button onClick={pres} disabled={!!busy} className="px-6 py-3 rounded-full text-xs font-bold tracking-widest border border-[#C5A55A] text-[#C5A55A] disabled:opacity-50">{busy === 'pptx' ? 'Дайындалуда…' : '📑 Презентация · PPTX'}</button>
                             </div>
                             {err && <p className="text-[#e07a5f] text-xs mt-3">{err}</p>}
