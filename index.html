@@ -1237,12 +1237,7 @@
         // --- Tree Components ---
 
         function Node({ node, expanded, onToggle }) {
-            const [vis, setVis] = useState(false);
-            useEffect(() => {
-                const delay = Math.min((node.gen - 1) * 60, 800);
-                const t = setTimeout(() => setVis(true), delay);
-                return () => clearTimeout(t);
-            }, [node.gen]);
+            const vis = true;
 
             const hasKids = node.children && node.children.length > 0;
             const hasSibs = node.siblings && node.siblings.length > 0;
@@ -1255,9 +1250,7 @@
             return (
                 <div id={`node-${node.id}`}
                     style={{
-                        opacity:    vis ? 1 : 0,
-                        transform:  vis ? 'translateY(0) scale(1)' : 'translateY(-12px) scale(0.93)',
-                        transition: 'opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1)',
+                        animation: 'nodeReveal .45s cubic-bezier(0.16,1,0.3,1) both',
                         position: 'relative',
                     }}
                 >
@@ -1293,8 +1286,9 @@
                             fontWeight:    isHL ? 600 : isMain ? 500 : 400,
                             letterSpacing: '0.01em',
                         }}>
-                            {node.name}
+                            {node.name}{node.more && <span title="tumalas.kz-те жалғасы бар" style={{ color: '#666' }}> …</span>}
                         </div>
+                        {hasKids && !isOpen && <div style={{ fontSize: 8, color: 'rgba(197,165,90,0.55)', marginTop: 2 }}>+{countAllKids(node)}</div>}
 
                         {/* Era */}
                         {node.era && node.gen <= 6 && (
@@ -1346,6 +1340,9 @@
             );
         }
 
+        const _kidCount = new WeakMap();
+        function countAllKids(n) { if (_kidCount.has(n)) return _kidCount.get(n); const c = (n.children || []).reduce((s, k) => s + 1 + countAllKids(k), 0); _kidCount.set(n, c); return c; }
+        function treePathIds(id) { const p = findTreePath(TREE_DATA, id); return p ? p.map(n => n.id) : []; }
         function TreeBranch({ node, expanded, onToggle }) {
             const isOpen  = expanded.has(node.id);
             const hasKids = node.children && node.children.length > 0;
@@ -1436,7 +1433,7 @@
             );
         }
 
-        function ShezhireTreeSection({ onBack }) {
+        function ShezhireTreeSection({ onBack, onList }) {
             const getMainIds = (node) => {
                 let ids = [];
                 if (node.isMainLine || node.highlight) ids.push(node.id);
@@ -1484,17 +1481,24 @@
                 });
             };
 
-            const expandAll   = () => { const ids = new Set(), q = [TREE_DATA]; while (q.length && ids.size < 800) { const n = q.shift(); ids.add(n.id); (n.children || []).forEach(c => q.push(c)); } setExpanded(ids); };
+            const [busy, setBusy] = useState(false);
+            const expandAll   = () => { setBusy(true); setTimeout(() => { const ids = new Set(), q = [TREE_DATA]; while (q.length) { const n = q.shift(); if (n.children?.length || n.siblings?.length) ids.add(n.id); (n.children || []).forEach(c => q.push(c)); } setExpanded(ids); setTimeout(() => setBusy(false), 300); }, 60); };
+            const [sq, setSq] = useState(''); const [sHit, setSHit] = useState(0); const [found, setFound] = useState(null);
+            const allNodes = useMemo(() => { const out = []; const w = n => { out.push(n); (n.children || []).forEach(w); }; w(TREE_DATA); return out; }, []);
+            const sMatches = useMemo(() => { const k = normName(sq); if (k.length < 2) return []; return allNodes.filter(n => normName(n.name).includes(k)); }, [sq]);
+            const reveal = (id) => { const ids = treePathIds(id); if (!ids.length) return; setExpanded(prev => { const s = new Set(prev); ids.slice(0, -1).forEach(x => s.add(x)); return s; }); setFound(id);
+                let tries = 0; const go = () => { const el = document.getElementById('node-' + id); if (el) { document.querySelectorAll('.tree-found').forEach(x => { x.classList.remove('tree-found'); x.style.boxShadow = ''; }); const c = el.firstElementChild; c.classList.add('tree-found'); c.style.boxShadow = '0 0 0 2px #F0D882, 0 0 24px rgba(240,216,130,.5)'; el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } else if (tries++ < 20) setTimeout(go, 100); }; setTimeout(go, 80); };
+            const goS = (k) => { if (!sMatches.length) return; const i = ((k % sMatches.length) + sMatches.length) % sMatches.length; setSHit(i); reveal(sMatches[i].id); };
             const collapseAll = () => setExpanded(new Set(['alash']));
 
-            const focusMe = () => {
-                const el = document.getElementById('node-damir');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-            };
+            const focusMe = () => { let me = null; try { me = localStorage.getItem('shejire_user'); } catch {} reveal(me && findNodeById(TREE_DATA, me) ? me : 'aset'); };
 
             return (
                 <div className="px-4 md:px-6 py-12 md:py-20 min-h-screen" style={{maxWidth: '100vw', overflowX: 'hidden'}}>
 
+                    {busy && <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-3" style={{ background: 'rgba(8,8,8,.75)' }}>
+                        <div className="w-12 h-12 rounded-full border-2 border-[#C5A55A] border-t-transparent animate-spin" />
+                        <p className="text-[#C5A55A] text-xs tracking-[0.3em] uppercase">Барлық есімдер ашылуда…</p></div>}
                     {/* Controls bar */}
                     <div className="flex justify-between items-center mb-6 flex-wrap gap-3 max-w-7xl mx-auto">
                         <button onClick={onBack}
@@ -1530,10 +1534,17 @@
                                 <button onClick={() => setZoom(0.8)}
                                     className="text-[8px] text-[#444] hover:text-[#888] px-1.5 transition-colors tracking-wide uppercase">↺</button>
                             </div>
+                            <div className="flex items-center gap-1 rounded-full border border-[#2a2a2a] focus-within:border-[#C5A55A] pl-3 pr-1">
+                                <input value={sq} onChange={e => { setSq(e.target.value); setSHit(0); }} onKeyDown={e => { if (e.key === 'Enter') goS(found && sMatches[sHit]?.id === found ? sHit + 1 : sHit); }}
+                                    placeholder="Есім іздеу · поиск" className="bg-transparent outline-none text-[11px] text-white py-1.5 w-36" />
+                                {sq.length >= 2 && <span className="text-[9px] text-[#888] px-1">{sMatches.length ? `${sHit + 1}/${sMatches.length}` : '—'}</span>}
+                                <button onClick={() => goS(sHit - 1)} className="w-6 h-6 text-[#C5A55A]">↑</button><button onClick={() => goS(sHit + 1)} className="w-6 h-6 text-[#C5A55A]">↓</button>
+                            </div>
                             <button onClick={expandAll}
                                 className="px-3 py-1.5 border border-[#C5A55A30] text-[#C5A55A] rounded-full text-[9px] tracking-widest uppercase hover:bg-[#C5A55A0A] transition-colors">
                                 Барлығын ашу
                             </button>
+                            {onList && <button onClick={onList} className="px-3 py-1.5 border border-[#2a2a2a] text-[#999] rounded-full text-[9px] tracking-widest uppercase hover:text-[#C5A55A]">☰ Тізім</button>}
                             <button onClick={collapseAll}
                                 className="px-3 py-1.5 border border-[#1c1c1c] text-[#444] rounded-full text-[9px] tracking-widest uppercase hover:text-[#777] transition-colors">
                                 Тек ата жолы
@@ -1552,7 +1563,7 @@
                             Әлімұлы · Кіші жүз · Қарамашақ-Төртқара
                         </div>
                         <h2 className="text-3xl md:text-5xl font-serif mb-3 tracking-widest text-[#C5A55A] leading-tight">ШЕЖІРЕ ДРЕВО</h2>
-                        <p className="text-[#444] tracking-[0.35em] uppercase text-[8px] md:text-[9px] mb-5">21 ҰРПАҚ · АЛАШТАН ДАМИРГЕ ДЕЙІН</p>
+                        <p className="text-[#444] tracking-[0.35em] uppercase text-[8px] md:text-[9px] mb-5">{allNodes.length.toLocaleString('ru-RU')} ЕСІМ · АЛАШТАН БҮГІНГЕ ДЕЙІН · есімді басыңыз — ашылады</p>
                         <div className="flex justify-center items-center gap-4">
                             <div className="w-10 h-[1px] bg-gradient-to-r from-transparent to-[#C5A55A30]" />
                             <span className="text-xl text-[#C5A55A] tamga-glow" style={{fontFamily:"'Cinzel',serif"}}>⩔</span>
@@ -4902,7 +4913,13 @@
                     <div className="w-12 h-12 rounded-full border-2 border-[#C5A55A] border-t-transparent animate-spin" />
                     <p className="text-[#C5A55A] text-xs tracking-[0.3em] uppercase">Шежіре жүктелуде · 28 644 есім</p>
                 </div>);
-            if (mode === '2d') return <ShejireOutline onBack={onBack} on3D={() => setMode('3d')} />;
+            if (mode === 'list') return <ShejireOutline onBack={onBack} on3D={() => setMode('3d')} />;
+            if (mode === '2d') return (
+                <div>
+                    <button onClick={() => setMode('3d')} className="fixed top-5 right-40 z-50 px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border" style={btnStyle(false)}>◈ 3D</button>
+                    <ShezhireTreeSection onBack={onBack} onList={() => setMode('list')} />
+                </div>
+            );
             return <Tree3DScreen onBack={onBack} onClassic={() => setMode('2d')} />;
         }
 
