@@ -207,6 +207,29 @@
         html.light .tamga-glow:not(.keep-dark *){text-shadow:0 0 18px rgba(139,105,20,.25)!important}
         html.light .bg-gold-primary:not(.keep-dark *){background:#8B6914}
         html.light .bg-haze{display:none}
+        html.light .tn-card{background:#fffdf8!important;border-color:#cdbf9f!important}
+        html.light .tn-card.tree-node-main{background:#fbf0d4!important;border-color:#b8913a!important}
+        html.light .tn-card.tn-card-hl{background:#f6e2a8!important;border-color:#8B6914!important}
+        html.light .tn-card.tn-card-more{background:#dff5f1!important;border-color:#0f8a78!important;box-shadow:0 4px 14px rgba(15,138,120,.22)}
+        html.light .tn-name{color:#1c1408!important}
+        html.light .tn-main{color:#6b4c08!important}
+        html.light .tn-hl{color:#4a3405!important}
+        html.light .tn-more,html.light .tn-moretag{color:#0b6b5d!important}
+        html.light .tn-era,html.light .tn-label{color:#5e5240!important}
+        html.light .tn-badge{color:#7a5a0c!important}
+        html.light .ol-root{background:#f7f1e3!important}
+        html.light .ol-head{background:rgba(255,250,238,.97)!important;border-color:#dccfb3!important}
+        html.light .ol-name{color:#1c1408!important}
+        html.light .ol-main{color:#6b4c08!important}
+        html.light .ol-more{color:#0b6b5d!important}
+        html.light .ol-num{color:#8a7c62!important}
+        html.light .ol-tag{color:#0b6b5d!important;background:rgba(15,138,120,.12)!important;border-color:rgba(15,138,120,.55)!important}
+        html.light .ol-badge{color:#7a5a0c!important;background:rgba(139,105,20,.14)!important}
+        html.light .ol-sel{background:rgba(139,105,20,.2)!important}
+        html.light .ol-hit{background:rgba(15,138,120,.14)!important}
+        html.light .ol-root input{color:#1c1408!important}
+        html.light .b3d:not(.keep-dark *):not([style*="linear-gradient"]){background:#fffaf0!important;color:#6b4c08!important;border-color:#cdbf9f!important;backdrop-filter:none!important}
+        html.light .ol-root .rounded-full.border-\[\#2a2a2a\]{background:#fff!important;border-color:#cdbf9f!important}
         html.light footer{border-color:#e6dcc6!important;color:#857a66!important}
         html.light input:not(.keep-dark *),html.light textarea:not(.keep-dark *){color:#1c1710!important}
         html.light .placeholder-\[\#222\]:not(.keep-dark *)::placeholder,html.light .placeholder-\[\#333\]:not(.keep-dark *)::placeholder,html.light .placeholder-\[\#2a2a2a\]:not(.keep-dark *)::placeholder{color:#b5ab95}
@@ -1256,7 +1279,7 @@
                 >
                     <div
                         onClick={() => canOpen && onToggle(node.id)}
-                        className={`flex flex-col items-center relative overflow-hidden group transition-all duration-300${isMain ? ' tree-node-main' : ''}`}
+                        className={`tn-card flex flex-col items-center relative overflow-hidden group transition-all duration-300${isMain ? ' tree-node-main' : ''}${isHL ? ' tn-card-hl' : ''}${node.more && !isMain ? ' tn-card-more' : ''}`}
                         style={{
                             padding:      isSmall ? '9px 13px' : '13px 18px',
                             width:        isSmall ? 140 : 168,
@@ -1281,27 +1304,27 @@
                         </div>
 
                         {/* Name */}
-                        <div className="font-serif leading-tight text-center" style={{
-                            fontSize:      node.gen <= 2 ? 17 : node.gen <= 5 ? 14 : 12,
-                            color:         isHL ? 'rgba(197,165,90,1)' : isMain ? 'rgba(197,165,90,0.85)' : '#cccccc',
+                        <div className={`tn-name font-serif leading-tight text-center${isHL ? ' tn-hl' : isMain ? ' tn-main' : node.more ? ' tn-more' : ''}`} style={{
+                            fontSize:      node.gen <= 2 ? 17 : node.gen <= 5 ? 14 : 13,
+                            color:         isHL ? 'rgba(197,165,90,1)' : isMain ? 'rgba(197,165,90,0.9)' : node.more ? '#5eead4' : '#e8e2d4',
                             fontWeight:    isHL ? 600 : isMain ? 500 : 400,
                             letterSpacing: '0.01em',
                         }}>
-                            {node.name}{node.more && <span title="tumalas.kz-те жалғасы бар" style={{ color: '#5eead4' }}> …</span>}
+                            {node.name}{node.more && <span className="tn-more" title="tumalas.kz-те жалғасы бар" style={{ color: '#5eead4' }}> …</span>}
                         </div>
-                        {hasKids && !isOpen && <div style={{ fontSize: 8, color: 'rgba(197,165,90,0.55)', marginTop: 2 }}>+{countAllKids(node)}</div>}
-                        {node.more && <div style={{ fontSize: 8, color: '#5eead4', marginTop: 3, letterSpacing: '0.08em', textTransform: 'uppercase' }}>↗ жалғасы бар</div>}
+                        {hasKids && !isOpen && <div className="tn-badge" style={{ fontSize: 9, color: 'rgba(197,165,90,0.8)', marginTop: 2 }}>+{countAllKids(node)}</div>}
+                        {node.more && <div className="tn-moretag" style={{ fontSize: 8.5, color: '#5eead4', marginTop: 3, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>↗ жалғасы бар</div>}
 
                         {/* Era */}
                         {node.era && node.gen <= 6 && (
-                            <div className="mt-1 text-center leading-tight" style={{fontSize:8, color:'#3a3a2e', letterSpacing:'0.04em'}}>
+                            <div className="tn-era mt-1 text-center leading-tight" style={{fontSize:8, color:'#8a8270', letterSpacing:'0.04em'}}>
                                 {node.era}
                             </div>
                         )}
 
                         {/* Label */}
                         {node.label && (
-                            <div className="mt-1 font-serif italic" style={{fontSize:9, color:'#888', letterSpacing:'0.05em'}}>
+                            <div className="tn-label mt-1 font-serif italic" style={{fontSize:9, color:'#a8a090', letterSpacing:'0.05em'}}>
                                 {node.label}
                             </div>
                         )}
@@ -4579,7 +4602,7 @@
             return err;
         }
 
-        const btn3d = "px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border transition-all whitespace-nowrap shrink-0";
+        const btn3d = "b3d px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border transition-all whitespace-nowrap shrink-0";
         const btnStyle = (on) => ({ borderColor: on ? '#C5A55A' : '#2a2a2a', color: on ? '#000' : '#C5A55A', background: on ? 'linear-gradient(135deg,#C5A55A,#8B6914)' : 'rgba(8,8,8,0.7)', backdropFilter: 'blur(6px)' });
 
         // ═════════════════════════════════════════════════════════════════════
@@ -4857,8 +4880,8 @@
             const selN = sel && idx.byId[sel];
             const matchSet = useMemo(() => new Set(matches), [matches]);
             return (
-                <div className="fixed inset-0 z-40 keep-dark flex flex-col" style={{ background: '#0a0906' }}>
-                    <div className="p-3 md:p-5 border-b border-[#2a2418] space-y-3" style={{ background: 'rgba(12,10,6,.96)' }}>
+                <div className="ol-root fixed inset-0 z-40 flex flex-col" style={{ background: '#0a0906' }}>
+                    <div className="ol-head p-3 md:p-5 border-b border-[#2a2418] space-y-3" style={{ background: 'rgba(12,10,6,.96)' }}>
                         <div className="flex flex-wrap items-center gap-2 justify-between pr-36 md:pr-40">
                             <div className="flex items-center gap-3">
                                 <button onClick={onBack} className="text-[#777] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase">← Назад</button>
@@ -4892,14 +4915,14 @@
                                 const isSel = n.id === sel, isMain = mainSet.has(n.id) || n.isMainLine || n.highlight, isHit = matchSet.has(n.id);
                                 return <div key={n.id} className="absolute left-0 flex items-center pr-6" style={{ top: i * ROW_H, height: ROW_H, paddingLeft: 12 + r.d * OL_IND() }}>
                                     {Array.from({ length: r.d }).map((_, j) => <span key={j} className="absolute top-0 bottom-0 w-px" style={{ left: 12 + OL_IND() / 2 + 8 + j * OL_IND(), background: selPath[j + 1] && selPath.includes(n.id) ? 'rgba(197,165,90,.5)' : 'rgba(197,165,90,.12)' }} />)}
-                                    <button onClick={() => toggle(n)} className="flex items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[#C5A55A14]"
+                                    <button onClick={() => toggle(n)} className={`flex items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[#C5A55A14]${isSel ? ' ol-sel' : isHit ? ' ol-hit' : ''}`}
                                         style={{ background: isSel ? 'rgba(197,165,90,.22)' : isHit ? 'rgba(74,222,128,.12)' : 'transparent' }}>
                                         <span className="w-4 text-center text-[#C5A55A] text-xs">{has ? (open ? '▾' : '▸') : '·'}</span>
-                                        <span className="text-[#555] text-[10px] w-5 text-right tabular-nums">{r.d}</span>
-                                        <span className={`text-sm whitespace-nowrap ${isMain ? 'font-semibold' : ''}`} style={{ color: n.highlight ? '#FFF3C4' : isMain ? '#F0D882' : n.more ? '#5eead4' : '#e6dcc4' }}>{n.name}</span>
+                                        <span className="ol-num text-[#8a8270] text-[10px] w-5 text-right tabular-nums">{r.d}</span>
+                                        <span className={`ol-name text-[15px] whitespace-nowrap ${isMain ? 'font-semibold ol-main' : n.more ? 'ol-more' : ''}`} style={{ color: n.highlight ? '#FFF3C4' : isMain ? '#F0D882' : n.more ? '#5eead4' : '#f0e9da' }}>{n.name}</span>
                                         {n.label && <span className="text-[10px] text-[#C5A55A]">{n.label}</span>}
-                                        {has && !open && <span className="text-[10px] px-1.5 rounded-full bg-[#C5A55A26] text-[#C5A55A]">+{descCache[n.id]}</span>}
-                                        {n.more && <span className="text-[10px] px-1.5 rounded-full" style={{ color: '#5eead4', background: 'rgba(56,189,168,.15)', border: '1px solid rgba(56,189,168,.5)' }} title="Продолжение на tumalas.kz">↗ жалғасы бар</span>}
+                                        {has && !open && <span className="ol-badge text-[10px] px-1.5 rounded-full bg-[#C5A55A26] text-[#C5A55A]">+{descCache[n.id]}</span>}
+                                        {n.more && <span className="ol-tag text-[10px] px-1.5 rounded-full font-semibold" style={{ color: '#5eead4', background: 'rgba(56,189,168,.15)', border: '1px solid rgba(56,189,168,.5)' }} title="Продолжение на tumalas.kz">↗ жалғасы бар</span>}
                                     </button>
                                 </div>; })}
                         </div>
