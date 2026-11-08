@@ -4966,6 +4966,10 @@
             { id: 'tundik',   kk: 'Түндік',    ru: 'Покрышка дымника',  order: 9, text: 'Квадратный войлок на шаңырақ. Днём его откидывают верёвкой — для света и дыма из очага, ночью и в непогоду закрывают.' },
             { id: 'oshak',    kk: 'Ошақ',      ru: 'Очаг',              order: 10, text: 'Огонь в центре юрты, прямо под шаңырақ. «От басы» — домашний очаг, символ продолжения рода.' },
             { id: 'tor',      kk: 'Төр',       ru: 'Почётное место',    order: 11, text: 'Место напротив двери, за очагом. Сюда сажают самых уважаемых гостей и старших. «Төрге шық» — «проходи на почётное место».' },
+            { id: 'shi',      kk: 'Ши',        ru: 'Циновка из чия',    order: 12, real: true, text: 'Циновка из стеблей чия, каждый обмотан цветной шерстью — так складывается узор. Ставится между кереге и войлоком: защищает от ветра и пыли, а летом, когда войлок подворачивают, пропускает воздух.' },
+            { id: 'tekemet',  kk: 'Текемет',   ru: 'Войлочные ковры',   order: 13, real: true, text: 'Валяные ковры с вбитым узором (текемет) и стёганые мозаичные (сырмақ). Ими застилают пол юрты: тепло снизу, красота сверху. Орнамент «қошқар мүйіз» — бараньи рога — знак достатка.' },
+            { id: 'sandyq',   kk: 'Сандық',    ru: 'Сундуки и утварь',  order: 14, real: true, text: 'Расписные сундуки стоят вдоль кереге за төр. На них складывают «жүк» — стопку одеял, подушек и кошм: чем выше жүк, тем богаче и гостеприимнее дом.' },
+            { id: 'dombra',   kk: 'Домбыра',   ru: 'Домбра',            order: 15, real: true, text: 'Двухструнная домбра висит на почётной стороне, на кереге. «Қазақтың домбырасы — қазақтың жаны»: ни один вечер в ауле не обходился без кюя.' },
         ];
 
         function ornamentTexture(T, w = 1024, h = 64) {
@@ -5091,6 +5095,107 @@
             const t = new T.CanvasTexture(c); t.center.set(0.5, 0.5); t.rotation = Math.PI / 2; if (!bump) t.encoding = T.sRGBEncoding; return t;
         }
 
+        // ── Реальная 3D-модель юрты: «yurta» © 37-Gimnaziya (Sketchfab), CC BY 4.0 ──
+        // Лёгкий загрузчик GLB (float/uint, матрицы узлов) — работает с глобальным three.min.js без GLTFLoader.
+        async function loadSimpleGLB(T, url) {
+            const buf = await (await fetch(url)).arrayBuffer(); const dv = new DataView(buf);
+            const jl = dv.getUint32(12, true); const j = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl)));
+            const bin = 20 + jl + 8, C = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+            const acc = i => { const a = j.accessors[i], bv = j.bufferViews[a.bufferView], off = bin + (bv.byteOffset || 0) + (a.byteOffset || 0), n = a.count * C[a.type];
+                const A = a.componentType === 5126 ? Float32Array : a.componentType === 5125 ? Uint32Array : a.componentType === 5123 ? Uint16Array : Uint8Array;
+                return { arr: new A(buf.slice(off, off + n * A.BYTES_PER_ELEMENT)), size: C[a.type] }; };
+            const out = [];
+            const walk = (ni, pm, pn = '') => { const n = j.nodes[ni], m = new T.Matrix4(), nm = /^Object_\d+$/.test(n.name || '') ? pn : (n.name || '');
+                if (n.matrix) m.fromArray(n.matrix); else m.compose(new T.Vector3(...(n.translation || [0, 0, 0])), new T.Quaternion(...(n.rotation || [0, 0, 0, 1])), new T.Vector3(...(n.scale || [1, 1, 1])));
+                m.premultiply(pm);
+                if (n.mesh !== undefined) j.meshes[n.mesh].primitives.forEach(p => { const g = new T.BufferGeometry();
+                    const P = acc(p.attributes.POSITION); g.setAttribute('position', new T.BufferAttribute(P.arr, 3));
+                    if (p.attributes.NORMAL !== undefined) g.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL).arr, 3));
+                    if (p.attributes.TEXCOORD_0 !== undefined) g.setAttribute('uv', new T.BufferAttribute(acc(p.attributes.TEXCOORD_0).arr, 2));
+                    if (p.indices !== undefined) g.setIndex(new T.BufferAttribute(acc(p.indices).arr, 1));
+                    g.applyMatrix4(m); out.push({ name: nm, mat: j.materials[p.material] || {}, geo: g }); });
+                (n.children || []).forEach(c => walk(c, m, nm)); };
+            j.scenes[j.scene || 0].nodes.forEach(ni => walk(ni, new T.Matrix4()));
+            return out;
+        }
+
+        function shiTexture(T) { // ши — циновка из чия с цветной обмоткой
+            const c = document.createElement('canvas'); c.width = 512; c.height = 512; const g = c.getContext('2d');
+            g.fillStyle = '#d9c79a'; g.fillRect(0, 0, 512, 512);
+            for (let x = 0; x < 512; x += 4) { g.fillStyle = x % 8 ? '#c9b27c' : '#e6d6a8'; g.fillRect(x, 0, 2, 512); }
+            const cols = ['#9b2226', '#1d3557', '#e9c46a', '#2a6f4e'];
+            for (let y = 40; y < 512; y += 128) for (let x = 0; x < 512; x += 64) {
+                g.fillStyle = cols[((x / 64) + (y / 128)) % 4 | 0]; g.beginPath(); g.moveTo(x + 32, y); g.lineTo(x + 60, y + 32); g.lineTo(x + 32, y + 64); g.lineTo(x + 4, y + 32); g.closePath(); g.fill();
+                g.fillStyle = '#d9c79a'; g.beginPath(); g.moveTo(x + 32, y + 16); g.lineTo(x + 46, y + 32); g.lineTo(x + 32, y + 48); g.lineTo(x + 18, y + 32); g.closePath(); g.fill(); }
+            const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(3, 1); t.encoding = T.sRGBEncoding; return t;
+        }
+        function feltTexture(T, base = '#efe4cc') { // войлок: мягкий шум
+            const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, 256, 256);
+            for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '90,70,40' : '255,255,255'},${Math.random() * 0.07})`; g.fillRect(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 3, 1 + Math.random() * 3); }
+            const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(4, 4); t.encoding = T.sRGBEncoding; return t;
+        }
+        function rugTexture(T) { // текемет / сырмақ
+            const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+            g.fillStyle = '#8e2b22'; g.fillRect(0, 0, 512, 512); g.strokeStyle = '#e8c66a'; g.lineWidth = 10; g.strokeRect(24, 24, 464, 464);
+            g.fillStyle = '#1f3b5a'; g.fillRect(60, 60, 392, 392); g.strokeStyle = '#e8c66a'; g.lineWidth = 7;
+            for (const [cx, cy] of [[150, 150], [362, 150], [150, 362], [362, 362], [256, 256]]) { g.beginPath();
+                g.moveTo(cx, cy + 50); g.lineTo(cx, cy); g.bezierCurveTo(cx, cy - 55, cx - 55, cy - 55, cx - 45, cy - 5); g.moveTo(cx, cy); g.bezierCurveTo(cx, cy - 55, cx + 55, cy - 55, cx + 45, cy - 5);
+                g.moveTo(cx, cy); g.bezierCurveTo(cx, cy + 55, cx - 55, cy + 55, cx - 45, cy + 5); g.moveTo(cx, cy); g.bezierCurveTo(cx, cy + 55, cx + 55, cy + 55, cx + 45, cy + 5); g.stroke(); }
+            const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; return t;
+        }
+
+        // раскладываем узлы модели по частям атласа (каркас, войлок, утварь)
+        async function buildYurtGLB(T, scene) {
+            const list = await loadSimpleGLB(T, 'models/yurta.glb');
+            const s = 3 / 322, rot = 1.25 - Math.atan2(173, 257); // радиус ≈ 3 как у схемы, дверь — к зрителю (+z)
+            const M = new T.Matrix4().makeRotationY(rot).multiply(new T.Matrix4().makeScale(s, s, s)).multiply(new T.Matrix4().makeTranslation(0, 113, 0));
+            const wood = new T.MeshStandardMaterial({ color: 0x9a5a2b, roughness: 0.6, metalness: 0.05 });
+            const red = new T.MeshStandardMaterial({ color: 0xa3271d, roughness: 0.45, metalness: 0.1 });
+            const felt = new T.MeshStandardMaterial({ map: feltTexture(T), color: 0xffffff, roughness: 0.95, side: T.DoubleSide });
+            const feltDark = new T.MeshStandardMaterial({ map: feltTexture(T, '#e3d5b8'), roughness: 0.95, side: T.DoubleSide });
+            const band = new T.MeshStandardMaterial({ map: ornamentTexture(T), roughness: 0.7, side: T.DoubleSide }); band.map.repeat.set(6, 1);
+            const shi = new T.MeshStandardMaterial({ map: shiTexture(T), roughness: 0.85, side: T.DoubleSide });
+            const rug = new T.MeshStandardMaterial({ map: rugTexture(T), roughness: 0.9, side: T.DoubleSide });
+            const floor = new T.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 });
+            const chest = new T.MeshStandardMaterial({ color: 0xb4532a, roughness: 0.5, metalness: 0.15 });
+            const parts = {};
+            const add = (id, mesh, explode, dir, extra = {}) => {
+                if (!parts[id]) { const grp = new T.Group(); grp.userData.id = id; scene.add(grp); parts[id] = { grp, base: new T.Vector3(), explode, mats: [], dir, ...extra }; }
+                const p = parts[id]; p.grp.add(mesh); mesh.userData.part = id; if (!p.mats.includes(mesh.material)) p.mats.push(mesh.material);
+            };
+            const bb = new T.Box3();
+            list.forEach(({ name, mat, geo }) => {
+                if (/^KeregeDEMO/.test(name)) return; // дубликат кереге
+                bb.setFromBufferAttribute(geo.attributes.position); const sz = bb.getSize(new T.Vector3()); // в единицах модели (Y — вверх)
+                const mn = mat.name || '', big = Math.max(sz.x, sz.z);
+                let id, m, ex = new T.Vector3(), dir = new T.Vector3(0, 1, 0), extra = {};
+                if (/^Kerege/.test(name)) { id = 'kerege'; m = wood; dir.set(-1, 0.1, 0.4); }
+                else if (mn === 'material') { id = 'shanyrak'; m = red; ex.set(0, 3, 0); dir.set(1, 0.3, 0.4); }
+                else if (/^Mat\.1_/.test(mn) && bb.min.y > 230) { id = 'kuldireush'; m = wood; ex.set(0, 4, 0); dir.set(0.2, 1, 0.3); }
+                else if (/^Mat\.1_/.test(mn) && bb.min.y > 80) { id = 'uyk'; m = wood; ex.set(0, 1.4, 0); dir.set(0.6, 0.6, 0.5); }
+                else if (mn === 'Mat.12' && big > 300 && bb.min.y > 50) { id = 'uzik'; m = felt; ex.set(0, 2.4, 0); dir.set(-0.8, 0.5, -0.5); }
+                else if (mn === 'Mat.12' && big > 300) { id = 'tuyrlyk'; m = felt; dir.set(1, -0.2, -0.6); extra.scaleOut = 1.35; }
+                else if (/^03_(26|1_28)/.test(name)) { id = 'tuyrlyk'; m = feltDark; }
+                else if (/^cloth/.test(name)) { id = 'baskur'; m = band; ex.set(0, 0.9, 0); dir.set(-0.9, 0, -0.4); }
+                else if (/^(S1|S2|shild)/.test(name)) { id = 'esik'; m = /^shild/.test(name) ? chest : wood; ex.set(0, 0, 2.2); dir.set(0.25, 0.2, 1); }
+                else if (/^Dombra/.test(name)) { id = 'dombra'; m = wood; ex.set(0.6, 0.6, -0.6); dir.set(0.2, 1, 0); }
+                else if (/^bottom/.test(name)) { id = 'floor'; m = floor; }
+                else if (sz.y < 12 && big > 40) { id = 'tekemet'; m = rug; ex.set(0, -0.15, 0); dir.set(0, 1, 1); }
+                else if (sz.y > 150) { id = 'shi'; m = shi; dir.set(-1, 0.2, 0.1); extra.scaleOut = 1.15; }
+                else { id = 'sandyq'; m = chest; ex.set(0, -0.1, -0.6); dir.set(0.3, 1, -0.2); }
+                if (mat.pbrMetallicRoughness?.baseColorFactor && id === 'sandyq') { m = m.clone(); const c = mat.pbrMetallicRoughness.baseColorFactor; m.color.setRGB(c[0], c[1], c[2]).multiplyScalar(1.15).lerp(new T.Color(0xb4532a), 0.45); }
+                if (!geo.attributes.normal) geo.computeVertexNormals();
+                geo.applyMatrix4(M);
+                const mesh = new T.Mesh(geo, m); mesh.castShadow = mesh.receiveShadow = true;
+                add(id, mesh, ex, dir, extra);
+            });
+            // точка-якорь подписи: вершина части, «дальше всего» в направлении dir (всегда на настоящей геометрии)
+            Object.values(parts).forEach(p => { let best = -1e9; const v = new T.Vector3(), a = new T.Vector3(), d = p.dir.clone().normalize();
+                p.grp.children.forEach(o => { const pa = o.geometry.attributes.position; for (let i = 0; i < pa.count; i += 3) { v.fromBufferAttribute(pa, i); const k = v.dot(d); if (k > best) { best = k; a.copy(v); } } });
+                p.anchor = () => a.clone(); });
+            return parts;
+        }
+
         const ZHUZ_INFO = {
             [ZHUZES.ULY]:  { color: 0xC5A55A, land: 'Жетісу, Оңтүстік Қазақстан', ru: 'Семиречье и юг', saying: '«Ұлы жүзге — таяқ беріп, мал бақ»' },
             [ZHUZES.ORTA]: { color: 0x8fb3ff, land: 'Сарыарқа, Солтүстік, Шығыс', ru: 'Центр, север и восток', saying: '«Орта жүзге — қалам беріп, дау бақ»' },
@@ -5129,36 +5234,56 @@
             const [active, setActive] = useState(null);
             const [explode, setExplode] = useState(0);
             const [build, setBuild] = useState(null); // прогресс сборки
-            const st = useRef({ explode: 0, active: null, build: null });
-            st.current.explode = explode; st.current.active = active; st.current.build = build;
+            const [real, setReal] = useState(true);   // настоящая 3D-модель или схема
+            const [realState, setRealState] = useState('loading'); // loading | ok | fail
+            const st = useRef({ explode: 0, active: null, build: null, real: true });
+            st.current.explode = explode; st.current.active = active; st.current.build = build; st.current.real = real && realState === 'ok';
 
             const err = useThree(mountRef, {
-                opts: { distance: 14.5, target: [0, 0.6, 0], minDist: 5, maxDist: 30 },
+                opts: { distance: 14.5, target: [0, 0.9, 0], minDist: 4, maxDist: 30 },
                 run: (stage) => {
                     S.current = stage; const { T, scene } = stage;
                     addStarDust(T, scene, 500, 40); addGroundOrnament(T, scene, -0.02, 5);
-                    const parts = buildYurt(T, scene); partsRef.current = parts;
-                    const meshes = []; Object.values(parts).forEach(p => p.grp.traverse(o => { if (o.isMesh || o.isLineSegments) meshes.push(o); }));
+                    const proc = buildYurt(T, scene); let glb = null, light = null; partsRef.current = proc;
+                    const meshes = []; const collect = ps => Object.values(ps).forEach(p => p.grp.traverse(o => { if (o.isMesh || o.isLineSegments) meshes.push(o); }));
+                    collect(proc);
+                    let alive = true;
+                    buildYurtGLB(T, scene).then(ps => {
+                        if (!alive) return; glb = ps;
+                        // төр — почётное место напротив двери: якорь на полу у дальней стены
+                        const tg = new T.Group(); scene.add(tg); glb.tor = { grp: tg, base: new T.Vector3(), explode: new T.Vector3(), mats: [], anchor: () => new T.Vector3(0, 0.15, -2.2) };
+                        const warm = new T.PointLight(0xffb36b, 0.9, 7); warm.position.set(0, 1.2, 0); scene.add(warm); light = warm;
+                        collect(glb); setRealState('ok');
+                    }).catch(e => { console.warn('yurta.glb', e); alive && setRealState('fail'); });
                     let cur = 0;
                     stage.onFrame((dt, t) => {
                         cur += (st.current.explode - cur) * Math.min(1, dt * 6);
-                        const b = st.current.build;
+                        const b = st.current.build, useReal = st.current.real && glb;
+                        // какой набор частей показываем: модель + недостающее из схемы (очаг)
+                        const parts = useReal ? { ...proc, ...glb } : proc; partsRef.current = parts;
+                        Object.entries(proc).forEach(([id, p]) => { if (useReal && (glb[id] || id === 'tundik')) p.grp.visible = false; });
+                        if (light) light.visible = !!useReal;
+                        if (glb) Object.entries(glb).forEach(([id, p]) => { if (!useReal) p.grp.visible = false; else if (!YURT_PARTS.some(d => d.id === id)) p.grp.visible = b === null || b > 1; });
                         YURT_PARTS.forEach(def => {
-                            const p = parts[def.id]; if (!p) return;
+                            const p = parts[def.id]; if (!p || (useReal && def.id === 'tundik')) return;
                             let k = cur, vis = true;
                             if (b !== null) { const lt = b - def.order + 1; vis = lt > 0; k = vis ? Math.max(0, 1 - lt) * 2.2 : 3; }
                             p.grp.visible = vis;
                             p.grp.position.copy(p.base).addScaledVector(p.explode, k);
                             if (p.scaleOut) { const s = 1 + (p.scaleOut - 1) * (b === null ? cur : Math.min(1, k)); p.grp.scale.set(s, 1, s); }
                             const on = st.current.active === def.id;
-                            p.mats.forEach(m => { if (m.emissive) m.emissive.setHex(on ? 0x6b4a10 : 0x000000); if ('opacity' in m && m.userData.op0 === undefined) m.userData.op0 = m.opacity; });
+                            p.mats.forEach(m => { if (m.emissive) m.emissive.setHex(on ? 0x6b4a10 : 0x000000); });
                         });
-                        const fire = parts.oshak?.grp.userData.fire; if (fire) { fire.scale.y = 1 + Math.sin(t * 9) * 0.12; fire.material.opacity = 0.7 + Math.sin(t * 13) * 0.15; }
-                        const items = YURT_PARTS.filter(d => parts[d.id]?.grp.visible).map(d => ({ id: d.id, el: labelEls.current[d.id], anchor: () => parts[d.id].anchor().applyMatrix4(parts[d.id].grp.matrixWorld) }));
-                        YURT_PARTS.forEach(d => { const el = labelEls.current[d.id]; if (el && !parts[d.id].grp.visible) el.style.opacity = 0; });
+                        const fire = proc.oshak?.grp.userData.fire; if (fire) { fire.scale.y = 1 + Math.sin(t * 9) * 0.12; fire.material.opacity = 0.7 + Math.sin(t * 13) * 0.15; }
+                        if (light) light.intensity = 0.8 + Math.sin(t * 11) * 0.08 + Math.sin(t * 7.3) * 0.06;
+                        const shown = YURT_PARTS.filter(d => parts[d.id]?.grp.visible && !(useReal && d.id === 'tundik') && (useReal || !d.real));
+                        const items = shown.map(d => ({ id: d.id, el: labelEls.current[d.id], anchor: () => parts[d.id].anchor().applyMatrix4(parts[d.id].grp.matrixWorld) }));
+                        YURT_PARTS.forEach(d => { const el = labelEls.current[d.id]; if (el) { const on = shown.includes(d); el.style.pointerEvents = on ? 'auto' : 'none'; if (!on) el.style.opacity = 0; } });
                         update(stage, items, st.current.active);
                     });
-                    stage.onClick(e => { const h = stage.pick(e, meshes); let id = null; h?.object && (id = h.object.userData.part || null); setActive(a => (id && a !== id) ? id : null); });
+                    stage.onClick(e => { const h = stage.pick(e, meshes.filter(m => { let o = m; while (o) { if (!o.visible) return false; o = o.parent; } return true; })); let id = null; h?.object && (id = h.object.userData.part || null);
+                        if (id && !YURT_PARTS.some(d => d.id === id)) id = null; setActive(a => (id && a !== id) ? id : null); });
+                    return () => { alive = false; };
                 },
             }, []);
 
@@ -5191,6 +5316,12 @@
                             <h3 className="text-xl font-serif text-white">{def.kk} <span className="text-[#777] text-sm">— {def.ru}</span></h3>
                             <p className="text-[#bbb] text-xs leading-relaxed mt-1">{def.text}</p>
                         </div>}
+                        <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1"><div className="flex rounded-full border border-[#2a2418] overflow-hidden text-[10px] tracking-widest uppercase" style={{ background: 'rgba(8,8,8,0.85)' }}>
+                            {[[true, realState === 'loading' ? '… Модель' : '⌂ Нақты модель'], [false, '◈ Сызба']].map(([v, l]) =>
+                                <button key={l} disabled={v && realState !== 'ok'} onClick={() => { setReal(v); setActive(null); }} className="px-3 py-1.5 transition-colors whitespace-nowrap"
+                                    style={{ background: real === v ? '#C5A55A' : 'transparent', color: real === v ? '#000' : (v && realState !== 'ok' ? '#555' : '#C5A55A') }}>{l}</button>)}
+                        </div>
+                        {real && realState === 'ok' && <a href="https://sketchfab.com/3d-models/yurta-e48dad7dfd4f49f3b8037afa7120118d" target="_blank" rel="noopener" className="text-[9px] text-[#666] hover:text-[#C5A55A] whitespace-nowrap">3D «yurta» · 37-Gimnaziya · CC BY 4.0</a>}</div>
                         <div className="flex items-center gap-3 rounded-full px-4 py-2 border border-[#222]" style={{ background: 'rgba(8,8,8,0.85)' }}>
                             <span className="text-[#777] text-[10px] uppercase tracking-widest whitespace-nowrap">Жинау</span>
                             <input type="range" min="0" max="1" step="0.01" value={explode} onChange={e => { setBuild(null); setExplode(+e.target.value); }} className="flex-1 accent-[#C5A55A]" />
@@ -5198,6 +5329,7 @@
                             <button className={btn3d} style={btnStyle(build !== null)} onClick={() => { setExplode(0); setBuild(b => b === null ? 0 : null); }}>{build === null ? '▶ Тігу' : '■'}</button>
                         </div>
                     </div>
+
                 </div>
             );
         }
