@@ -196,7 +196,7 @@
         const TRIBES_DB = {
             // Ұлы жүз
             qanly: { name: "ҚАҢЛЫ", juz: ZHUZES.ULY, tamga: "⩚", tamgaName: "Көсеу", color: "#C5A55A", story: "Қаңлы — древнее племя, упоминаемое в источниках задолго до нашей эры. Они были мощной силой в Сырдарьинском регионе. По Темиргалиеву, Канглы являются наследниками могущественной державы Кангюй.", era: "III в. до н.э. — XVIII в." },
-            shanyshqyly: { name: "ШАНЫШҚЫЛЫ", juz: ZHUZES.ULY, tamga: "⋔", tamgaName: "Шанышқы", color: "#C5A55A", story: "Шанышқылы — воинственное племя Старшего жуза. Исторически связаны с Канджыгалы. Сыграли важную роль в защите южных рубежей Казахского ханства." },
+            shanyshqyly: { name: "ШАНЫШҚЫЛЫ", juz: ZHUZES.ULY, tamga: "⋔", tamgaName: "Шанышқы", color: "#C5A55A", story: "Шанышқылы — воинственное племя Старшего жуза. Входят в объединение Үйсін (потомки Бәйдібека). Сыграли важную роль в защите южных рубежей Казахского ханства." },
             sirgeli: { name: "СІРГЕЛІ", juz: ZHUZES.ULY, tamga: "⋂", tamgaName: "Сірге", color: "#C5A55A", story: "Сиргели получили название от знака 'сирге' — путы для жеребят. Это племя славилось своими табунами и мастерством в коневодстве." },
             shaqsham: { name: "ШАҚШАМ", juz: ZHUZES.ULY, tamga: "ᗕ", tamgaName: "Тамға", color: "#C5A55A", story: "Малочисленное, но гордое объединение в составе Старшего жуза, сохранившее свою идентичность через века." },
             saryuysin: { name: "САРЫҮЙСІН", juz: ZHUZES.ULY, tamga: "⚭", tamgaName: "Абақ", color: "#C5A55A", story: "Прямые наследники древних Усуней, господствовавших в Семиречье в античную эпоху. 'Сары' указывает на древность или благородство происхождения." },
@@ -213,7 +213,7 @@
             nayman: { name: "НАЙМАН", juz: ZHUZES.ORTA, tamga: "⊔", tamgaName: "Шөміш", color: "#C5A55A", story: "Найманы — наследники великого Найманского ханства. Обладали развитой государственностью и письменностью задолго до возвышения монголов." },
             qonyrat: { name: "ҚОҢЫРАТ", juz: ZHUZES.ORTA, tamga: "∏", tamgaName: "Босаға", color: "#C5A55A", story: "Коныраты славились своей дипломатией. Из этого рода происходили жены многих ханов, включая Борте, супругу Чингисхана." },
             qypshaq: { name: "ҚЫПШАҚ", juz: ZHUZES.ORTA, tamga: "∥", tamgaName: "Қос әліп", color: "#C5A55A", story: "Кыпчаки — хозяева Великой Степи (Дешт-и-Кыпчак). Их имя наводило трепет от Китая до Византии. Египетские мамлюки имели кыпчакское происхождение." },
-            kerey: { name: "КЕРЕЙ", juz: ZHUZES.ORTA, tamga: "⊕", tamgaName: "Абақ", color: "#C5A55A", story: "Кереи — одно из основателей Казахского ханства. Вместе с Жанибеком и Керей-ханами они составили ядро новой нации." },
+            kerey: { name: "КЕРЕЙ", juz: ZHUZES.ORTA, tamga: "⊕", tamgaName: "Абақ", color: "#C5A55A", story: "Кереи — одно из племён-основателей Казахского ханства: в 1465 году они поддержали Керей и Жәнібек ханов и составили ядро новой нации. Делятся на Абақ-Керей и Ашамайлы-Керей." },
             uaq: { name: "УАҚ", juz: ZHUZES.ORTA, tamga: "◧", tamgaName: "Ергенек", color: "#C5A55A", story: "Воинственное племя, всегда ставившее интересы степи превыше всего. Известны своими батырами в войне с джунгарами." },
 
             // Кіші жүз
@@ -809,38 +809,38 @@
                         {
                             id: "argyn", name: "Арғын", gen: 3,
                             era: "Самый многочисленный род сегодня",
-                            siblings: ["Бегендік", "Байжігіт", "Мейрам", "Буйрасын", "Сарыжомарт"],
+                            siblings: ["Мейрам", "Тобықты", "Атығай", "Қарауыл", "Бегендік", "Қанжығалы"],
                             children: [
                                 { id: "begendig", name: "Бегендік",  gen: 4 },
-                                { id: "bayjigit", name: "Байжігіт",  gen: 4 },
+                                { id: "tobyqty",  name: "Тобықты",   gen: 4 },
                                 { id: "meyram",   name: "Мейрам",    gen: 4 },
-                                { id: "buyrasyn", name: "Буйрасын",  gen: 4 }
+                                { id: "atygai",   name: "Атығай",    gen: 4 }
                             ]
                         },
                         {
                             id: "nayman", name: "Найман", gen: 3,
                             era: "Найманское ханство · XII в.",
-                            siblings: ["Матай", "Садыр", "Серкеш", "Терістамғалы", "Балталы", "Жіруік"],
+                            siblings: ["Матай", "Садыр", "Қаракерей", "Төртуыл", "Терістамғалы", "Балталы", "Бағаналы", "Сарыжомарт"],
                             children: [
                                 { id: "matay",   name: "Матай",   gen: 4 },
                                 { id: "sadir",   name: "Садыр",   gen: 4 },
-                                { id: "serkesh", name: "Серкеш",  gen: 4 }
+                                { id: "qarakerei", name: "Қаракерей", gen: 4 }
                             ]
                         },
                         {
                             id: "qonyrat", name: "Қоңырат", gen: 3,
                             era: "Борте — жена Чингисхана",
-                            siblings: ["Сыбан", "Итемген", "Жаман-Адай"]
+                            siblings: ["Жастабан", "Көктін"]
                         },
                         {
                             id: "qypshaq", name: "Қыпшақ", gen: 3,
                             era: "Дешт-и-Қыпчак · IX–XIII вв.",
-                            siblings: ["Тортуыл", "Бұлтын", "Бөрілі", "Қарабалықты"]
+                            siblings: ["Қарабалық", "Бұлтын", "Торы", "Ұзын", "Көлденең", "Құлан-Қыпшақ"]
                         },
                         {
                             id: "kerey", name: "Керей", gen: 3,
                             era: "Основатели Казахского ханства · 1465",
-                            siblings: ["Аша-Керей", "Ашамайлы-Керей"]
+                            siblings: ["Абақ-Керей", "Ашамайлы-Керей"]
                         },
                         {
                             id: "uaq", name: "Уақ", gen: 3,
@@ -926,7 +926,7 @@
                                 { id: "maskar",    name: "Масқар",    gen: 4 },
                                 { id: "baybaqty",  name: "Байбақты",  gen: 4 },
                                 { id: "estemge",   name: "Есентемір", gen: 4 },
-                                { id: "kyzyldurt", name: "Кзылқұрт", gen: 4 },
+                                { id: "kyzyldurt", name: "Қызылқұрт", gen: 4 },
                                 { id: "ysyk",      name: "Ысық",      gen: 4 },
                                 { id: "altyn",     name: "Алтын",     gen: 4 },
                                 { id: "mangytay",  name: "Маңғытай",  gen: 4 }
@@ -1073,7 +1073,7 @@
                                 { id: "zhagalbayly", name: "Жағалбайлы",gen: 4 },
                                 { id: "teleu",       name: "Телеу",      gen: 4 },
                                 { id: "ramadan",     name: "Рамадан",    gen: 4 },
-                                { id: "kerey-kis",   name: "Керей",      gen: 4 }
+                                { id: "kereit",      name: "Кереит",     gen: 4 }
                             ]
                         }
                     ]
@@ -2789,7 +2789,7 @@
         };
         const ERMEK_PROFILE = {
             name: 'Ермек',
-            tribe: 'adai',
+            tribe: 'baiuly',
             lineage: 'Ермек\nАлмаз\nТерехан\nНазар\nІзтілеу\nАлдасүгір\nБайсеу\nДос\nЖақау\nМамыр\nӘрдек\nШылым\nАйтұмыс\nӘлниязбұзау\nКелімберді\nАдай\nБайұлы\nКіші жүз\nАлаш',
             dna: false,
             createdAt: new Date().toISOString(),
@@ -2972,13 +2972,21 @@
             const [customVer, setCustomVer]     = useState(0);     // перерисовать после добавления/удаления рода
             const [showAddTribe, setShowAddTribe] = useState(false);
 
+            // вход: берём сохранённый профиль пользователя, иначе — профиль по умолчанию
+            const enterCabinet = (u) => {
+                let p = null;
+                try { p = JSON.parse(localStorage.getItem('shejire_profile_' + u.login) || 'null'); } catch {}
+                if (!p || !p.lineage) p = u.profile;
+                if (p.tribe && !TRIBES_DB[p.tribe] && TRIBES_DB[u.profile.tribe]) p = { ...p, tribe: u.profile.tribe };
+                localStorage.setItem('shejire_user', u.login);
+                localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(p));
+                setProfile(p);
+                setLoggedUser(u.login);
+            };
             const doLogin = () => {
                 const u = Object.values(CABINET_USERS).find(u => u.login === loginForm.login.trim() && u.pass === loginForm.pass.trim());
                 if (!u) { setLoginErr('Логин немесе пароль қате · Неверный логин или пароль'); return; }
-                localStorage.setItem('shejire_user', u.login);
-                localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
-                setProfile(u.profile);
-                setLoggedUser(u.login);
+                enterCabinet(u);
                 setLoginErr('');
             };
             const doLogout = () => {
@@ -2996,7 +3004,7 @@
             };
 
             const saveProfile = () => {
-                const p = { ...form, createdAt: new Date().toISOString() };
+                const p = { ...(CABINET_USERS[loggedUser]?.profile || {}), ...form, createdAt: new Date().toISOString() };
                 localStorage.setItem('shejire_profile_' + loggedUser, JSON.stringify(p));
                 setProfile(p); setEditing(false);
             };
@@ -3048,12 +3056,7 @@
                             <p className="text-[#2a2a2a] text-[9px] tracking-widest uppercase">Немесе тікелей кіріңіз</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.values(CABINET_USERS).map(u => (
-                                    <button key={u.login} onClick={() => {
-                                        localStorage.setItem('shejire_user', u.login);
-                                        localStorage.setItem('shejire_profile_' + u.login, JSON.stringify(u.profile));
-                                        setProfile(u.profile);
-                                        setLoggedUser(u.login);
-                                    }}
+                                    <button key={u.login} onClick={() => enterCabinet(u)}
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all hover:border-[#C5A55A] hover:bg-[#C5A55A0A] text-left"
                                         style={{borderColor:'#1a1a1a'}}>
                                         <span className="text-xl">{TRIBES_DB[u.profile?.tribe]?.tamga || '⩔'}</span>
