@@ -7466,6 +7466,15 @@
                         <h3 className="text-3xl md:text-4xl font-serif">Ұлттық ойындар — 3D әлемде</h3>
                         <p className="text-[#777] text-sm mt-2">11 игр в трёхмерной степи: клавиатура на компьютере, кнопки на телефоне.</p>
                     </div>
+                    <a href="/games/bayge/" className="glass-card rounded-2xl p-5 md:p-6 mb-4 flex items-center gap-5 group" style={{ borderColor: 'rgba(197,165,90,.45)', textDecoration: 'none' }}>
+                        <span className="text-4xl md:text-5xl">🐎</span>
+                        <div className="flex-1">
+                            <p className="text-[#C5A55A] text-[9px] tracking-[0.4em] uppercase">Жаңа · реалистичный конь</p>
+                            <h4 className="text-xl md:text-2xl font-serif">Бәйге Pro — 900 м</h4>
+                            <p className="text-[#777] text-xs mt-1">Анатомический конь с суставами и настоящим галопом, тени, пыль, 4 камеры, выносливость.</p>
+                        </div>
+                        <span className="text-[#C5A55A] text-xs tracking-widest uppercase group-hover:translate-x-1 transition-transform">▶ Ойнау</span>
+                    </a>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                         {GAMES_3D.map((g, i) => (
                             <button key={g.id} onClick={() => onPlay(g.id)} className="glass-card rounded-2xl p-4 md:p-5 text-left group relative overflow-hidden" style={{ animation: `nodeReveal .5s ease ${i * 50}ms both` }}>
