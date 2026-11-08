@@ -1511,10 +1511,11 @@
                     </header>
 
                     {/* Tabs */}
-                    <div className="flex justify-center gap-3 mb-12">
+                    <div className="flex flex-wrap justify-center gap-3 mb-12">
                         {[
                             { key: 'custom',  label: 'Обычаи и обряды', icon: '⩔' },
                             { key: 'holiday', label: 'Праздники',        icon: '☀' },
+                            { key: '3d',      label: '3D көрініс',       icon: '◈' },
                         ].map(t => (
                             <button key={t.key} onClick={() => setTab(t.key)}
                                 className={`px-5 py-2.5 rounded-full text-xs tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${tab === t.key ? 'border border-[#C5A55A] text-[#C5A55A] bg-[#C5A55A0F]' : 'border border-[#222] text-[#555] hover:border-[#C5A55A40] hover:text-[#888]'}`}>
@@ -1523,6 +1524,7 @@
                         ))}
                     </div>
 
+                    {tab === '3d' && <Customs3D />}
                     <div className="grid md:grid-cols-2 gap-6 md:gap-8">
                         {filtered.map((custom, idx) => (
                             <button
@@ -4368,7 +4370,7 @@
                 pr.forEach(p => (p.x < W / 2 ? left : right).push(p));
                 const place = (arr, side) => {
                     arr.sort((a, b) => a.y - b.y);
-                    const gap = narrow ? 26 : 34, top = 70, bottom = H - 30;
+                    const gap = narrow ? 26 : 34, top = Math.min(140, H * 0.17), bottom = H - 30;
                     let y = top;
                     arr.forEach(p => { p.ly = Math.max(y, Math.min(bottom, p.y)); y = p.ly + gap; });
                     // если вылезли вниз — сдвигаем вверх
@@ -4411,7 +4413,7 @@
             return err;
         }
 
-        const btn3d = "px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border transition-all";
+        const btn3d = "px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border transition-all whitespace-nowrap shrink-0";
         const btnStyle = (on) => ({ borderColor: on ? '#C5A55A' : '#2a2a2a', color: on ? '#000' : '#C5A55A', background: on ? 'linear-gradient(135deg,#C5A55A,#8B6914)' : 'rgba(8,8,8,0.7)', backdropFilter: 'blur(6px)' });
 
         // ═════════════════════════════════════════════════════════════════════
@@ -4789,14 +4791,17 @@
                     {mode === 'yurt' && <YurtAtlas key="y" />}
                     {mode === 'tamga' && <TamgaAtlas key="t" />}
                     {mode === 'zhuz' && <ZhuzAtlas key="z" />}
+                    {mode === 'dombra' && <DombraAtlas key="d" />}
+                    {mode === 'asyq' && <AsyqAtlas key="a" />}
+                    {mode === 'saddle' && <SaddleAtlas key="s" />}
                     <div className="absolute top-0 inset-x-0 p-4 md:p-6 pointer-events-none flex flex-wrap justify-between gap-3">
                         <div className="pointer-events-auto">
                             <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-3 block">← Назад</button>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D АТЛАС · ОҚУ ҚҰРАЛЫ</p>
-                            <h2 className="text-3xl md:text-5xl font-serif text-white">{mode === 'yurt' ? 'Киіз үй анатомиясы' : mode === 'tamga' ? 'Тамға мөрі' : 'Үш жүз'}</h2>
+                            <h2 className="text-3xl md:text-5xl font-serif text-white">{({ yurt: 'Киіз үй анатомиясы', tamga: 'Тамға мөрі', zhuz: 'Үш жүз', dombra: 'Домбыра', asyq: 'Асық', saddle: 'Ер-тұрман' })[mode]}</h2>
                         </div>
-                        <div className="pointer-events-auto flex gap-2 mr-12 h-fit">
-                            {[['yurt', '⌂ Киіз үй'], ['tamga', '⩔ Тамға'], ['zhuz', '◎ Үш жүз']].map(([k, l]) =>
+                        <div className="pointer-events-auto flex gap-2 h-fit overflow-x-auto max-w-full pb-1 md:flex-wrap md:justify-end md:mr-12 md:max-w-[560px]">
+                            {[['yurt', '⌂ Киіз үй'], ['dombra', '♪ Домбыра'], ['asyq', '🦴 Асық'], ['saddle', '🐎 Ер-тұрман'], ['tamga', '⩔ Тамға'], ['zhuz', '◎ Үш жүз']].map(([k, l]) =>
                                 <button key={k} className={btn3d} style={btnStyle(mode === k)} onClick={() => setMode(k)}>{l}</button>)}
                         </div>
                     </div>
@@ -5089,7 +5094,7 @@
             const learned = Object.values(data.cards).filter(c => c.box >= 3).length;
             const total = allWords().length;
             const level = data.xp < 100 ? 'A0' : data.xp < 300 ? 'A1' : data.xp < 700 ? 'A2' : data.xp < 1500 ? 'B1' : 'B2';
-            const TABS = [['abc', 'Әліпби', 'Алфавит'], ['lessons', 'Сабақтар', 'Уроки'], ['cards', 'Карточкалар', 'Повторение'], ['quiz', 'Тест', 'Проверка'], ['ata', 'Жеті ата', 'Семь колен']];
+            const TABS = [['abc', 'Әліпби', 'Алфавит'], ['lessons', 'Сабақтар', 'Слова'], ['dialog', 'Диалогтар', 'Диалоги'], ['grammar', 'Грамматика', 'Правила'], ['build', 'Сөйлем', 'Предложения'], ['cards', 'Карточкалар', 'Повторение'], ['quiz', 'Тест', 'Проверка'], ['ata', 'Жеті ата', 'Семь колен']];
 
             return (
                 <div className="max-w-5xl mx-auto px-4 md:px-6 pt-20 pb-32">
@@ -5098,7 +5103,7 @@
                         <div>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-2">ҚАЗАҚ ТІЛІ · КАЗАХСКИЙ ЯЗЫК</p>
                             <h2 className="text-4xl md:text-6xl font-serif text-white">Тіл үйрену</h2>
-                            <p className="text-[#666] text-sm mt-2 max-w-md">Алфавит, слова родства и шежіре, юрта и степь — с озвучкой, карточками и тестами. Прогресс сохраняется в этом браузере.</p>
+                            <p className="text-[#666] text-sm mt-2 max-w-md">Алфавит, 12 тем слов, 11 живых диалогов с ролевой игрой, грамматика с тренажёрами, сборка предложений, карточки и тесты. Прогресс сохраняется в этом браузере.</p>
                         </div>
                         <div className="grid grid-cols-4 gap-2 text-center">
                             {[[level, 'Деңгей'], [data.xp, 'XP'], [streakOf(data.days) + '🔥', 'Күн қатар'], [`${learned}/${total}`, 'Үйренілді']].map(([v, l]) => (
@@ -5118,6 +5123,9 @@
                     {tab === 'lessons' && <LessonsTab sp={sp} data={data} setCard={setCard} addXp={addXp} />}
                     {tab === 'cards' && <CardsTab sp={sp} data={data} setCard={setCard} addXp={addXp} />}
                     {tab === 'quiz' && <QuizTab sp={sp} addXp={addXp} />}
+                    {tab === 'dialog' && <DialogTab sp={sp} addXp={addXp} />}
+                    {tab === 'grammar' && <GrammarTab sp={sp} />}
+                    {tab === 'build' && <BuilderTab sp={sp} addXp={addXp} />}
                     {tab === 'ata' && <AtaTab sp={sp} />}
                 </div>
             );
@@ -5284,6 +5292,908 @@
                                     </li>))}
                             </ol>
                         </> : <p className="text-[#666] text-sm mt-4">Войдите в личный кабинет, чтобы увидеть здесь свою цепочку предков.</p>}
+                    </div>
+                </div>
+            );
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  Общий «анатомический» просмотрщик: выноски, разборка, подсветка
+        //  scene(T, scene, stage) → { parts: {id: {grp, explode, anchor}}, tick?(dt,t,S), api? }
+        // ═════════════════════════════════════════════════════════════════════
+        function registerPart(parts, id, grp, explode, anchor) {
+            grp.userData.id = id;
+            const p = { grp, base: grp.position.clone(), explode: explode || new THREE.Vector3(), anchor, mats: [] };
+            grp.traverse(o => { if (o.material) { o.userData.part = id; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => p.mats.push(m)); } });
+            parts[id] = p; return p;
+        }
+
+        function AnatomyViewer({ PARTS, scene: buildScene, opts, controls, intro, explodable = true, stepLabel = 'бөлік' }) {
+            const mountRef = useRef(null);
+            const { svgRef, boxRef, update } = useLeaders();
+            const labelEls = useRef({});
+            const [active, setActive] = useState(null);
+            const [explode, setExplode] = useState(0);
+            const [, force] = useState(0);
+            const st = useRef({}); st.current.explode = explode; st.current.active = active;
+            const apiRef = useRef({});
+
+            const err = useThree(mountRef, {
+                opts: opts || {},
+                run: (S) => {
+                    const { T, scene } = S;
+                    addStarDust(T, scene, 450, 35);
+                    S._setActive = setActive;
+                    const res = buildScene(T, scene, S) || {};
+                    const parts = res.parts || {};
+                    Object.values(parts).forEach(p => { if (!p.grp.parent) scene.add(p.grp); });
+                    apiRef.current = { ...(res.api || {}), S, parts, setActive }; force(n => n + 1);
+                    const meshes = []; Object.values(parts).forEach(p => p.grp.traverse(o => { if (o.isMesh || o.isLine) meshes.push(o); }));
+                    let cur = 0;
+                    S.onFrame((dt, t) => {
+                        cur += (st.current.explode - cur) * Math.min(1, dt * 6);
+                        Object.entries(parts).forEach(([id, p]) => {
+                            if (!p.locked) p.grp.position.copy(p.base).addScaledVector(p.explode, cur);
+                            const on = st.current.active === id;
+                            p.mats.forEach(m => { if (m.emissive && !m.userData.keepEmissive) m.emissive.setHex(on ? 0x6b4a10 : (m.userData.em0 ?? 0)); });
+                        });
+                        res.tick?.(dt, t, st.current);
+                        PARTS.forEach(d => { const el = labelEls.current[d.id]; if (el && !(parts[d.id] && parts[d.id].grp.visible)) el.style.opacity = 0; });
+                        const items = PARTS.filter(d => parts[d.id] && parts[d.id].grp.visible).map(d => ({ id: d.id, el: labelEls.current[d.id], anchor: () => parts[d.id].anchor().applyMatrix4(parts[d.id].grp.matrixWorld) }));
+                        update(S, items, st.current.active);
+                    });
+                    S.onClick(e => { if (res.onClick?.(e)) return; const h = S.pick(e, meshes); const id = h?.object?.userData.part || null; setActive(a => (id && a !== id) ? id : null); });
+                    S.el.addEventListener('pointermove', e => { if (!e.buttons) S.el.style.cursor = S.pick(e, meshes) ? 'pointer' : 'grab'; });
+                    return res.dispose;
+                },
+            }, []);
+
+            const def = PARTS.find(p => p.id === active);
+            return (
+                <div ref={boxRef} className="absolute inset-0 overflow-hidden">
+                    <div ref={mountRef} className="absolute inset-0" />
+                    {err && <div className="absolute inset-0 flex items-center justify-center text-[#C5A55A] text-sm">{err}</div>}
+                    <svg ref={svgRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+                    {PARTS.map(p => (
+                        <button key={p.id} ref={el => labelEls.current[p.id] = el} onClick={() => setActive(a => a === p.id ? null : p.id)}
+                            className="absolute px-2 py-0.5 rounded text-[11px] md:text-xs whitespace-nowrap transition-colors"
+                            style={{ color: active === p.id ? '#000' : '#E8D5A0', background: active === p.id ? '#C5A55A' : 'rgba(8,8,8,0.6)', top: 0, left: 0, opacity: 0 }}>
+                            <b>{p.kk}</b><span className="hidden sm:inline opacity-60"> · {p.ru}</span>
+                        </button>
+                    ))}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[min(560px,calc(100%-24px))] space-y-2">
+                        {(def || intro) && <div className="rounded-2xl p-4 border border-[#C5A55A40]" style={{ background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(8px)' }}>
+                            {def ? <>
+                                <p className="text-[#C5A55A] text-[9px] tracking-[0.4em] uppercase">{PARTS.indexOf(def) + 1}-{stepLabel}</p>
+                                <h3 className="text-xl font-serif text-white">{def.kk} <span className="text-[#777] text-sm">— {def.ru}</span></h3>
+                                <p className="text-[#bbb] text-xs leading-relaxed mt-1">{def.text}</p>
+                            </> : intro}
+                        </div>}
+                        <div className="flex flex-wrap items-center gap-2 rounded-2xl px-3 py-2 border border-[#222]" style={{ background: 'rgba(8,8,8,0.85)' }}>
+                            {explodable && <>
+                                <span className="text-[#777] text-[9px] uppercase tracking-widest">Жинау</span>
+                                <input type="range" min="0" max="1" step="0.01" value={explode} onChange={e => setExplode(+e.target.value)} className="flex-1 min-w-[90px] accent-[#C5A55A]" />
+                                <span className="text-[#777] text-[9px] uppercase tracking-widest">Бөлшектеу</span>
+                            </>}
+                            {controls && controls(apiRef.current)}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const woodMat = (c = 0xa0522d) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, metalness: 0.08 });
+        const tube = (T, pts, r, mat, seg = 24) => new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), seg, r, 8, false), mat);
+
+        // ── Звук: щипок струны (алгоритм Карплуса — Стронга) ──
+        let _actx = null;
+        function pluck(freq, { dur = 2.2, gain = 0.35, bright = 0.5 } = {}) {
+            try {
+                _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
+                if (_actx.state === 'suspended') _actx.resume();
+                const sr = _actx.sampleRate, N = Math.max(2, Math.round(sr / freq)), len = Math.floor(sr * dur);
+                const buf = _actx.createBuffer(1, len, sr), d = buf.getChannelData(0), ring = new Float32Array(N);
+                for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+                let idx = 0, decay = 0.996 - (1 - bright) * 0.004;
+                for (let i = 0; i < len; i++) {
+                    const nx = (idx + 1) % N; const v = ring[idx];
+                    ring[idx] = decay * 0.5 * (v + ring[nx]); d[i] = v; idx = nx;
+                }
+                const src = _actx.createBufferSource(); src.buffer = buf;
+                const g = _actx.createGain(); g.gain.value = gain;
+                const f = _actx.createBiquadFilter(); f.type = 'peaking'; f.frequency.value = 900; f.gain.value = 5; // «шанақ» резонанс
+                src.connect(f).connect(g).connect(_actx.destination); src.start();
+            } catch (e) { console.warn(e); }
+        }
+
+        // ═════════════════════  ДОМБЫРА  ═════════════════════
+        const DOMBRA_PARTS = [
+            { id: 'shanaq',  kk: 'Шанақ',   ru: 'Корпус',            text: 'Грушевидный выдолбленный или клеёный корпус. Это резонатор: от его объёма и породы дерева зависит голос домбры. Лучшие шанақ делали из тутовника и клёна.' },
+            { id: 'qaqpaq',  kk: 'Қақпақ',  ru: 'Дека',              text: 'Тонкая верхняя крышка из ели или сосны. Именно она вибрирует и «поёт». В ней прорезают маленькие резонаторные отверстия.' },
+            { id: 'tesik',   kk: 'Үн тесігі', ru: 'Голосники',       text: 'Небольшие отверстия в деке. Через них звук выходит наружу и становится громче.' },
+            { id: 'tiek',    kk: 'Тиек',    ru: 'Подставка',         text: 'Маленькая подставка под струнами на деке. Передаёт колебания струн на қақпақ. Сдвиг тиек меняет строй.' },
+            { id: 'ishek',   kk: 'Ішек',    ru: 'Струны',            text: 'Две струны. Раньше — из бараньих кишок (отсюда «ішек» — кишка), сейчас часто из лески. Обычный строй — кварта: ре и соль. Нажмите на струну, чтобы услышать звук.' },
+            { id: 'moiyn',   kk: 'Мойын',   ru: 'Гриф',              text: 'Длинная шейка. Домбрист играет, прижимая струны к грифу левой рукой и ударяя по ним правой — «қағыс».' },
+            { id: 'perne',   kk: 'Перне',   ru: 'Лады',              text: 'Лады из жильных нитей, навязанные на гриф. Классическая домбра имела 8–9 перне, современная — до 19–20.' },
+            { id: 'bas',     kk: 'Бас',     ru: 'Головка',           text: 'Верхушка грифа, где закреплены колки.' },
+            { id: 'qulaq',   kk: 'Құлақ',   ru: 'Колки',             text: '«Уши» домбры — колки, которыми натягивают и настраивают струны.' },
+            { id: 'tuyme',   kk: 'Түйме',   ru: 'Струнодержатель',   text: 'Пуговка внизу корпуса, за которую закрепляют концы струн.' },
+        ];
+        const DOMBRA_STRINGS = [146.83, 196.0]; // ре, соль
+        const PERNE = [0, 2, 3, 5, 7, 8, 10, 12, 14, 15];
+
+        function buildDombra(T, scene, S) {
+            const parts = {};
+            const bodyH = 3.0, neckTop = 7.6, bridgeY = 0.75;
+            const prof = (t) => t <= 0 ? 0 : 0.26 + 1.04 * Math.sin(Math.PI * Math.min(1, Math.pow(t, 0.72) * 0.93));
+            // шанақ — задняя половина «груши»
+            { const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push(new T.Vector2(Math.max(0.001, prof(t)), t * bodyH)); }
+              const g = new T.Group();
+              const m = new T.Mesh(new T.LatheGeometry(pts, 48, Math.PI / 2, Math.PI), new T.MeshStandardMaterial({ color: 0x6b2f12, roughness: 0.35, metalness: 0.15, side: T.DoubleSide }));
+              m.scale.z = 0.55; g.add(m);
+              // рёбра-клёпки
+              for (let k = 1; k < 7; k++) { const a = Math.PI / 2 + k * Math.PI / 7; const rib = [];
+                for (let i = 1; i < 40; i++) { const t = i / 40; const r = prof(t) * 1.004; rib.push(new T.Vector3(Math.sin(a) * r, t * bodyH, Math.cos(a) * r * 0.55)); }
+                g.add(new T.Line(new T.BufferGeometry().setFromPoints(rib), new T.LineBasicMaterial({ color: 0xe0a060, transparent: true, opacity: 0.5 }))); }
+              registerPart(parts, 'shanaq', g, new T.Vector3(0, 0, -1.6), () => new T.Vector3(-1.05, 1.2, -0.4)); }
+            // қақпақ
+            { const sh = new T.Shape(); sh.moveTo(0, 0);
+              for (let i = 1; i <= 40; i++) { const t = i / 40; sh.lineTo(prof(t), t * bodyH); }
+              for (let i = 40; i >= 0; i--) { const t = i / 40; sh.lineTo(-prof(t), t * bodyH); }
+              [[0, 1.75, 0.09], [-0.3, 1.6, 0.06], [0.3, 1.6, 0.06], [-0.18, 1.95, 0.05], [0.18, 1.95, 0.05]].forEach(([x, y, r]) => { const h = new T.Path(); h.absarc(x, y, r, 0, Math.PI * 2, true); sh.holes.push(h); });
+              const g = new T.Group();
+              const m = new T.Mesh(new T.ShapeGeometry(sh, 32), new T.MeshStandardMaterial({ color: 0xe8c48a, roughness: 0.6, side: T.DoubleSide }));
+              m.position.z = 0.005; g.add(m);
+              // ою по краю деки
+              const edge = []; for (let i = 6; i <= 36; i++) { const t = i / 40; edge.push(new T.Vector3(prof(t) * 0.86, t * bodyH, 0.012)); }
+              for (let i = 36; i >= 6; i--) { const t = i / 40; edge.push(new T.Vector3(-prof(t) * 0.86, t * bodyH, 0.012)); }
+              g.add(new T.Line(new T.BufferGeometry().setFromPoints(edge), new T.LineBasicMaterial({ color: 0x7a3a12 })));
+              registerPart(parts, 'qaqpaq', g, new T.Vector3(0, 0, 0.9), () => new T.Vector3(0.75, 1.05, 0.02)); }
+            // үн тесігі (подсветка: кольца вокруг отверстий)
+            { const g = new T.Group();
+              [[0, 1.75, 0.09], [-0.3, 1.6, 0.06], [0.3, 1.6, 0.06], [-0.18, 1.95, 0.05], [0.18, 1.95, 0.05]].forEach(([x, y, r]) => {
+                const ring = new T.Mesh(new T.RingGeometry(r, r + 0.025, 24), new T.MeshStandardMaterial({ color: 0x5a2a0a, side: T.DoubleSide })); ring.position.set(x, y, 0.014); g.add(ring); });
+              registerPart(parts, 'tesik', g, new T.Vector3(0, 0, 0.9), () => new T.Vector3(0, 1.75, 0.02)); }
+            // тиек
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(0.5, 0.06, 0.13), woodMat(0x3a1c08)); m.position.set(0, bridgeY, 0.07); g.add(m);
+              registerPart(parts, 'tiek', g, new T.Vector3(0.9, 0, 0.9), () => new T.Vector3(0.25, bridgeY, 0.1)); }
+            // мойын
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(0.42, neckTop - bodyH + 0.3, 0.26), woodMat(0x7a3a14));
+              m.position.set(0, (neckTop + bodyH - 0.3) / 2, -0.08); g.add(m);
+              registerPart(parts, 'moiyn', g, new T.Vector3(0, 0, 0), () => new T.Vector3(-0.21, 4.2, 0)); }
+            // перне
+            { const g = new T.Group(); const L = neckTop - bridgeY; const mat = new T.MeshStandardMaterial({ color: 0xd9c49a, roughness: 0.8 });
+              PERNE.slice(1).forEach(s => { const y = neckTop - L * (1 - Math.pow(2, -s / 12)); const f = new T.Mesh(new T.BoxGeometry(0.46, 0.03, 0.3), mat); f.position.set(0, y, -0.06); g.add(f); });
+              registerPart(parts, 'perne', g, new T.Vector3(-0.9, 0, 0.5), () => new T.Vector3(0.23, neckTop - L * (1 - Math.pow(2, -5 / 12)), 0.05)); }
+            // бас + құлақ
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(0.42, 1.1, 0.28), woodMat(0x5a2a0a)); m.position.set(0, neckTop + 0.5, -0.12); m.rotation.x = -0.12; g.add(m);
+              registerPart(parts, 'bas', g, new T.Vector3(0, 1.2, 0), () => new T.Vector3(0.21, neckTop + 0.85, -0.1)); }
+            { const g = new T.Group(); const mat = woodMat(0x2a1505);
+              [[neckTop + 0.35, 1], [neckTop + 0.75, -1]].forEach(([y, s]) => { const p = new T.Mesh(new T.CylinderGeometry(0.05, 0.07, 0.6, 12), mat); p.rotation.z = Math.PI / 2; p.position.set(s * 0.45, y, -0.14); g.add(p);
+                const k = new T.Mesh(new T.SphereGeometry(0.11, 12, 8), mat); k.scale.set(0.5, 1, 1); k.position.set(s * 0.77, y, -0.14); g.add(k); });
+              registerPart(parts, 'qulaq', g, new T.Vector3(0, 1.8, 0), () => new T.Vector3(-0.77, neckTop + 0.75, -0.14)); }
+            // түйме
+            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.07, 0.07, 0.14, 12), woodMat(0x2a1505)); m.position.set(0, 0.02, 0.03); g.add(m);
+              registerPart(parts, 'tuyme', g, new T.Vector3(0, -1.0, 0), () => new T.Vector3(0.07, 0.02, 0.05)); }
+            // ішек — вибрирующие струны
+            const strings = [];
+            { const g = new T.Group(); const NP = 40;
+              [-0.08, 0.08].forEach((x, si) => {
+                const pts = []; for (let i = 0; i <= NP; i++) { const t = i / NP; pts.push(new T.Vector3(x, bridgeY + (neckTop - bridgeY) * t, 0.13 - 0.06 * t)); }
+                const geo = new T.BufferGeometry().setFromPoints(pts);
+                const line = new T.Line(geo, new T.LineBasicMaterial({ color: 0xfff3c4 })); g.add(line);
+                const tail = new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0, 0.05, 0.08), new T.Vector3(x, bridgeY, 0.13)]), new T.LineBasicMaterial({ color: 0xfff3c4, transparent: true, opacity: 0.6 })); g.add(tail);
+                const hit = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, neckTop - bridgeY, 6), new T.MeshBasicMaterial({ visible: false }));
+                hit.position.set(x, (neckTop + bridgeY) / 2, 0.1); hit.userData.string = si; g.add(hit);
+                strings.push({ line, base: pts.map(p => p.clone()), amp: 0, fret: 0, hit, t0: 0 });
+              });
+              registerPart(parts, 'ishek', g, new T.Vector3(0, 0, 1.6), () => new T.Vector3(0.08, 4.5, 0.11)); }
+
+            let fret = 0;
+            const play = (si, fr = fret) => {
+                const s = strings[si]; s.amp = 0.06; s.fret = fr;
+                pluck(DOMBRA_STRINGS[si] * Math.pow(2, PERNE[fr] / 12));
+            };
+            const tick = (dt, t) => {
+                strings.forEach(s => {
+                    if (s.amp < 0.0005) return; s.amp *= Math.pow(0.04, dt);
+                    const L = 1 - (1 - Math.pow(2, -PERNE[s.fret] / 12)); // доля звучащей длины
+                    const pos = s.line.geometry.attributes.position;
+                    for (let i = 0; i < pos.count; i++) { const u = i / (pos.count - 1); const v = u < L ? Math.sin(Math.PI * u / L) : 0;
+                        pos.setX(i, s.base[i].x + s.amp * v * Math.sin(t * 90 + i)); }
+                    pos.needsUpdate = true;
+                });
+            };
+            const onClick = (e) => { const h = S.pick(e, strings.map(s => s.hit)); if (h) { play(h.object.userData.string); return true; } return false; };
+            // наигрыш-пример (не конкретный күй) — ритм «қағыс»
+            const demo = () => {
+                const seq = [[0,0],[1,0],[0,2],[1,0],[0,3],[1,0],[0,4],[1,2],[0,4],[1,2],[0,3],[1,0],[0,2],[1,0],[0,0],[1,0],[0,0],[1,4],[1,3],[1,2],[1,0],[0,4],[0,3],[0,0]];
+                seq.forEach(([si, fr], k) => setTimeout(() => play(si, fr), k * 210));
+            };
+            S.st.phi = 1.35; S.st.theta = 0.35;
+            return { parts, tick, onClick, api: { play, demo, setFret: (f) => { fret = f; } } };
+        }
+
+        function DombraAtlas() {
+            const [fret, setFret] = useState(0);
+            return <AnatomyViewer PARTS={DOMBRA_PARTS} scene={buildDombra} opts={{ distance: 15, target: [0, 3.3, 0], minDist: 4, maxDist: 25, autoRotate: false }}
+                intro={<p className="text-[#999] text-xs">Домбыра — две струны, строй «кварта» (ре–соль). Нажмите на струну в 3D, выберите перне (лад) или включите наигрыш. Нажмите на подпись, чтобы узнать о части.</p>}
+                controls={(api) => <>
+                    <div className="flex gap-1 w-full overflow-x-auto">
+                        {PERNE.map((s, i) => <button key={i} onClick={() => { setFret(i); api.setFret?.(i); }} className="shrink-0 w-7 h-7 rounded-full text-[10px] border"
+                            style={{ borderColor: fret === i ? '#C5A55A' : '#2a2a2a', color: fret === i ? '#000' : '#999', background: fret === i ? '#C5A55A' : 'transparent' }}>{i}</button>)}
+                    </div>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => api.play?.(1)}>♪ Жоғарғы ішек</button>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => api.play?.(0)}>♪ Төменгі ішек</button>
+                    <button className={btn3d} style={btnStyle(true)} onClick={() => api.demo?.()}>▶ Әуен</button>
+                </>} />;
+        }
+
+        // ═════════════════════  АСЫҚ  ═════════════════════
+        const ASYQ_PARTS = [
+            { id: 'alshy', kk: 'Алшы', ru: 'сторона «алшы»', text: 'Выпуклая сторона с ровной площадкой. Выпадает редко — это удача: в игре «алшы» выигрывает тот, у кого асық встал на алшы.' },
+            { id: 'taiki', kk: 'Тәйкі', ru: 'сторона «тәйкі»', text: 'Противоположная алшы сторона с выемкой. Тоже выпадает редко. Говорят: «алшы түссе — бақыт, тәйкі түссе — тағы бір кез».' },
+            { id: 'buk',   kk: 'Бүк',   ru: 'горбатая сторона', text: 'Округлая «спинка» асыка. Выпадает часто.' },
+            { id: 'shik',  kk: 'Шік',   ru: 'вогнутая сторона', text: 'Сторона с углублением, противоположна бүк. Выпадает так же часто, как бүк.' },
+            { id: 'saqa',  kk: 'Сақа',  ru: 'биток',           text: 'Самый крупный асық, которым выбивают остальные. Сақа часто утяжеляли свинцом и красили — это гордость игрока.' },
+        ];
+        const ASYQ_FACES = { buk: [0, 1, 0], shik: [0, -1, 0], alshy: [0, 0, 1], taiki: [0, 0, -1] };
+        const ASYQ_WEIGHTS = [['buk', 0.39], ['shik', 0.39], ['alshy', 0.11], ['taiki', 0.11]];
+
+        function asyqGeometry(T, s = 1) {
+            const g = new T.SphereGeometry(1, 48, 32); const p = g.attributes.position; const v = new T.Vector3();
+            for (let i = 0; i < p.count; i++) {
+                v.fromBufferAttribute(p, i);
+                let { x, y, z } = v; x *= 1.45; y *= 0.72; z *= 0.82;
+                if (y > 0) y += 0.18 * Math.exp(-(x * x) * 1.2) * (1 - Math.abs(z));          // бүк — горб
+                if (y < -0.3) y += 0.32 * Math.exp(-(x * x + z * z) * 2.2);                     // шік — ямка
+                if (z > 0.55) z = 0.55 + (z - 0.55) * 0.25;                                     // алшы — площадка
+                if (z < -0.5) { z = -0.5 + (z + 0.5) * 0.4; z += 0.12 * Math.exp(-(x * x) * 6); } // тәйкі — выемка
+                const w = 1 - 0.18 * Math.exp(-(x * x) * 3); y *= w; z *= w;                    // перехват в середине
+                p.setXYZ(i, x * s, y * s, z * s);
+            }
+            g.computeVertexNormals(); return g;
+        }
+
+        function buildAsyq(T, scene, S) {
+            const parts = {};
+            const bone = new T.MeshStandardMaterial({ color: 0xeee0c0, roughness: 0.55, metalness: 0.02 });
+            const main = new T.Group(); const m = new T.Mesh(asyqGeometry(T), bone); main.add(m); scene.add(main);
+            // точки-якоря сторон (невидимые группы, двигаются вместе с асыком)
+            Object.entries(ASYQ_FACES).forEach(([id, n]) => {
+                const g = new T.Group(); main.add(g);
+                const p = new T.Vector3(...n).multiply(new T.Vector3(1.2, 0.85, 0.62));
+                parts[id] = { grp: g, base: new T.Vector3(), explode: new T.Vector3(), anchor: () => p.clone(), mats: [], locked: true };
+            });
+            // сақа — крупный красный биток рядом
+            { const g = new T.Group(); const sm = new T.Mesh(asyqGeometry(T, 1.0), new T.MeshStandardMaterial({ color: 0xa3281e, roughness: 0.4, metalness: 0.2 }));
+              g.add(sm); g.scale.setScalar(0.8); g.position.set(3.4, -0.35, -1.0); g.rotation.set(0, 0.6, 0); scene.add(g);
+              registerPart(parts, 'saqa', g, new T.Vector3(), () => new T.Vector3(0, 0.9, 0)); parts.saqa.locked = true; }
+            // кийіз-подстилка
+            const felt = new T.Mesh(new T.CircleGeometry(5, 64), new T.MeshStandardMaterial({ color: 0x2a0c08, roughness: 1 }));
+            felt.rotation.x = -Math.PI / 2; felt.position.y = -0.85; scene.add(felt);
+            const ring = new T.Mesh(new T.RingGeometry(4.6, 4.75, 64), new T.MeshBasicMaterial({ color: GOLD3, side: T.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = -0.84; scene.add(ring);
+
+            const up = new T.Vector3(0, 1, 0);
+            const target = (face) => { const n = new T.Vector3(...ASYQ_FACES[face]); return new T.Quaternion().setFromUnitVectors(n, up).premultiply(new T.Quaternion().setFromAxisAngle(up, Math.random() * Math.PI * 2)); };
+            const restY = { buk: -0.1, shik: -0.15, alshy: -0.25, taiki: -0.25 };
+            let throwSt = null; let cb = null;
+            main.quaternion.copy(target('alshy')); main.position.y = restY.alshy;
+            const toss = (onDone) => {
+                let r = Math.random(), face = 'buk'; for (const [f, w] of ASYQ_WEIGHTS) { if ((r -= w) <= 0) { face = f; break; } }
+                throwSt = { t: 0, face, q1: target(face), axis: new T.Vector3(Math.random() - 0.5, Math.random(), Math.random() - 0.5).normalize(), spins: 4 + Math.random() * 3, x0: main.position.x };
+                cb = onDone;
+            };
+            const tick = (dt) => {
+                if (!throwSt) return; const s = throwSt; s.t = Math.min(1, s.t + dt / 1.6); const k = s.t;
+                const h = k < 0.6 ? Math.sin(k / 0.6 * Math.PI) * 3.2 : Math.abs(Math.sin((k - 0.6) / 0.4 * Math.PI * 2)) * 0.35 * (1 - k) * 2.5;
+                main.position.y = restY[s.face] + h;
+                const ang = s.spins * Math.PI * 2 * Math.pow(1 - k, 2);
+                main.quaternion.copy(s.q1).multiply(new T.Quaternion().setFromAxisAngle(s.axis, ang));
+                if (k >= 1) { throwSt = null; cb?.(s.face); }
+            };
+            S.st.phi = 1.05; S.st.theta = 0.5;
+            return { parts, tick, api: { toss } };
+        }
+
+        function AsyqAtlas() {
+            const [res, setRes] = useState(null); const [hist, setHist] = useState([]); const [busy, setBusy] = useState(false);
+            const NAMES = { buk: 'Бүк', shik: 'Шік', alshy: 'Алшы', taiki: 'Тәйкі' };
+            return <AnatomyViewer PARTS={ASYQ_PARTS} scene={buildAsyq} explodable={false} stepLabel="жағы" opts={{ distance: 9, target: [0, 0.2, 0], minDist: 4, maxDist: 20 }}
+                intro={<div>
+                    <p className="text-[#999] text-xs">Асық — таранная кость барана, главная детская игра степи. У асыка 4 стороны: <b className="text-[#C5A55A]">алшы, тәйкі, бүк, шік</b>. Бросьте и посмотрите, какая выпадет: алшы и тәйкі редки, бүк и шік часты.</p>
+                    {res && <p className="text-white text-lg font-serif mt-2">Түсті: <span className="text-[#F0D882]">{NAMES[res]}</span>{res === 'alshy' ? ' — бақыт! 🎉' : ''}</p>}
+                    {hist.length > 0 && <p className="text-[#666] text-[10px] mt-1">Барлығы {hist.length}: {Object.keys(NAMES).map(k => `${NAMES[k]} ${hist.filter(h => h === k).length}`).join(' · ')}</p>}
+                </div>}
+                controls={(api) => <button className={btn3d + ' flex-1'} style={btnStyle(true)} disabled={busy}
+                    onClick={() => { if (!api.toss) return; setBusy(true); setRes(null); api.toss(f => { setRes(f); setHist(h => [...h, f]); setBusy(false); }); }}>🦴 Асық ату · Бросить</button>} />;
+        }
+
+        // ═════════════════════  ЕР-ТҰРМАН  ═════════════════════
+        const SADDLE_PARTS = [
+            { id: 'toqym',   kk: 'Тоқым',     ru: 'Потник',          text: 'Войлочная подкладка под седло, бережёт спину коня. Праздничный тоқым украшали вышивкой.' },
+            { id: 'qaptal',  kk: 'Қаптал',    ru: 'Полки ленчика',   text: 'Две продольные доски — основа седла (ер ағашы). Лежат по бокам хребта коня и распределяют вес всадника.' },
+            { id: 'aldqas',  kk: 'Алдыңғы қас', ru: 'Передняя лука', text: 'Высокая передняя дуга. Её украшали серебром и костью. Казахское седло с высокой лукой называется «құранды ер».' },
+            { id: 'artqas',  kk: 'Артқы қас', ru: 'Задняя лука',     text: 'Задняя дуга, на которую опирается спина всадника в долгом пути.' },
+            { id: 'tebingi', kk: 'Тебінгі',   ru: 'Крылья',          text: 'Кожаные пластины по бокам — защищают ноги всадника от пота коня и стремянных ремней.' },
+            { id: 'uzengi',  kk: 'Үзеңгі',    ru: 'Стремена',        text: 'Опора для ног. Висят на ремнях «үзеңгі бау». Пословица: «Үзеңгі қағысу» — ехать бок о бок, быть ровней.' },
+            { id: 'aiyl',    kk: 'Айыл',      ru: 'Подпруга',        text: 'Широкий ремень под брюхом коня, который крепко держит седло.' },
+            { id: 'omildirik', kk: 'Өмілдірік', ru: 'Нагрудник',     text: 'Ремень вокруг груди коня — не даёт седлу съезжать назад на подъёме.' },
+            { id: 'quiysqan', kk: 'Құйысқан', ru: 'Подхвостник',     text: 'Ремень от задней луки под хвост — держит седло на спуске.' },
+        ];
+        function buildSaddle(T, scene, S) {
+            const parts = {};
+            // стилизованный конь (полупрозрачный, как в атласе)
+            const horseM = new T.MeshStandardMaterial({ color: 0x8a5a32, roughness: 0.8, transparent: true, opacity: 0.35, depthWrite: false });
+            const body = new T.Mesh(new T.CapsuleGeometry(1.15, 3.2, 8, 24), horseM); body.rotation.z = Math.PI / 2; scene.add(body);
+            const neck = new T.Mesh(new T.CapsuleGeometry(0.55, 1.8, 6, 16), horseM); neck.position.set(2.6, 1.3, 0); neck.rotation.z = -0.8; scene.add(neck);
+            const head = new T.Mesh(new T.CapsuleGeometry(0.4, 1.0, 6, 16), horseM); head.position.set(3.6, 2.0, 0); head.rotation.z = 1.2; scene.add(head);
+            [[1.7, 0.45], [1.7, -0.45], [-1.7, 0.45], [-1.7, -0.45]].forEach(([x, z]) => { const l = new T.Mesh(new T.CapsuleGeometry(0.22, 2.2, 4, 10), horseM); l.position.set(x, -2.0, z); scene.add(l); });
+            const tail = tube(T, [new T.Vector3(-2.7, 0.4, 0), new T.Vector3(-3.2, -0.3, 0), new T.Vector3(-3.3, -1.4, 0)], 0.12, horseM); scene.add(tail);
+
+            const leather = new T.MeshStandardMaterial({ color: 0x5a2e14, roughness: 0.6 });
+            const silver = new T.MeshStandardMaterial({ color: 0xd8d8e0, roughness: 0.25, metalness: 0.9 });
+            const wood = new T.MeshStandardMaterial({ color: 0xa8652a, roughness: 0.5 });
+            const arcPts = (r, h, n = 20) => { const a = []; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI; a.push(new T.Vector3(0, Math.sin(t) * h, Math.cos(t) * r)); } return a; };
+            // тоқым
+            { const g = new T.Group(); const tex = ornamentTexture(T, 512, 256);
+              const geo = new T.CylinderGeometry(1.22, 1.22, 2.2, 32, 1, true, Math.PI * 0.08, Math.PI * 0.84);
+              const m = new T.Mesh(geo, new T.MeshStandardMaterial({ map: tex, roughness: 1, side: T.DoubleSide })); m.rotation.z = Math.PI / 2; m.rotation.y = 0; g.add(m);
+              registerPart(parts, 'toqym', g, new T.Vector3(0, 0.6, 0), () => new T.Vector3(-0.9, 1.0, 0.55)); }
+            // қаптал
+            { const g = new T.Group(); [0.42, -0.42].forEach(z => { const b = new T.Mesh(new T.BoxGeometry(1.9, 0.12, 0.42), wood); b.position.set(0, 1.28, z); b.rotation.x = z > 0 ? 0.35 : -0.35; g.add(b); });
+              registerPart(parts, 'qaptal', g, new T.Vector3(0, 1.3, 0), () => new T.Vector3(-0.6, 1.3, 0.55)); }
+            // қастар
+            { const g = new T.Group(); g.add(tube(T, arcPts(0.5, 0.75).map(p => p.add(new T.Vector3(0.85, 1.3, 0))), 0.09, wood));
+              const s = new T.Mesh(new T.SphereGeometry(0.13, 16, 12), silver); s.position.set(0.85, 2.08, 0); g.add(s);
+              registerPart(parts, 'aldqas', g, new T.Vector3(0.8, 2.0, 0), () => new T.Vector3(0.85, 2.08, 0)); }
+            { const g = new T.Group(); g.add(tube(T, arcPts(0.55, 0.5).map(p => p.add(new T.Vector3(-0.85, 1.3, 0))), 0.08, wood));
+              registerPart(parts, 'artqas', g, new T.Vector3(-0.8, 2.0, 0), () => new T.Vector3(-0.85, 1.8, 0)); }
+            // тебінгі
+            { const g = new T.Group(); [1, -1].forEach(s => { const m = new T.Mesh(new T.PlaneGeometry(1.3, 0.9), new T.MeshStandardMaterial({ color: 0x3a1c0c, roughness: 0.7, side: T.DoubleSide }));
+                m.position.set(0.1, 0.55, s * 1.2); m.rotation.x = s * 0.25; g.add(m); });
+              registerPart(parts, 'tebingi', g, new T.Vector3(0, 0, 1.4), () => new T.Vector3(0.6, 0.4, 1.22)); }
+            // үзеңгі
+            { const g = new T.Group(); [1, -1].forEach(s => {
+                g.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0.2, 1.2, s * 0.6), new T.Vector3(0.2, -0.75, s * 1.3)]), new T.LineBasicMaterial({ color: 0x3a1c0c })));
+                const st = new T.Mesh(new T.TorusGeometry(0.22, 0.04, 8, 20), silver); st.position.set(0.2, -0.95, s * 1.32); g.add(st); });
+              registerPart(parts, 'uzengi', g, new T.Vector3(0, -0.8, 0.6), () => new T.Vector3(0.42, -0.95, 1.32)); }
+            // айыл
+            { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(1.2, 0.07, 8, 48), leather); m.rotation.y = Math.PI / 2; m.position.x = 0.35; m.scale.set(1, 1, 1.0); g.add(m);
+              registerPart(parts, 'aiyl', g, new T.Vector3(0, -1.0, 0), () => new T.Vector3(0.35, -1.2, 0)); }
+            // өмілдірік
+            { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(0.85, 0.06, 8, 40), leather); m.position.set(2.0, 0.7, 0); m.rotation.y = Math.PI / 2; m.rotation.x = 0.0; m.rotation.z = -0.5; g.add(m);
+              registerPart(parts, 'omildirik', g, new T.Vector3(1.4, 0, 0), () => new T.Vector3(2.4, 0.2, 0.6)); }
+            // құйысқан
+            { const g = new T.Group(); g.add(tube(T, [new T.Vector3(-0.85, 1.3, 0), new T.Vector3(-2.2, 1.1, 0), new T.Vector3(-2.75, 0.45, 0)], 0.05, leather));
+              const r = new T.Mesh(new T.TorusGeometry(0.2, 0.05, 8, 20), leather); r.position.set(-2.8, 0.35, 0); r.rotation.y = Math.PI / 2; g.add(r);
+              registerPart(parts, 'quiysqan', g, new T.Vector3(-1.2, 0.3, 0), () => new T.Vector3(-2.2, 1.1, 0)); }
+            S.st.phi = 1.3; S.st.theta = 0.3;
+            return { parts };
+        }
+
+        // ═════════════════════  ДӘСТҮР 3D: Бесік, Тұсаукесер, Наурыз көже  ═════════════════════
+        const BESIK_PARTS = [
+            { id: 'taban',   kk: 'Табан',    ru: 'Полозья',        text: 'Изогнутые полозья — на них бесік качается. Мать могла укачивать ребёнка одной рукой, не отрываясь от дел.' },
+            { id: 'qabyrga', kk: 'Бесік ағашы', ru: 'Корпус и спинки', text: 'Деревянный короб с резными спинками. Бесік делали из ивы или берёзы и передавали из поколения в поколение — первый бесік дарит семья матери (нағашы).' },
+            { id: 'arqalyq', kk: 'Арқалық',  ru: 'Поперечина',     text: 'Длинная перекладина над люлькой, соединяющая спинки. За неё бесік переносят, на неё накидывают покрывало.' },
+            { id: 'zhabu',   kk: 'Бесік жабу', ru: 'Покрывало',     text: 'Нарядное покрывало поверх арқалық — защищает от света, мух и «дурного глаза».' },
+            { id: 'bau',     kk: 'Бау',      ru: 'Ремни',          text: 'Широкие тканые ремни, которыми ребёнка бережно привязывают, чтобы он лежал ровно и спокойно.' },
+            { id: 'zhastyq', kk: 'Жастық',   ru: 'Подушечка',      text: 'Маленькая подушка; под неё по обычаю кладут нож или ножницы — оберег, а на арқалық вешают тұмар.' },
+            { id: 'tubek',   kk: 'Шүмек пен түбек', ru: 'Трубка и горшочек', text: 'Уникальная «гигиеническая» система: через отверстие в дне по трубке-шүмек всё стекает в горшочек-түбек. Ребёнок остаётся сухим.' },
+        ];
+        function buildBesik(T, scene, S) {
+            const parts = {}; const W = 2.6, D = 1.1, H = 0.7;
+            const wood = new T.MeshStandardMaterial({ color: 0xb5651d, roughness: 0.5 }); const dark = new T.MeshStandardMaterial({ color: 0x7a3a12, roughness: 0.5 });
+            const rock = new T.Group(); scene.add(rock);
+            // табан
+            { const g = new T.Group(); [D / 2, -D / 2].forEach(z => { const pts = []; for (let i = 0; i <= 20; i++) { const x = -W / 2 - 0.3 + (W + 0.6) * i / 20; pts.push(new T.Vector3(x, 0.25 * Math.pow(x / (W / 2 + 0.3), 2), z)); } g.add(tube(T, pts, 0.07, dark)); });
+              rock.add(g); registerPart(parts, 'taban', g, new T.Vector3(0, -0.8, 0), () => new T.Vector3(W / 2, 0.18, D / 2)); }
+            // корпус + спинки
+            { const g = new T.Group(); const bottom = new T.Mesh(new T.BoxGeometry(W, 0.06, D), wood); bottom.position.y = 0.35; g.add(bottom);
+              [D / 2, -D / 2].forEach(z => { const s = new T.Mesh(new T.BoxGeometry(W, H, 0.06), wood); s.position.set(0, 0.35 + H / 2, z); g.add(s); });
+              [W / 2, -W / 2].forEach(x => { const sh = new T.Shape(); sh.moveTo(-D / 2, 0); sh.lineTo(D / 2, 0); sh.lineTo(D / 2, H + 0.5); sh.absarc(0, H + 0.5, D / 2, 0, Math.PI, false); sh.lineTo(-D / 2, 0);
+                const hole = new T.Path(); hole.absarc(0, H + 0.55, 0.22, 0, Math.PI * 2, true); sh.holes.push(hole);
+                const m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 0.08, bevelEnabled: false }), dark); m.rotation.y = Math.PI / 2; m.position.set(x - 0.04, 0.35, 0); g.add(m); });
+              rock.add(g); registerPart(parts, 'qabyrga', g, new T.Vector3(), () => new T.Vector3(-W / 2, H + 0.9, 0)); }
+            // арқалық
+            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, W + 0.5, 12), dark); m.rotation.z = Math.PI / 2; m.position.y = 0.35 + H + 0.95; g.add(m);
+              rock.add(g); registerPart(parts, 'arqalyq', g, new T.Vector3(0, 1.2, 0), () => new T.Vector3(0.6, 0.35 + H + 0.95, 0)); }
+            // жабу
+            { const g = new T.Group(); const tex = ornamentTexture(T, 512, 256); tex.repeat.set(2, 1);
+              const m = new T.Mesh(new T.CylinderGeometry(D / 2 + 0.12, D / 2 + 0.12, W - 0.1, 32, 1, true, -Math.PI / 2, Math.PI), new T.MeshStandardMaterial({ map: tex, transparent: true, opacity: 0.6, side: T.DoubleSide, roughness: 1, depthWrite: false }));
+              m.rotation.z = Math.PI / 2; m.position.y = 0.35 + H + 0.5; m.scale.set(1, 1, 1); g.add(m);
+              rock.add(g); registerPart(parts, 'zhabu', g, new T.Vector3(0, 2.4, 0), () => new T.Vector3(-0.4, 0.35 + H + 1.0, 0.3)); }
+            // бау
+            { const g = new T.Group(); [-0.5, 0.45].forEach(x => { const b = new T.Mesh(new T.TorusGeometry(D / 2 + 0.02, 0.05, 6, 24, Math.PI), new T.MeshStandardMaterial({ color: 0xc23b2b, roughness: 0.8 })); b.position.set(x, 0.62, 0); b.rotation.y = Math.PI / 2; g.add(b); });
+              rock.add(g); registerPart(parts, 'bau', g, new T.Vector3(0, 0.9, 0), () => new T.Vector3(0.45, 1.1, 0)); }
+            // жастық + младенец в пелёнке
+            { const g = new T.Group(); const p = new T.Mesh(new T.CapsuleGeometry(0.22, 0.35, 6, 16), new T.MeshStandardMaterial({ color: 0xf2e6c8, roughness: 1 })); p.rotation.x = Math.PI / 2; p.rotation.z = Math.PI / 2; p.position.set(-0.85, 0.55, 0); g.add(p);
+              const baby = new T.Mesh(new T.CapsuleGeometry(0.22, 0.9, 6, 16), new T.MeshStandardMaterial({ color: 0xffffff, roughness: 1 })); baby.rotation.z = Math.PI / 2; baby.position.set(0, 0.6, 0); g.add(baby);
+              const head = new T.Mesh(new T.SphereGeometry(0.2, 16, 12), new T.MeshStandardMaterial({ color: 0xe9b98f })); head.position.set(-0.75, 0.75, 0); g.add(head);
+              rock.add(g); registerPart(parts, 'zhastyq', g, new T.Vector3(0, 0.6, 0), () => new T.Vector3(-0.85, 0.75, 0.2)); }
+            // шүмек + түбек
+            { const g = new T.Group(); g.add(tube(T, [new T.Vector3(0.2, 0.5, 0), new T.Vector3(0.25, 0.25, 0), new T.Vector3(0.35, 0.0, 0)], 0.035, new T.MeshStandardMaterial({ color: 0xd9c49a })));
+              const pot = new T.Mesh(new T.CylinderGeometry(0.18, 0.13, 0.25, 16), new T.MeshStandardMaterial({ color: 0x8a5a2a, roughness: 0.6 })); pot.position.set(0.35, -0.08, 0); g.add(pot);
+              rock.add(g); registerPart(parts, 'tubek', g, new T.Vector3(0, -0.9, 0.8), () => new T.Vector3(0.35, -0.08, 0.15)); }
+            const floor = new T.Mesh(new T.CircleGeometry(4, 64), new T.MeshStandardMaterial({ color: 0x3a2516, roughness: 1 })); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.22; scene.add(floor);
+            let rocking = false;
+            const tick = (dt, t) => { rock.rotation.z = rocking ? Math.sin(t * 2.2) * 0.12 : rock.rotation.z * 0.9; };
+            S.st.phi = 1.1; S.st.theta = 0.7;
+            return { parts, tick, api: { toggle: () => (rocking = !rocking) } };
+        }
+
+        function BesikScene() {
+            const [rock, setRock] = useState(false); const sp = useSpeech();
+            const LULLABY = 'Әлди-әлди, ақ бөпем, ақ бесікке жата ғой. Ақ бесікке жатсаң да, тәтті ұйқыға бата ғой.';
+            return <AnatomyViewer PARTS={BESIK_PARTS} scene={buildBesik} opts={{ distance: 7.5, target: [0, 0.7, 0], minDist: 3, maxDist: 16 }}
+                intro={<div><p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Бесікке салу</b> — праздник первого укладывания младенца в колыбель (обычно на 40-й день). Бесік вносит и готовит уважаемая женщина, гостям раздают шашу.</p>
+                    {rock && <p className="text-[#F0D882] text-xs italic mt-2">«{LULLABY}»</p>}</div>}
+                controls={(api) => <>
+                    <button className={btn3d} style={btnStyle(rock)} onClick={() => { api.toggle?.(); setRock(r => !r); }}>⌒ Тербету</button>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => sp.say(LULLABY)}>🔈 Бесік жыры</button>
+                </>} />;
+        }
+
+        const TUSAU_PARTS = [
+            { id: 'bala',  kk: 'Сәби',      ru: 'Ребёнок',       text: 'Обряд проводят, когда малыш делает первые шаги (около года). Ему желают крепких ног и прямой дороги в жизни.' },
+            { id: 'alazhip', kk: 'Ала жіп', ru: 'Пёстрая нить',  text: 'Чёрно-белая витая нить — «тұсау» (путы). Белое и чёрное — добро и зло: пусть ребёнок научится их различать. Иногда берут кишку или зелёную траву.' },
+            { id: 'aqzhol', kk: 'Ақ жол',  ru: 'Белая дорожка',  text: 'Белая ткань, по которой ребёнок делает первые шаги после обряда — пожелание «ақ жол», светлого пути.' },
+            { id: 'qaishy', kk: 'Қайшы',   ru: 'Ножницы',        text: 'Путы перерезает энергичный, удачливый и уважаемый человек — считается, что ребёнок унаследует его качества. Ему дарят подарок.' },
+        ];
+        function buildTusau(T, scene, S) {
+            const parts = {};
+            const skin = new T.MeshStandardMaterial({ color: 0xe9b98f, roughness: 0.7 }); const cloth = new T.MeshStandardMaterial({ color: 0x3a7bd5, roughness: 0.8 });
+            const kid = new T.Group(); scene.add(kid);
+            const torso = new T.Mesh(new T.CapsuleGeometry(0.32, 0.45, 6, 16), cloth); torso.position.y = 1.0; kid.add(torso);
+            const head = new T.Mesh(new T.SphereGeometry(0.3, 20, 16), skin); head.position.y = 1.65; kid.add(head);
+            const hat = new T.Mesh(new T.ConeGeometry(0.28, 0.35, 16), new T.MeshStandardMaterial({ color: 0xc23b2b })); hat.position.y = 1.98; kid.add(hat);
+            const owl = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), new T.MeshStandardMaterial({ color: 0xffffff })); owl.position.y = 2.18; kid.add(owl); // үкі
+            const legs = [-0.14, 0.14].map(x => { const l = new T.Group(); l.position.set(x, 0.62, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.1, 0.36, 4, 10), cloth); m.position.y = -0.28; l.add(m); kid.add(l); return l; });
+            const arms = [-0.42, 0.42].map(x => { const a = new T.Group(); a.position.set(x, 1.2, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.08, 0.35, 4, 10), skin); m.position.y = -0.22; a.add(m); kid.add(a); return a; });
+            registerPart(parts, 'bala', kid, new T.Vector3(), () => new T.Vector3(0, 1.75, 0)); parts.bala.locked = true;
+            // ала жіп — две спирали (чёрная и белая) «восьмёркой» вокруг лодыжек
+            const rope = new T.Group(); scene.add(rope); const halves = [];
+            [0, 1].forEach(side => { const h = new T.Group(); rope.add(h); halves.push(h);
+                [0x111111, 0xffffff].forEach((c, ci) => { const pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60 * Math.PI * 2; const cx = (side ? 0.14 : -0.14);
+                    pts.push(new T.Vector3(cx + Math.cos(t) * 0.14 + Math.cos(t * 9 + ci * Math.PI) * 0.012, 0.12 + Math.sin(t * 9 + ci * Math.PI) * 0.012, Math.sin(t) * 0.14)); }
+                  h.add(tube(T, pts, 0.016, new T.MeshStandardMaterial({ color: c, roughness: 0.7 }), 80)); }); });
+            const bridge = tube(T, [new T.Vector3(-0.02, 0.12, 0), new T.Vector3(0.02, 0.12, 0)], 0.02, new T.MeshStandardMaterial({ color: 0x777777 })); rope.add(bridge);
+            registerPart(parts, 'alazhip', rope, new T.Vector3(), () => new T.Vector3(0.28, 0.12, 0)); parts.alazhip.locked = true;
+            // ақ жол
+            const path = new T.Mesh(new T.PlaneGeometry(1.2, 9), new T.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 1, side: T.DoubleSide })); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.01, -3.5);
+            const pg = new T.Group(); pg.add(path); scene.add(pg); registerPart(parts, 'aqzhol', pg, new T.Vector3(), () => new T.Vector3(0.6, 0.02, -5)); parts.aqzhol.locked = true;
+            // қайшы
+            const sc = new T.Group(); const blade = new T.MeshStandardMaterial({ color: 0xcfd3da, metalness: 0.9, roughness: 0.25 });
+            const b1 = new T.Group(), b2 = new T.Group(); [b1, b2].forEach((b, i) => { const m = new T.Mesh(new T.BoxGeometry(0.6, 0.03, 0.07), blade); m.position.x = 0.3; b.add(m);
+                const r = new T.Mesh(new T.TorusGeometry(0.09, 0.025, 6, 16), new T.MeshStandardMaterial({ color: 0xc23b2b })); r.position.x = -0.12; r.position.z = i ? 0.08 : -0.08; r.rotation.x = Math.PI / 2; b.add(r); sc.add(b); });
+            sc.position.set(1.6, 0.6, 0.6); sc.rotation.y = Math.PI; scene.add(sc);
+            registerPart(parts, 'qaishy', sc, new T.Vector3(), () => new T.Vector3(0.3, 0, 0)); parts.qaishy.locked = true;
+            const floor = new T.Mesh(new T.CircleGeometry(6, 64), new T.MeshStandardMaterial({ color: 0x2a0c08, roughness: 1 })); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+            let phase = 'idle', t0 = 0, now = 0;
+            const tick = (dt, t) => {
+                now = t; const k = t - t0;
+                if (phase === 'cut') {
+                    const a = Math.min(1, k / 1.0);
+                    sc.position.lerpVectors(new T.Vector3(1.6, 0.6, 0.6), new T.Vector3(0.35, 0.14, 0.05), a);
+                    const snip = k > 1 ? Math.abs(Math.sin((k - 1) * 10)) * 0.4 : 0.3; b1.rotation.y = snip; b2.rotation.y = -snip;
+                    if (k > 1.8) { phase = 'fall'; t0 = t; }
+                } else if (phase === 'fall') {
+                    halves[0].position.set(-k * 0.6, Math.max(-0.11, -k * 0.2), 0); halves[1].position.set(k * 0.6, Math.max(-0.11, -k * 0.2), 0);
+                    sc.position.lerp(new T.Vector3(1.8, 0.6, 1.2), 0.05); bridge.visible = false;
+                    if (k > 1.0) { phase = 'walk'; t0 = t; }
+                } else if (phase === 'walk') {
+                    const sw = Math.sin(k * 6); legs[0].rotation.x = sw * 0.5; legs[1].rotation.x = -sw * 0.5; arms[0].rotation.x = -sw * 0.4; arms[1].rotation.x = sw * 0.4;
+                    kid.position.z = -Math.min(6.5, k * 0.9); kid.position.y = Math.abs(Math.sin(k * 6)) * 0.04;
+                    S.st.target.z += (kid.position.z - S.st.target.z) * 0.03;
+                    if (k > 7.5) { phase = 'done'; legs.forEach(l => l.rotation.x = 0); }
+                }
+            };
+            const run = () => { phase = 'cut'; t0 = now; kid.position.set(0, 0, 0); halves.forEach(h => h.position.set(0, 0, 0)); bridge.visible = true; S.st.target.set(0, 0.9, 0); };
+            S.st.phi = 1.15; S.st.theta = 0.9; S.setAuto(false);
+            return { parts, tick, api: { run } };
+        }
+        function TusauScene() {
+            return <AnatomyViewer PARTS={TUSAU_PARTS} scene={buildTusau} explodable={false} opts={{ distance: 7, target: [0, 0.9, 0], minDist: 3, maxDist: 16, autoRotate: false }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Тұсаукесер</b> — обряд «перерезания пут». Нажмите «Тұсау кесу»: ножницы разрежут ала жіп, и малыш пойдёт по ақ жол. Поют «Тұсау кесер» жыры: «Қаз-қаз, балам, қаз балам...».</p>}
+                controls={(api) => <button className={btn3d + ' flex-1'} style={btnStyle(true)} onClick={() => api.run?.()}>✂ Тұсау кесу</button>} />;
+        }
+
+        const KOZHE_PARTS = [
+            { id: 'su',   kk: 'Су',   ru: 'Вода',  text: 'Основа көже. Вода — символ жизни и чистоты.' },
+            { id: 'et',   kk: 'Ет',   ru: 'Мясо',  text: 'Обязательно кладут сохранённое с зимы мясо «соғым» — в знак того, что запасов хватило до весны.' },
+            { id: 'tuz',  kk: 'Тұз',  ru: 'Соль',  text: 'Соль — достаток и крепость.' },
+            { id: 'mai',  kk: 'Май',  ru: 'Жир/масло', text: 'Жир — сытость и благополучие.' },
+            { id: 'un',   kk: 'Ұн',   ru: 'Мука',  text: 'Мука — хлеб и урожай.' },
+            { id: 'dan',  kk: 'Дән',  ru: 'Зерно (бидай, тары, күріш)', text: 'Пшеница, просо или рис — будущий урожай.' },
+            { id: 'sut',  kk: 'Сүт',  ru: 'Молоко', text: 'Молоко (или айран, қатық) — чистота и новое начало года.' },
+            { id: 'qazan', kk: 'Қазан', ru: 'Котёл', text: 'Наурыз көже варят в большом казане из семи продуктов — по числу «жеті»: семь — священное число. Его угощают в семи домах, а в гости ходят по семь раз.' },
+        ];
+        function buildKozhe(T, scene, S) {
+            const parts = {};
+            // қазан
+            { const g = new T.Group(); const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(new T.Vector2(0.4 + 1.2 * Math.sin(t * Math.PI / 2), -1 + t * 1.3)); }
+              const m = new T.Mesh(new T.LatheGeometry(pts, 48), new T.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.7, roughness: 0.4, side: T.DoubleSide })); g.add(m);
+              const rim = new T.Mesh(new T.TorusGeometry(1.6, 0.05, 8, 48), new T.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.3 })); rim.rotation.x = Math.PI / 2; rim.position.y = 0.3; g.add(rim);
+              [1, -1].forEach(s => { const h = new T.Mesh(new T.TorusGeometry(0.18, 0.04, 6, 16), rim.material); h.position.set(s * 1.65, 0.25, 0); h.rotation.y = Math.PI / 2; g.add(h); });
+              const soup = new T.Mesh(new T.CircleGeometry(1.5, 48), new T.MeshStandardMaterial({ color: 0xe6d3a8, roughness: 0.4, emissive: 0x332a10 })); soup.rotation.x = -Math.PI / 2; soup.position.y = 0.05; soup.material.userData.keepEmissive = true; g.add(soup); g.userData.soup = soup;
+              // ошақ-тұғыр и огонь
+              [0, 2.1, 4.2].forEach(a => { const leg = new T.Mesh(new T.BoxGeometry(0.12, 1.3, 0.12), new T.MeshStandardMaterial({ color: 0x333333, metalness: 0.6 })); leg.position.set(Math.cos(a) * 1.4, -1.4, Math.sin(a) * 1.4); g.add(leg); });
+              const fire = new T.Mesh(new T.ConeGeometry(0.5, 0.9, 12), new T.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.8 })); fire.position.y = -1.7; g.add(fire); g.userData.fire = fire;
+              { const L = new T.PointLight(0xff8a30, 1.4, 6); L.position.set(0, -1.4, 0); g.add(L); }
+              scene.add(g); registerPart(parts, 'qazan', g, new T.Vector3(), () => new T.Vector3(1.6, 0.3, 0)); parts.qazan.locked = true; }
+            // ингредиенты на кругу
+            const ING = [['su', 0x4aa3ff, 'drop'], ['et', 0xa3281e, 'box'], ['tuz', 0xffffff, 'cubes'], ['mai', 0xf2d24a, 'box'], ['un', 0xf5efe0, 'mound'], ['dan', 0xd9a441, 'grains'], ['sut', 0xfafafa, 'drop']];
+            const items = [];
+            ING.forEach(([id, c, kind], i) => {
+                const a = i / ING.length * Math.PI * 2; const home = new T.Vector3(Math.cos(a) * 3.3, 1.2 + Math.sin(i * 1.3) * 0.3, Math.sin(a) * 3.3);
+                const g = new T.Group(); const mat = new T.MeshStandardMaterial({ color: c, roughness: 0.5, emissive: 0x000000 });
+                if (kind === 'drop') { const m = new T.Mesh(new T.SphereGeometry(0.3, 20, 16), mat); m.scale.y = 1.3; g.add(m); const tip = new T.Mesh(new T.ConeGeometry(0.2, 0.35, 16), mat); tip.position.y = 0.4; g.add(tip); }
+                else if (kind === 'box') { const m = new T.Mesh(new T.BoxGeometry(0.6, 0.35, 0.45), mat); m.rotation.set(0.3, 0.4, 0); g.add(m); }
+                else if (kind === 'cubes') { for (let k = 0; k < 6; k++) { const m = new T.Mesh(new T.BoxGeometry(0.12, 0.12, 0.12), mat); m.position.set((k % 3 - 1) * 0.16, Math.floor(k / 3) * 0.14, (k % 2) * 0.1); m.rotation.set(k, k * 2, 0); g.add(m); } }
+                else if (kind === 'mound') { const m = new T.Mesh(new T.ConeGeometry(0.4, 0.4, 20), mat); g.add(m); }
+                else { for (let k = 0; k < 14; k++) { const m = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), mat); m.scale.y = 1.6; m.position.set(Math.cos(k) * 0.2 * (k % 3) / 2, (k % 4) * 0.06, Math.sin(k) * 0.2 * (k % 3) / 2); g.add(m); } }
+                g.position.copy(home); scene.add(g);
+                registerPart(parts, id, g, new T.Vector3(), () => new T.Vector3(0, 0.3, 0)); parts[id].locked = true;
+                items.push({ g, home });
+            });
+            // пар
+            const steamN = 60, sp = new Float32Array(steamN * 3); for (let i = 0; i < steamN; i++) { sp[i * 3] = (Math.random() - 0.5) * 2; sp[i * 3 + 1] = Math.random() * 3; sp[i * 3 + 2] = (Math.random() - 0.5) * 2; }
+            const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3));
+            const steam = new T.Points(sg, new T.PointsMaterial({ map: glowTexture(T), color: 0xffffff, size: 0.6, transparent: true, opacity: 0, depthWrite: false })); scene.add(steam);
+            let cook = null, now = 0;
+            const tick = (dt, t) => {
+                now = t; const q = parts.qazan.grp.userData; q.fire.scale.y = 1 + Math.sin(t * 9) * 0.15;
+                items.forEach((it, i) => { if (!cook || cook.i <= i) it.g.position.y = it.home.y + Math.sin(t * 1.5 + i) * 0.08; it.g.rotation.y += dt * 0.4; });
+                if (cook) {
+                    const k = t - cook.t0; const i = Math.floor(k / 0.9);
+                    for (let j = 0; j < items.length; j++) {
+                        const it = items[j]; const local = k - j * 0.9;
+                        if (local > 0 && local < 0.9) { const a = local / 0.9; it.g.visible = true; it.g.position.set(it.home.x * (1 - a), it.home.y + Math.sin(a * Math.PI) * 1.2 - a * (it.home.y - 0.1), it.home.z * (1 - a)); it.g.scale.setScalar(1 - a * 0.7); if (cook.i !== j) { cook.i = j; S._setActive?.(ING[j][0]); } }
+                        else if (local >= 0.9) it.g.visible = false;
+                    }
+                    q.soup.material.color.lerp(new T.Color(0xf3ead2), 0.01);
+                    steam.material.opacity = Math.min(0.5, k * 0.08);
+                    if (k > items.length * 0.9 + 0.5 && !cook.done) { cook.done = true; S._setActive?.('qazan'); }
+                }
+                const p = steam.geometry.attributes.position; for (let i = 0; i < steamN; i++) { let y = p.getY(i) + dt * 0.6; if (y > 3.5) y = 0.2; p.setY(i, y); } p.needsUpdate = true;
+            };
+            const run = () => { cook = { t0: now, i: -1 }; items.forEach(it => { it.g.visible = true; it.g.scale.setScalar(1); it.g.position.copy(it.home); }); };
+            const reset = () => { cook = null; steam.material.opacity = 0; items.forEach(it => { it.g.visible = true; it.g.scale.setScalar(1); it.g.position.copy(it.home); }); };
+            S.st.phi = 1.05;
+            return { parts, tick, api: { run, reset } };
+        }
+        function KozheScene() {
+            return <AnatomyViewer PARTS={KOZHE_PARTS} scene={(T, sc, S) => { const r = buildKozhe(T, sc, S); return r; }} explodable={false} stepLabel="құрам"
+                opts={{ distance: 11, target: [0, 0.3, 0], minDist: 5, maxDist: 22 }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Наурыз көже</b> — праздничный суп из 7 продуктов (22 марта, Наурыз — Новый год по солнцу). Нажмите «Пісіру», и все семь продуктов отправятся в казан.</p>}
+                controls={(api) => <>
+                    <button className={btn3d + ' flex-1'} style={btnStyle(true)} onClick={() => api.run?.()}>🔥 Пісіру · Сварить</button>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => api.reset?.()}>↺</button>
+                </>} />;
+        }
+
+        function SaddleAtlas() {
+            return <AnatomyViewer PARTS={SADDLE_PARTS} scene={buildSaddle} opts={{ distance: 12, target: [0, 0.6, 0], minDist: 5, maxDist: 25 }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Ер-тұрман</b> — полное снаряжение коня. «Ат — ердің қанаты» (конь — крылья джигита). Разберите седло ползунком, чтобы увидеть каждую часть.</p>} />;
+        }
+
+        function Customs3D() {
+            const [m, setM] = useState('besik');
+            const LIST = [['besik', '⧖ Бесік'], ['tusau', '✂ Тұсаукесер'], ['kozhe', '☀ Наурыз көже'], ['yurt', '⌂ Отау (киіз үй)']];
+            return (
+                <div>
+                    <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
+                        {LIST.map(([k, l]) => <button key={k} className={btn3d + ' shrink-0'} style={btnStyle(m === k)} onClick={() => setM(k)}>{l}</button>)}
+                    </div>
+                    <div className="relative rounded-3xl overflow-hidden border border-[#1a1a1a] h-[78vh] min-h-[520px]" style={{ background: 'radial-gradient(ellipse at 50% 70%, #14110a 0%, #070707 70%)' }}>
+                        {m === 'besik' && <BesikScene key="b" />}
+                        {m === 'tusau' && <TusauScene key="t" />}
+                        {m === 'kozhe' && <KozheScene key="k" />}
+                        {m === 'yurt' && <YurtAtlas key="y" />}
+                    </div>
+                </div>
+            );
+        }
+
+        // ── Дополнительные уроки ──
+        KZ_LESSONS.push(
+            { id: 'colors', icon: '🎨', kk: 'Түстер', ru: 'Цвета', level: 'A1', words: [
+                ['ақ', 'белый'], ['қара', 'чёрный'], ['қызыл', 'красный'], ['көк', 'синий; голубой'], ['жасыл', 'зелёный'], ['сары', 'жёлтый'],
+                ['қоңыр', 'коричневый'], ['сұр', 'серый'], ['күлгін', 'фиолетовый'], ['қызғылт', 'розовый'], ['алтын түсті', 'золотистый'],
+            ] },
+            { id: 'days', icon: '📅', kk: 'Уақыт пен күндер', ru: 'Время и дни недели', level: 'A1', words: [
+                ['дүйсенбі', 'понедельник'], ['сейсенбі', 'вторник'], ['сәрсенбі', 'среда'], ['бейсенбі', 'четверг'], ['жұма', 'пятница'],
+                ['сенбі', 'суббота'], ['жексенбі', 'воскресенье'], ['бүгін', 'сегодня'], ['ертең', 'завтра'], ['кеше', 'вчера'], ['қазір', 'сейчас'],
+                ['таңертең', 'утром'], ['түсте', 'днём, в обед'], ['кешке', 'вечером'], ['түнде', 'ночью'], ['апта', 'неделя'], ['ай', 'месяц; луна'], ['жыл', 'год'],
+                ['Сағат неше?', 'Который час?'], ['Сағат үш', 'Три часа'],
+            ] },
+            { id: 'food', icon: '🍲', kk: 'Тамақ', ru: 'Еда и дастархан', level: 'A1', words: [
+                ['нан', 'хлеб'], ['ет', 'мясо'], ['сүт', 'молоко'], ['шай', 'чай'], ['су', 'вода'], ['қымыз', 'кумыс'], ['шұбат', 'шубат (верблюжье молоко)'],
+                ['бауырсақ', 'баурсаки'], ['ірімшік', 'творожный сыр'], ['құрт', 'курт'], ['қант', 'сахар'], ['тұз', 'соль'], ['алма', 'яблоко'],
+                ['Ас болсын!', 'Приятного аппетита!'], ['Дәмді екен', 'Вкусно'], ['Тойдым, рақмет', 'Я сыт, спасибо'], ['Дастарқанға береке!', 'Изобилия вашему столу!'],
+            ] },
+            { id: 'body', icon: '🧍', kk: 'Дене мүшелері', ru: 'Тело и здоровье', level: 'A2', words: [
+                ['бас', 'голова'], ['көз', 'глаз'], ['құлақ', 'ухо'], ['мұрын', 'нос'], ['ауыз', 'рот'], ['тіс', 'зуб'], ['шаш', 'волосы'],
+                ['қол', 'рука'], ['аяқ', 'нога'], ['жүрек', 'сердце'], ['ауырады', 'болит'], ['дәрігер', 'врач'], ['дәрі', 'лекарство'], ['дәріхана', 'аптека'],
+            ] },
+            { id: 'verbs', icon: '🏃', kk: 'Етістіктер', ru: 'Главные глаголы', level: 'A2', words: [
+                ['бару', 'идти, ехать (туда)'], ['келу', 'приходить'], ['жеу', 'есть'], ['ішу', 'пить'], ['оқу', 'читать; учиться'], ['жазу', 'писать'],
+                ['сөйлеу', 'говорить'], ['білу', 'знать'], ['көру', 'видеть'], ['тыңдау', 'слушать'], ['жұмыс істеу', 'работать'], ['ұйықтау', 'спать'],
+                ['сатып алу', 'покупать'], ['көмектесу', 'помогать'], ['үйрену', 'изучать'], ['түсіну', 'понимать'],
+            ] },
+            { id: 'polite', icon: '🙏', kk: 'Сыпайы сөздер', ru: 'Вежливость и этикет', level: 'A2', words: [
+                ['Түсінбедім', 'Я не понял(а)'], ['Қайталаңызшы', 'Повторите, пожалуйста'], ['Баяуырақ сөйлеңізші', 'Говорите, пожалуйста, помедленнее'],
+                ['Қазақша аз білемін', 'Я немного знаю казахский'], ['Бұл қазақша қалай болады?', 'Как это по-казахски?'], ['Көмектесіп жібересіз бе?', 'Не поможете?'],
+                ['Құттықтаймын!', 'Поздравляю!'], ['Жолыңыз болсын!', 'Счастливого пути!'], ['Сәттілік!', 'Удачи!'], ['Айып етпеңіз', 'Не обессудьте'],
+                ['Бата беріңіз', 'Благословите'], ['Иманды болсын', 'Пусть покоится с миром (соболезнование)'],
+            ] },
+        );
+
+        // ── Диалоги: [кто, қазақша, по-русски] ──
+        const KZ_DIALOGUES = [
+            { id: 'meet', icon: '🤝', kk: 'Танысу', ru: 'Знакомство', a: 'Айгүл', b: 'Сіз', lines: [
+                ['a', 'Сәлеметсіз бе!', 'Здравствуйте!'],
+                ['b', 'Сәлеметсіз бе!', 'Здравствуйте!'],
+                ['a', 'Менің атым Айгүл. Сіздің атыңыз кім?', 'Меня зовут Айгуль. Как вас зовут?'],
+                ['b', 'Менің атым Дамир. Танысқаныма қуаныштымын.', 'Меня зовут Дамир. Рад познакомиться.'],
+                ['a', 'Мен де қуаныштымын. Сіз қай жерденсіз?', 'Я тоже рада. Откуда вы?'],
+                ['b', 'Мен Алматыданмын. Ал сіз ше?', 'Я из Алматы. А вы?'],
+                ['a', 'Мен Астанаданмын. Қазақша жақсы сөйлейді екенсіз!', 'Я из Астаны. Вы хорошо говорите по-казахски!'],
+                ['b', 'Рақмет, мен әлі үйреніп жүрмін.', 'Спасибо, я ещё учусь.'],
+            ] },
+            { id: 'ru', icon: '🌳', kk: 'Руыңыз кім?', ru: 'Разговор о роде', a: 'Ақсақал', b: 'Сіз', lines: [
+                ['a', 'Балам, қай жердің баласысың?', 'Сынок, ты откуда родом?'],
+                ['b', 'Ата, мен Ақтөбеденмін.', 'Дедушка, я из Актобе.'],
+                ['a', 'Руың кім?', 'Из какого ты рода?'],
+                ['b', 'Кіші жүз, Әлімұлы руынанмын.', 'Я из Младшего жуза, род Алимулы.'],
+                ['a', 'Жеті атаңды білесің бе?', 'Знаешь своих семь предков?'],
+                ['b', 'Иә, білемін. Әкем — Қайрат, атам — Әліби.', 'Да, знаю. Мой отец — Кайрат, дед — Алиби.'],
+                ['a', 'Жарайсың! Ата-бабаңды ұмытпа.', 'Молодец! Не забывай предков.'],
+                ['b', 'Рақмет, ата. Батаңызды беріңізші.', 'Спасибо, дедушка. Благословите меня.'],
+                ['a', 'Жолың ашық болсын, балам!', 'Пусть дорога твоя будет открыта, сынок!'],
+            ] },
+            { id: 'shop', icon: '🛒', kk: 'Дүкенде', ru: 'В магазине', a: 'Сатушы', b: 'Сіз', lines: [
+                ['a', 'Сәлеметсіз бе! Не керек?', 'Здравствуйте! Что вам нужно?'],
+                ['b', 'Бір нан мен бір литр сүт беріңізші.', 'Дайте, пожалуйста, хлеб и литр молока.'],
+                ['a', 'Тағы не керек?', 'Что-нибудь ещё?'],
+                ['b', 'Басқа ештеңе керек емес. Қанша тұрады?', 'Больше ничего. Сколько стоит?'],
+                ['a', 'Барлығы бес жүз теңге.', 'Всего пятьсот тенге.'],
+                ['b', 'Картамен төлесем бола ма?', 'Можно оплатить картой?'],
+                ['a', 'Әрине, болады.', 'Конечно, можно.'],
+                ['b', 'Рақмет! Сау болыңыз!', 'Спасибо! До свидания!'],
+            ] },
+            { id: 'bazar', icon: '🍎', kk: 'Базарда', ru: 'На базаре (торг)', a: 'Сатушы', b: 'Сіз', lines: [
+                ['b', 'Алма қанша тұрады?', 'Сколько стоят яблоки?'],
+                ['a', 'Килосы мың теңге.', 'Тысяча тенге за килограмм.'],
+                ['b', 'Қымбат екен. Арзандатыңызшы.', 'Дороговато. Сделайте подешевле.'],
+                ['a', 'Жарайды, сегіз жүз теңгеге берейін.', 'Ладно, отдам за восемьсот.'],
+                ['b', 'Онда екі кило алайын.', 'Тогда возьму два килограмма.'],
+                ['a', 'Мінеки. Тағы келіңіз!', 'Вот, пожалуйста. Приходите ещё!'],
+            ] },
+            { id: 'taxi', icon: '🚕', kk: 'Таксиде', ru: 'В такси', a: 'Жүргізуші', b: 'Сіз', lines: [
+                ['b', 'Сәлеметсіз бе! Әуежайға апарасыз ба?', 'Здравствуйте! Отвезёте в аэропорт?'],
+                ['a', 'Иә, отырыңыз.', 'Да, садитесь.'],
+                ['b', 'Қанша болады?', 'Сколько будет стоить?'],
+                ['a', 'Үш мың теңге.', 'Три тысячи тенге.'],
+                ['b', 'Жарайды. Сәл тезірек жүре аласыз ба? Кешігіп барамын.', 'Хорошо. Можно чуть быстрее? Я опаздываю.'],
+                ['a', 'Уайымдамаңыз, үлгереміз.', 'Не волнуйтесь, успеем.'],
+                ['b', 'Осы жерге тоқтаңызшы. Рақмет!', 'Остановите здесь, пожалуйста. Спасибо!'],
+            ] },
+            { id: 'cafe', icon: '☕', kk: 'Кафеде', ru: 'В кафе', a: 'Даяшы', b: 'Сіз', lines: [
+                ['a', 'Қош келдіңіз! Не тапсырыс бересіз?', 'Добро пожаловать! Что будете заказывать?'],
+                ['b', 'Мәзірді әкеліңізші.', 'Принесите, пожалуйста, меню.'],
+                ['a', 'Мінеки. Бүгін бешбармақ өте дәмді.', 'Вот, пожалуйста. Сегодня бешбармак очень вкусный.'],
+                ['b', 'Онда бешбармақ пен бір шәйнек шай беріңізші.', 'Тогда бешбармак и чайник чая, пожалуйста.'],
+                ['a', 'Шайға сүт қосайын ба?', 'Добавить в чай молоко?'],
+                ['b', 'Иә, қосыңыз. Есепшотты да әкеліңізші.', 'Да, добавьте. И принесите, пожалуйста, счёт.'],
+                ['a', 'Ас болсын!', 'Приятного аппетита!'],
+            ] },
+            { id: 'guest', icon: '🏠', kk: 'Қонақта', ru: 'В гостях', a: 'Үй иесі', b: 'Сіз', lines: [
+                ['a', 'Қош келдіңіз! Төрге шығыңыз!', 'Добро пожаловать! Проходите на почётное место!'],
+                ['b', 'Рақмет. Үйлеріңіз қандай жайлы!', 'Спасибо. Какой у вас уютный дом!'],
+                ['a', 'Шай ішіңіз, дастарқанға қараңыз.', 'Пейте чай, угощайтесь.'],
+                ['b', 'Бауырсағыңыз өте дәмді екен!', 'Ваши баурсаки очень вкусные!'],
+                ['a', 'Ас болсын! Тағы бір кесе құяйын ба?', 'Приятного аппетита! Налить ещё пиалу?'],
+                ['b', 'Рақмет, тойдым. Дастарқандарыңызға береке берсін!', 'Спасибо, я сыт(а). Пусть ваш стол будет изобильным!'],
+            ] },
+            { id: 'road', icon: '🧭', kk: 'Жол сұрау', ru: 'Как пройти', a: 'Жолаушы', b: 'Сіз', lines: [
+                ['b', 'Кешіріңіз, метро қайда екенін білесіз бе?', 'Извините, не знаете, где метро?'],
+                ['a', 'Тура жүріңіз, содан кейін солға бұрылыңыз.', 'Идите прямо, потом поверните налево.'],
+                ['b', 'Алыс па?', 'Далеко?'],
+                ['a', 'Жоқ, жақын. Жаяу бес минуттай.', 'Нет, близко. Минут пять пешком.'],
+                ['b', 'Көп рақмет!', 'Большое спасибо!'],
+                ['a', 'Оқасы жоқ. Жолыңыз болсын!', 'Не за что. Счастливого пути!'],
+            ] },
+            { id: 'doctor', icon: '🩺', kk: 'Дәрігерде', ru: 'У врача', a: 'Дәрігер', b: 'Сіз', lines: [
+                ['a', 'Сізді не мазалайды?', 'Что вас беспокоит?'],
+                ['b', 'Басым ауырады, қызуым бар.', 'У меня болит голова и температура.'],
+                ['a', 'Қашаннан бері?', 'С каких пор?'],
+                ['b', 'Кешеден бері.', 'Со вчерашнего дня.'],
+                ['a', 'Мына дәріні күніне үш рет ішіңіз. Көп су ішіңіз.', 'Принимайте это лекарство три раза в день. Пейте много воды.'],
+                ['b', 'Түсіндім. Рақмет, дәрігер!', 'Понял(а). Спасибо, доктор!'],
+                ['a', 'Тезірек жазылыңыз!', 'Скорейшего выздоровления!'],
+            ] },
+            { id: 'phone', icon: '📞', kk: 'Телефонмен', ru: 'По телефону', a: 'Ерлан', b: 'Сіз', lines: [
+                ['a', 'Алло, сәлем! Бұл Асқар ма?', 'Алло, привет! Это Аскар?'],
+                ['b', 'Иә, менмін. Кім сөйлеп тұр?', 'Да, это я. Кто говорит?'],
+                ['a', 'Бұл Ерлан ғой. Қалайсың?', 'Это же Ерлан. Как ты?'],
+                ['b', 'Жақсы, өзің қалайсың?', 'Хорошо, а ты как?'],
+                ['a', 'Жақсы. Ертең кездесейік пе?', 'Хорошо. Давай завтра встретимся?'],
+                ['b', 'Келістік. Сағат нешеде?', 'Договорились. Во сколько?'],
+                ['a', 'Сағат алтыда, орталықта.', 'В шесть часов, в центре.'],
+                ['b', 'Жарайды, кездескенше!', 'Хорошо, до встречи!'],
+            ] },
+            { id: 'work', icon: '💼', kk: 'Жұмыста', ru: 'На работе', a: 'Әріптес', b: 'Сіз', lines: [
+                ['a', 'Қайырлы таң! Жиналыс нешеде басталады?', 'Доброе утро! Во сколько начинается собрание?'],
+                ['b', 'Қайырлы таң! Сағат онда басталады.', 'Доброе утро! Начинается в десять.'],
+                ['a', 'Есепті дайындадыңыз ба?', 'Вы подготовили отчёт?'],
+                ['b', 'Иә, кеше бітірдім. Поштаңызға жібердім.', 'Да, закончил(а) вчера. Отправил(а) вам на почту.'],
+                ['a', 'Жарайсыз! Түскі асқа бірге барайық па?', 'Молодец! Пойдём вместе на обед?'],
+                ['b', 'Әрине, барайық.', 'Конечно, пойдём.'],
+            ] },
+        ];
+
+        // ── Предложения для сборки (порядок слов: подлежащее → … → сказуемое) ──
+        const KZ_SENTENCES = [
+            ['Мен қазақ тілін үйреніп жүрмін', 'Я изучаю казахский язык'],
+            ['Менің әкем мұғалім', 'Мой отец — учитель'],
+            ['Біз ертең ауылға барамыз', 'Мы завтра поедем в аул'],
+            ['Анам дастарқанға бауырсақ қойды', 'Мама поставила на стол баурсаки'],
+            ['Атам маған шежіре айтып берді', 'Дедушка рассказал мне шежире'],
+            ['Сен қай рудансың', 'Из какого ты рода?'],
+            ['Біздің үйіміз үлкен', 'Наш дом большой'],
+            ['Мен шай ішкім келеді', 'Я хочу выпить чаю'],
+            ['Бүгін ауа райы жақсы', 'Сегодня хорошая погода'],
+            ['Балалар далада ойнап жүр', 'Дети играют на улице'],
+            ['Мен Алматыда тұрамын', 'Я живу в Алматы'],
+            ['Інім университетте оқиды', 'Мой младший брат учится в университете'],
+            ['Қонақтар кешке келеді', 'Гости придут вечером'],
+            ['Ол домбыра тартады', 'Он(а) играет на домбре'],
+        ];
+
+        // ── Грамматика: правила сингармонизма ──
+        const KZ_BACK = 'аоұыу', KZ_FRONT = 'әөүіеи';
+        const kzLastVowel = (w) => { for (let i = w.length - 1; i >= 0; i--) { const c = w[i].toLowerCase(); if (KZ_BACK.includes(c)) return 'back'; if (KZ_FRONT.includes(c)) return 'front'; if ('я'.includes(c)) return 'back'; } return 'back'; };
+        const kzLast = (w) => w.trim().slice(-1).toLowerCase();
+        const kzPlural = (w) => { w = w.trim(); if (!w) return ''; const l = kzLast(w), b = kzLastVowel(w) === 'back';
+            const s = ('аәеиоөұүыіуюя'.includes(l) || 'рйу'.includes(l)) ? (b ? 'лар' : 'лер') : ('лмнңжз'.includes(l) ? (b ? 'дар' : 'дер') : (b ? 'тар' : 'тер')); return w + s; };
+        const kzQuestion = (w) => { w = w.trim(); if (!w) return ''; const l = kzLast(w), b = kzLastVowel(w) === 'back';
+            const s = ('аәеиоөұүыіуюя'.includes(l) || 'рйул'.includes(l)) ? (b ? 'ма' : 'ме') : ('мнңжз'.includes(l) ? (b ? 'ба' : 'бе') : (b ? 'па' : 'пе')); return w + ' ' + s + '?'; };
+        const kzPossess = (w) => { w = w.trim(); if (!w) return []; const l = kzLast(w); const v = 'аәеиоөұүыіуюя'.includes(l) && l !== 'у';
+            const y = kzLastVowel(w) === 'back' ? 'ы' : 'і'; const base = (!v && 'кқп'.includes(l)) ? w.slice(0, -1) + ({ 'к': 'г', 'қ': 'ғ', 'п': 'б' }[l]) : w;
+            return v ? [['менің', w + 'м'], ['сенің', w + 'ң'], ['сіздің', w + 'ң' + y + 'з'], ['оның', w + 'с' + y], ['біздің', w + 'м' + y + 'з']]
+                     : [['менің', base + y + 'м'], ['сенің', base + y + 'ң'], ['сіздің', base + y + 'ң' + y + 'з'], ['оның', base + y], ['біздің', base + y + 'м' + y + 'з']]; };
+
+        const KZ_GRAMMAR = [
+            { id: 'harmony', kk: 'Үндестік заңы', ru: 'Закон сингармонизма', text: 'Главное правило казахского: окончания «подстраиваются» под слово. Если последний гласный твёрдый (а, о, ұ, ы, у) — берётся твёрдый вариант (-лар, -ма, -да). Если мягкий (ә, ө, ү, і, е, и) — мягкий (-лер, -ме, -де). Начальный согласный окончания зависит от последнего звука слова.',
+              ex: [['бала → балалар', 'дети'], ['үй → үйлер', 'дома'], ['ат → аттар', 'кони'], ['гүл → гүлдер', 'цветы']], tool: 'plural' },
+            { id: 'question', kk: 'Сұраулық шылау', ru: 'Вопрос: ма/ме, ба/бе, па/пе', text: 'Общий вопрос делают частицей после слова: после гласных и р, й, у, л — ма/ме; после м, н, ң, ж, з — ба/бе; после глухих согласных — па/пе.',
+              ex: [['Бұл үй ме?', 'Это дом?'], ['Сен студентсің бе?', 'Ты студент?'], ['Алыс па?', 'Далеко?'], ['Сіз дайынсыз ба?', 'Вы готовы?']], tool: 'question' },
+            { id: 'possess', kk: 'Тәуелдік жалғау', ru: 'Притяжательность: мой, твой…', text: '«Мой дом» по-казахски — «менің үйім»: и местоимение, и окончание. После гласной: -м, -ң, -сы/-сі; после согласной: -ым/-ім, -ың/-ің, -ы/-і. Конечные к, қ, п часто озвончаются: кітап → кітабым.',
+              ex: [['менің әкем', 'мой отец'], ['сенің атың', 'твоё имя'], ['оның кітабы', 'его книга'], ['біздің ауылымыз', 'наш аул']], tool: 'possess' },
+            { id: 'cases', kk: 'Септіктер', ru: '7 падежей', text: 'В казахском 7 падежей. Окончания тоже следуют сингармонизму. Пример со словом «үй» (дом) и «қала» (город):',
+              table: [['Атау', 'кто? что?', 'үй', 'қала'], ['Ілік', 'чей?', 'үйдің', 'қаланың'], ['Барыс', 'куда? кому?', 'үйге', 'қалаға'], ['Табыс', 'кого? что?', 'үйді', 'қаланы'], ['Жатыс', 'где?', 'үйде', 'қалада'], ['Шығыс', 'откуда?', 'үйден', 'қаладан'], ['Көмектес', 'с чем? чем?', 'үймен', 'қаламен']] },
+            { id: 'present', kk: 'Осы шақ', ru: 'Настоящее время глагола', text: 'Глагол стоит в конце предложения. К основе добавляют -а/-е/-й и личное окончание. Пример: бару (идти) и келу (приходить).',
+              table: [['мен', 'я', 'барамын', 'келемін'], ['сен', 'ты', 'барасың', 'келесің'], ['сіз', 'вы (вежл.)', 'барасыз', 'келесіз'], ['ол', 'он/она', 'барады', 'келеді'], ['біз', 'мы', 'барамыз', 'келеміз'], ['олар', 'они', 'барады', 'келеді']] },
+            { id: 'order', kk: 'Сөз тәртібі', ru: 'Порядок слов', text: 'Казахский — язык «S-O-V»: подлежащее → дополнение → сказуемое (глагол в конце). Определение — перед словом, предлоги заменяют окончания и послелоги.',
+              ex: [['Мен кітап оқимын.', 'Я читаю книгу (досл.: я книгу читаю).'], ['Ол үйге барды.', 'Он пошёл домой (досл.: он в дом пошёл).'], ['Үлкен үй', 'большой дом']] },
+        ];
+
+        function DialogTab({ sp, addXp }) {
+            const [open, setOpen] = useState(null); const [mode, setMode] = useState('read'); const [step, setStep] = useState(0); const [pick, setPick] = useState(null); const [score, setScore] = useState(0);
+            const [showRu, setShowRu] = useState(true);
+            const D = KZ_DIALOGUES.find(d => d.id === open);
+            const allB = useMemo(() => KZ_DIALOGUES.flatMap(d => d.lines.filter(l => l[0] === 'b').map(l => l[1])), []);
+            const opts = useMemo(() => { if (!D || mode !== 'role') return []; const l = D.lines[step]; if (!l || l[0] !== 'b') return [];
+                return shuffle([l[1], ...shuffle(allB.filter(x => x !== l[1])).slice(0, 2)]); }, [open, step, mode]);
+            useEffect(() => { if (D && mode === 'role' && D.lines[step]?.[0] === 'a') { sp.say(D.lines[step][1]); const t = setTimeout(() => setStep(s => s + 1), 1600 + D.lines[step][1].length * 40); return () => clearTimeout(t); } }, [open, step, mode]);
+            const playAll = () => { if (!D) return; let k = 0; const next = () => { if (k >= D.lines.length) return; setStep(k); sp.say(D.lines[k][1]); const d = 900 + D.lines[k][1].length * 70; k++; setTimeout(next, d); }; next(); };
+
+            if (!D) return (
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {KZ_DIALOGUES.map(d => <button key={d.id} onClick={() => { setOpen(d.id); setStep(0); setMode('read'); setScore(0); }} className="glass-card rounded-2xl p-5 text-left">
+                        <span className="text-3xl">{d.icon}</span>
+                        <h4 className="text-xl font-serif text-white mt-3">{d.kk}</h4><p className="text-[#777] text-xs">{d.ru} · {d.lines.length} реплик</p>
+                    </button>)}
+                </div>);
+            const shown = mode === 'read' ? D.lines : D.lines.slice(0, step);
+            const cur = D.lines[step];
+            const choose = (o) => { if (pick) return; setPick(o); const ok = o === cur[1]; if (ok) { setScore(s => s + 1); addXp(4); sp.say(o); }
+                setTimeout(() => { setPick(null); if (ok) setStep(s => s + 1); }, ok ? 900 : 1300); };
+            return (
+                <div className="max-w-2xl mx-auto">
+                    <button onClick={() => setOpen(null)} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-4">← Диалогтар</button>
+                    <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+                        <div><h3 className="text-3xl font-serif text-white">{D.icon} {D.kk}</h3><p className="text-[#666] text-xs">{D.ru}</p></div>
+                        <div className="flex gap-2">
+                            <button className={btn3d} style={btnStyle(mode === 'read')} onClick={() => { setMode('read'); setStep(0); }}>Оқу</button>
+                            <button className={btn3d} style={btnStyle(mode === 'role')} onClick={() => { setMode('role'); setStep(0); setScore(0); }}>Рөлдік ойын</button>
+                            <button className={btn3d} style={btnStyle(showRu)} onClick={() => setShowRu(v => !v)}>RU</button>
+                        </div>
+                    </div>
+                    {mode === 'role' && <p className="text-[#888] text-xs mb-4">Вы — «{D.b}». Слушайте собеседника и выбирайте правильную реплику.</p>}
+                    <div className="space-y-3">
+                        {shown.map((l, i) => { const me = l[0] === 'b';
+                            return <div key={i} className={`flex ${me ? 'justify-end' : 'justify-start'}`}>
+                                <button onClick={() => sp.say(l[1])} className="max-w-[85%] text-left rounded-2xl px-4 py-3 border transition-all"
+                                    style={{ borderColor: mode === 'read' && step === i ? '#C5A55A' : me ? '#C5A55A40' : '#1e1e1e', background: me ? 'rgba(197,165,90,0.08)' : '#0d0d0d', borderBottomRightRadius: me ? 4 : 16, borderBottomLeftRadius: me ? 16 : 4 }}>
+                                    <p className="text-[9px] tracking-widest uppercase mb-1" style={{ color: me ? '#C5A55A' : '#666' }}>{me ? D.b : D.a} 🔈</p>
+                                    <p className="text-white">{l[1]}</p>
+                                    {showRu && <p className="text-[#777] text-xs mt-1">{l[2]}</p>}
+                                </button>
+                            </div>; })}
+                    </div>
+                    {mode === 'read' && <button onClick={playAll} className="mt-6 px-6 py-3 rounded-full text-xs font-bold tracking-widest" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>▶ Барлығын тыңдау</button>}
+                    {mode === 'role' && cur && cur[0] === 'b' && <div className="mt-6 grid gap-2">
+                        <p className="text-[#555] text-[10px] tracking-widest uppercase">Сіздің жауабыңыз · {showRu ? cur[2] : 'Ваш ответ'}</p>
+                        {opts.map(o => { const st = pick ? (o === cur[1] ? 'ok' : pick === o ? 'bad' : '') : '';
+                            return <button key={o} onClick={() => choose(o)} className="py-3 px-4 rounded-xl border text-left text-sm"
+                                style={{ borderColor: st === 'ok' ? '#4ade80' : st === 'bad' ? '#e07a5f' : '#222', background: st === 'ok' ? '#4ade8015' : st === 'bad' ? '#e07a5f15' : '#0a0a0a', color: '#ddd' }}>{o}</button>; })}
+                    </div>}
+                    {mode === 'role' && !cur && <div className="mt-6 text-center"><p className="text-3xl font-serif text-[#C5A55A]">Керемет! 🎉</p><p className="text-[#888] text-sm">Правильных ответов: {score}</p></div>}
+                </div>
+            );
+        }
+
+        function GrammarTab({ sp }) {
+            const [open, setOpen] = useState('harmony'); const [w, setW] = useState('');
+            const G = KZ_GRAMMAR.find(g => g.id === open);
+            const examples = { plural: ['кітап', 'қала', 'мұғалім', 'дос', 'көл', 'тау'], question: ['үй', 'алыс', 'жақсы', 'студентсің', 'дайынсыз', 'кітап'], possess: ['әке', 'кітап', 'ат', 'ауыл', 'үй', 'шеше'] };
+            const out = G.tool === 'plural' ? kzPlural(w) : G.tool === 'question' ? kzQuestion(w) : null;
+            return (
+                <div className="grid md:grid-cols-[220px_1fr] gap-6">
+                    <div className="flex md:flex-col gap-2 overflow-x-auto">
+                        {KZ_GRAMMAR.map((g, i) => <button key={g.id} onClick={() => { setOpen(g.id); setW(''); }} className="shrink-0 text-left px-4 py-3 rounded-xl border transition-all"
+                            style={{ borderColor: open === g.id ? '#C5A55A' : '#1a1a1a', background: open === g.id ? 'rgba(197,165,90,0.08)' : '#0d0d0d' }}>
+                            <p className="text-[#555] text-[9px] tracking-widest">{i + 1}</p><p className="text-white text-sm font-semibold">{g.kk}</p><p className="text-[#777] text-[11px]">{g.ru}</p></button>)}
+                    </div>
+                    <div className="rounded-2xl p-6 border border-[#1a1a1a] bg-[#0d0d0d]">
+                        <h3 className="text-2xl font-serif text-white">{G.kk}</h3><p className="text-[#C5A55A] text-xs mb-4">{G.ru}</p>
+                        <p className="text-[#bbb] text-sm leading-relaxed">{G.text}</p>
+                        {G.ex && <div className="mt-5 grid sm:grid-cols-2 gap-2">{G.ex.map(([k, r]) => <button key={k} onClick={() => sp.say(k.split('→').pop())} className="text-left px-4 py-2.5 rounded-xl bg-[#080808] border border-[#1a1a1a] hover:border-[#C5A55A60]"><p className="text-white">{k} <span className="text-xs">🔈</span></p><p className="text-[#777] text-xs">{r}</p></button>)}</div>}
+                        {G.table && <div className="mt-5 overflow-x-auto"><table className="w-full text-sm"><tbody>{G.table.map(r => <tr key={r[0]} className="border-b border-[#1a1a1a]">
+                            <td className="py-2 pr-3 text-[#C5A55A] font-semibold">{r[0]}</td><td className="py-2 pr-3 text-[#777] text-xs">{r[1]}</td>
+                            <td className="py-2 pr-3"><button onClick={() => sp.say(r[2])} className="text-white hover:text-[#C5A55A]">{r[2]}</button></td><td className="py-2"><button onClick={() => sp.say(r[3])} className="text-white hover:text-[#C5A55A]">{r[3]}</button></td></tr>)}</tbody></table></div>}
+                        {G.tool && <div className="mt-6 rounded-xl p-4 border border-[#C5A55A30]" style={{ background: 'rgba(197,165,90,0.05)' }}>
+                            <p className="text-[#C5A55A] text-[9px] tracking-[0.3em] uppercase mb-2">Тренажёр · впишите слово</p>
+                            <input value={w} onChange={e => setW(e.target.value)} placeholder="Мысалы: кітап" className="w-full bg-transparent border-b border-[#333] focus:border-[#C5A55A] text-white text-lg outline-none py-2" />
+                            <div className="flex flex-wrap gap-1 mt-2">{examples[G.tool].map(x => <button key={x} onClick={() => setW(x)} className="text-[11px] px-2 py-0.5 rounded-full border border-[#2a2a2a] text-[#999]">{x}</button>)}</div>
+                            {w.trim() && <div className="mt-4">
+                                {out && <button onClick={() => sp.say(out)} className="text-2xl font-serif text-[#F0D882]">{out} 🔈</button>}
+                                {G.tool === 'possess' && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{kzPossess(w).map(([p, f]) => <button key={p} onClick={() => sp.say(p + ' ' + f)} className="text-left px-3 py-2 rounded-lg bg-[#080808]"><span className="text-[#777] text-xs">{p} </span><span className="text-[#F0D882]">{f}</span></button>)}</div>}
+                                <p className="text-[#555] text-[10px] mt-2">Последний гласный: {kzLastVowel(w) === 'back' ? 'твёрдый (жуан)' : 'мягкий (жіңішке)'} · последний звук «{kzLast(w)}». Есть исключения — тренажёр учит общему правилу.</p>
+                            </div>}
+                        </div>}
+                    </div>
+                </div>
+            );
+        }
+
+        function BuilderTab({ sp, addXp }) {
+            const [idx, setIdx] = useState(() => Math.floor(Math.random() * KZ_SENTENCES.length));
+            const [kk, ru] = KZ_SENTENCES[idx]; const words = useMemo(() => kk.toLowerCase().split(' '), [idx]);
+            const [pool, setPool] = useState(() => shuffle(words.map((w, i) => ({ w, i })))); const [ans, setAns] = useState([]); const [res, setRes] = useState(null);
+            useEffect(() => { let p = shuffle(words.map((w, i) => ({ w, i }))); if (p.length > 1 && p.every((x, k) => x.i === k)) p = p.reverse(); setPool(p); setAns([]); setRes(null); }, [idx]);
+            const check = () => { const ok = ans.map(a => a.w).join(' ') === kk.toLowerCase(); setRes(ok); if (ok) { addXp(6); sp.say(kk); } };
+            return (
+                <div className="max-w-2xl mx-auto">
+                    <p className="text-[#555] text-[10px] tracking-widest uppercase mb-2">Сөйлем құраңыз · Соберите предложение</p>
+                    <p className="text-2xl text-white font-serif mb-1">{ru}</p>
+                    <p className="text-[#666] text-xs mb-6">Подсказка: в казахском глагол стоит в конце.</p>
+                    <div className="min-h-[64px] rounded-2xl border border-dashed p-3 flex flex-wrap gap-2 mb-4" style={{ borderColor: res === null ? '#333' : res ? '#4ade80' : '#e07a5f' }}>
+                        {ans.map((a, k) => <button key={k} onClick={() => { setAns(x => x.filter((_, j) => j !== k)); setPool(p => [...p, a]); setRes(null); }} className="px-3 py-2 rounded-xl bg-[#C5A55A] text-black font-semibold">{a.w}</button>)}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {pool.map((a, k) => <button key={a.i + '_' + k} onClick={() => { setPool(p => p.filter((_, j) => j !== k)); setAns(x => [...x, a]); setRes(null); }} className="px-3 py-2 rounded-xl border border-[#333] text-white hover:border-[#C5A55A]">{a.w}</button>)}
+                    </div>
+                    {res === false && <p className="text-[#e07a5f] text-sm mb-3">Әлі емес. Правильно: <b>{kk}</b></p>}
+                    {res === true && <p className="text-[#4ade80] text-sm mb-3">Дұрыс! Керемет! +6 XP</p>}
+                    <div className="flex gap-3">
+                        <button onClick={check} disabled={pool.length > 0} className="flex-1 py-3 rounded-2xl text-xs font-bold tracking-widest disabled:opacity-30" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>ТЕКСЕРУ ✓</button>
+                        <button onClick={() => sp.say(kk)} className="px-5 py-3 rounded-2xl border border-[#333] text-[#C5A55A]">🔈</button>
+                        <button onClick={() => setIdx(i => (i + 1 + Math.floor(Math.random() * (KZ_SENTENCES.length - 1))) % KZ_SENTENCES.length)} className="px-5 py-3 rounded-2xl border border-[#333] text-[#999] text-xs tracking-widest">КЕЛЕСІ →</button>
                     </div>
                 </div>
             );
