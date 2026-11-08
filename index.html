@@ -4357,10 +4357,14 @@
                 apply();
             };
             const up = e => { ptrs.delete(e.pointerId); pinch0 = 0; };
-            const wheel = e => { e.preventDefault(); st.fly = null; st.dist *= Math.exp(e.deltaY * 0.0012); apply(); };
+            const wheel = e => { e.preventDefault(); st.fly = null; st.dist *= Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0012)); apply(); };
             el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
             el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
             el.addEventListener('wheel', wheel, { passive: false });
+            const host = container.closest('.fixed') || container.parentElement; // подписи и панели поверх холста
+            const hostWheel = e => { if (e.target === el) return; if (e.ctrlKey) { e.preventDefault(); st.fly = null; st.dist *= Math.exp(e.deltaY * 0.01); apply(); } };
+            const noGesture = e => e.preventDefault();
+            host?.addEventListener('wheel', hostWheel, { passive: false }); host?.addEventListener('gesturestart', noGesture); el.addEventListener('gesturestart', noGesture);
             el.addEventListener('contextmenu', e => e.preventDefault());
 
             const frameCbs = [];
@@ -4403,7 +4407,7 @@
                 flyTo: (pos, d1 = st.dist, dur = 1.2) => { st.fly = { from: st.target.clone(), to: pos.clone(), d0: st.dist, d1, t: 0, dur }; idle = 0; },
                 setAuto: v => { st.auto = v; },
                 dispose: () => {
-                    alive = false; cancelAnimationFrame(raf); ro.disconnect();
+                    alive = false; cancelAnimationFrame(raf); ro.disconnect(); host?.removeEventListener('wheel', hostWheel); host?.removeEventListener('gesturestart', noGesture);
                     scene.traverse(o => { o.geometry?.dispose?.(); const m = o.material; (Array.isArray(m) ? m : m ? [m] : []).forEach(mm => { mm.map?.dispose?.(); mm.dispose?.(); }); });
                     renderer.dispose(); el.remove();
                 },
@@ -5053,6 +5057,7 @@
                     const P = acc(p.attributes.POSITION); g.setAttribute('position', new T.BufferAttribute(P.arr, 3));
                     if (p.attributes.NORMAL !== undefined) g.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL).arr, 3));
                     if (p.attributes.TEXCOORD_0 !== undefined) g.setAttribute('uv', new T.BufferAttribute(acc(p.attributes.TEXCOORD_0).arr, 2));
+                    if (p.attributes.COLOR_0 !== undefined) { const C0 = acc(p.attributes.COLOR_0), n = C0.arr.length / C0.size, rgb = new Float32Array(n * 3); for (let k = 0; k < n; k++) for (let q = 0; q < 3; q++) rgb[k * 3 + q] = C0.arr[k * C0.size + q]; g.setAttribute('color', new T.BufferAttribute(rgb, 3)); }
                     if (p.indices !== undefined) g.setIndex(new T.BufferAttribute(acc(p.indices).arr, 1));
                     g.applyMatrix4(m); const mt = j.materials[p.material] || {}, bt = mt.pbrMetallicRoughness?.baseColorTexture; out.push({ name: nm, mat: mt, geo: g, map: bt ? tex(bt.index) : null }); });
                 (n.children || []).forEach(c => walk(c, m, nm)); };
@@ -5979,51 +5984,64 @@
             g.computeVertexNormals(); return g;
         }
 
+        function feltCircleTexture(T) { const [c, g] = _cv(1024, 1024); const gr = g.createRadialGradient(512, 512, 50, 512, 512, 512); gr.addColorStop(0, '#5a1d16'); gr.addColorStop(1, '#2a0c08'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
+            const R = seeded(11); for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${R() > .5 ? '0,0,0' : '255,210,170'},${R() * .06})`; g.fillRect(R() * 1024, R() * 1024, 2 + R() * 3, 1 + R() * 2); }
+            g.strokeStyle = '#d9b45a'; g.lineWidth = 10; g.beginPath(); g.arc(512, 512, 478, 0, Math.PI * 2); g.stroke(); g.lineWidth = 3; g.beginPath(); g.arc(512, 512, 456, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.arc(512, 512, 372, 0, Math.PI * 2); g.stroke();
+            g.lineWidth = 7; g.lineCap = 'round'; for (let k = 0; k < 28; k++) { g.save(); g.translate(512, 512); g.rotate(k / 28 * Math.PI * 2); g.translate(0, -414);
+                g.beginPath(); g.moveTo(0, 26); g.lineTo(0, 0); g.bezierCurveTo(0, -34, -36, -34, -30, -4); g.moveTo(0, 0); g.bezierCurveTo(0, -34, 36, -34, 30, -4); g.stroke(); g.restore(); }
+            return _tex(T, c); }
         function buildAsyq(T, scene, S) {
-            const parts = {};
-            const bone = new T.MeshStandardMaterial({ color: 0xeee0c0, roughness: 0.55, metalness: 0.02 });
-            const main = new T.Group(); const m = new T.Mesh(asyqGeometry(T), bone); main.add(m); scene.add(main);
-            // точки-якоря сторон (невидимые группы, двигаются вместе с асыком)
-            Object.entries(ASYQ_FACES).forEach(([id, n]) => {
-                const g = new T.Group(); main.add(g);
-                const p = new T.Vector3(...n).multiply(new T.Vector3(1.2, 0.85, 0.62));
-                parts[id] = { grp: g, base: new T.Vector3(), explode: new T.Vector3(), anchor: () => p.clone(), mats: [], locked: true };
-            });
-            // сақа — крупный красный биток рядом
-            { const g = new T.Group(); const sm = new T.Mesh(asyqGeometry(T, 1.0), new T.MeshStandardMaterial({ color: 0xa3281e, roughness: 0.4, metalness: 0.2 }));
-              g.add(sm); g.scale.setScalar(0.8); g.position.set(3.4, -0.35, -1.0); g.rotation.set(0, 0.6, 0); scene.add(g);
-              registerPart(parts, 'saqa', g, new T.Vector3(), () => new T.Vector3(0, 0.9, 0)); parts.saqa.locked = true; }
-            // кийіз-подстилка
-            const felt = new T.Mesh(new T.CircleGeometry(5, 64), new T.MeshStandardMaterial({ color: 0x2a0c08, roughness: 1 }));
-            felt.rotation.x = -Math.PI / 2; felt.position.y = -0.85; scene.add(felt);
-            const ring = new T.Mesh(new T.RingGeometry(4.6, 4.75, 64), new T.MeshBasicMaterial({ color: GOLD3, side: T.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = -0.84; scene.add(ring);
-
+            const look = studioLook(S, { shadow: [2.5, 9, 4], shadowSize: 6, exposure: 1.12 });
+            const parts = {}, FY = -0.85, SC = 5.6;
+            const boneMat = (tint = 0xffffff) => new T.MeshPhysicalMaterial({ color: tint, roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.5, sheen: 0.4, sheenRoughness: 0.6, sheenColor: new T.Color(0xfff2d8) });
+            const bone = boneMat(0xf2e6cc), saqaM = boneMat(0xd2462c), heroMats = [bone];
+            const main = new T.Group(); const m = new T.Mesh(asyqGeometry(T), bone); m.castShadow = true; main.add(m); scene.add(main);
+            const ext = { buk: 0.88, shik: 0.85, alshy: 0.62, taiki: 0.62 }; // до загрузки GLB
+            Object.entries(ASYQ_FACES).forEach(([id, n]) => { const g = new T.Group(); main.add(g); const v = new T.Vector3(...n);
+                parts[id] = { grp: g, base: new T.Vector3(), explode: new T.Vector3(), anchor: () => v.clone().multiplyScalar(ext[id] * 1.04), mats: heroMats, locked: true }; });
+            // сақа — крупный крашеный биток; «кон» — ряд асыков на кону
+            const saqa = new T.Group(); const sm = new T.Mesh(asyqGeometry(T, 1.0), saqaM); saqa.add(sm); saqa.scale.setScalar(0.95); saqa.position.set(3.6, 0, 0.6); saqa.rotation.set(0, 0.6, 0); scene.add(saqa);
+            registerPart(parts, 'saqa', saqa, new T.Vector3(), () => new T.Vector3(0, 0.95, 0)); parts.saqa.locked = true;
+            const kon = []; for (let i = 0; i < 5; i++) { const k = new T.Mesh(asyqGeometry(T, 0.5), bone); k.position.set(-2.4 + i * 1.2, 0, -3.3); k.rotation.y = 0.1 * (i - 2); scene.add(k); kon.push(k); }
+            const felt = new T.Mesh(new T.CircleGeometry(5.2, 96), new T.MeshStandardMaterial({ map: feltCircleTexture(T), roughness: 1 })); felt.rotation.x = -Math.PI / 2; felt.position.y = FY; scene.add(felt);
             const up = new T.Vector3(0, 1, 0);
-            const target = (face) => { const n = new T.Vector3(...ASYQ_FACES[face]); return new T.Quaternion().setFromUnitVectors(n, up).premultiply(new T.Quaternion().setFromAxisAngle(up, Math.random() * Math.PI * 2)); };
-            const restY = { buk: -0.1, shik: -0.15, alshy: -0.25, taiki: -0.25 };
-            let throwSt = null; let cb = null;
-            main.quaternion.copy(target('alshy')); main.position.y = restY.alshy;
+            const qFor = (face, yaw = Math.random() * Math.PI * 2) => new T.Quaternion().setFromUnitVectors(new T.Vector3(...ASYQ_FACES[face]), up).premultiply(new T.Quaternion().setFromAxisAngle(up, yaw));
+            let geoN = null; const restY = {}; const rest = (geo, s) => { const p = geo.attributes.position, v = new T.Vector3();
+                Object.entries(ASYQ_FACES).forEach(([f, n]) => { let mn = 1e9, mx = -1e9; const nn = new T.Vector3(...n); for (let i = 0; i < p.count; i += 3) { const d = v.fromBufferAttribute(p, i).dot(nn); mn = Math.min(mn, d); mx = Math.max(mx, d); } restY[f] = FY - mn * s; if (s === 1) ext[f] = mx; }); };
+            rest(m.geometry, 1);
+            const place = (o, face, s = 1) => { o.quaternion.copy(qFor(face, o.rotation.y)); o.position.y = FY - (restY[face] - FY) * -s; };
+            const settle = () => { main.quaternion.copy(qFor('alshy', 0.4)); main.position.y = restY.alshy;
+                place(saqa, 'buk', 0.95); ['alshy', 'buk', 'shik', 'buk', 'taiki'].forEach((f, i) => place(kon[i], f, 0.5)); };
+            settle(); look.shadows();
+            // настоящая модель асыка (Blender-скан формы, с цветом кости по вершинам)
+            loadSimpleGLB(T, 'models/asyq.glb').then(list => { const geo = list[0].geo; geo.scale(SC, SC, SC); geo.computeBoundingSphere();
+                const c = geo.attributes.color; if (c) for (let i = 0; i < c.count; i++) c.setXYZ(i, Math.min(1, c.getX(i) * 1.45), Math.min(1, c.getY(i) * 1.38), Math.min(1, c.getZ(i) * 1.2));
+                [m, sm, ...kon].forEach(o => { const s = o === m ? 1 : 1; o.geometry.dispose(); o.geometry = geo; });
+                kon.forEach(k => k.scale.setScalar(0.5)); [bone, saqaM].forEach(mt => { mt.vertexColors = !!c; mt.color.set(mt === bone ? 0xffffff : 0xe0543a); mt.needsUpdate = true; });
+                rest(geo, 1); settle(); }).catch(e => console.warn('asyq.glb', e));
+            let throwSt = null, cb = null;
             const toss = (onDone) => {
                 let r = Math.random(), face = 'buk'; for (const [f, w] of ASYQ_WEIGHTS) { if ((r -= w) <= 0) { face = f; break; } }
-                throwSt = { t: 0, face, q1: target(face), axis: new T.Vector3(Math.random() - 0.5, Math.random(), Math.random() - 0.5).normalize(), spins: 4 + Math.random() * 3, x0: main.position.x };
+                throwSt = { t: 0, face, q0: main.quaternion.clone(), q1: qFor(face), axis: new T.Vector3(Math.random() - 0.5, Math.random() * 0.4, Math.random() - 0.5).normalize(), spins: 3 + Math.random() * 2, x0: main.position.x };
                 cb = onDone;
             };
             const tick = (dt) => {
-                if (!throwSt) return; const s = throwSt; s.t = Math.min(1, s.t + dt / 1.6); const k = s.t;
-                const h = k < 0.6 ? Math.sin(k / 0.6 * Math.PI) * 3.2 : Math.abs(Math.sin((k - 0.6) / 0.4 * Math.PI * 2)) * 0.35 * (1 - k) * 2.5;
-                main.position.y = restY[s.face] + h;
-                const ang = s.spins * Math.PI * 2 * Math.pow(1 - k, 2);
+                if (!throwSt) return; const s = throwSt; s.t = Math.min(1, s.t + dt / 1.8); const k = s.t;
+                // полёт, затем 2 затухающих отскока
+                const h = k < 0.55 ? Math.sin(k / 0.55 * Math.PI) * 3.4 : k < 0.8 ? Math.sin((k - 0.55) / 0.25 * Math.PI) * 0.55 : Math.sin((k - 0.8) / 0.2 * Math.PI) * 0.14;
+                main.position.y = restY[s.face] + Math.max(0, h);
+                const ang = s.spins * Math.PI * 2 * Math.pow(1 - k, 2.2);
                 main.quaternion.copy(s.q1).multiply(new T.Quaternion().setFromAxisAngle(s.axis, ang));
                 if (k >= 1) { throwSt = null; cb?.(s.face); }
             };
-            S.st.phi = 1.05; S.st.theta = 0.5;
+            S.st.phi = 1.08; S.st.theta = 0.5;
             return { parts, tick, api: { toss } };
         }
 
         function AsyqAtlas() {
             const [res, setRes] = useState(null); const [hist, setHist] = useState([]); const [busy, setBusy] = useState(false);
             const NAMES = { buk: 'Бүк', shik: 'Шік', alshy: 'Алшы', taiki: 'Тәйкі' };
-            return <AnatomyViewer PARTS={ASYQ_PARTS} scene={buildAsyq} explodable={false} stepLabel="жағы" opts={{ distance: 9, target: [0, 0.2, 0], minDist: 4, maxDist: 20 }}
+            return <AnatomyViewer PARTS={ASYQ_PARTS} scene={buildAsyq} explodable={false} stepLabel="жағы" opts={{ distance: 13, target: [0.4, -0.2, -0.4], minDist: 4, maxDist: 24 }}
                 intro={<div>
                     <p className="text-[#999] text-xs">Асық — таранная кость барана, главная детская игра степи. У асыка 4 стороны: <b className="text-[#C5A55A]">алшы, тәйкі, бүк, шік</b>. Бросьте и посмотрите, какая выпадет: алшы и тәйкі редки, бүк и шік часты.</p>
                     {res && <p className="text-white text-lg font-serif mt-2">Түсті: <span className="text-[#F0D882]">{NAMES[res]}</span>{res === 'alshy' ? ' — бақыт! 🎉' : ''}</p>}
@@ -6097,6 +6115,79 @@
         }
 
         // ═════════════════════  ДӘСТҮР 3D: Бесік, Тұсаукесер, Наурыз көже  ═════════════════════
+        // ── «Студия» для 3D-сцен: мягкое окружение для PBR-материалов, ACES-тонмаппинг, мягкие тени ──
+        function studioLook(S, { exposure = 1.05, shadow = [3, 8, 5], shadowSize = 5, warm = 0xfff0d8, sun = 1.1 } = {}) {
+            const { T, scene, renderer } = S;
+            renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = exposure;
+            renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+            const pm = new T.PMREMGenerator(renderer), e = new T.Scene();
+            e.add(new T.Mesh(new T.SphereGeometry(40, 24, 12), new T.MeshBasicMaterial({ color: 0x1a140c, side: T.BackSide })));
+            const box = (w, h, x, y, z, c) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: c, side: T.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); e.add(m); };
+            box(24, 10, 0, 20, 8, 0xfff4dc); box(8, 20, -20, 4, 10, 0xffd9a0); box(8, 16, 22, 6, -8, 0xbfd2ff); box(30, 6, 0, -16, 0, 0x5a3a1c);
+            scene.environment = pm.fromScene(e, 0.04).texture; pm.dispose();
+            scene.children.filter(o => o.isLight).forEach(l => l.intensity *= 0.6);
+            const L = new T.DirectionalLight(warm, sun); L.position.set(...shadow); L.castShadow = true; L.shadow.mapSize.set(2048, 2048);
+            const c = L.shadow.camera; c.left = c.bottom = -shadowSize; c.right = c.top = shadowSize; c.near = 0.5; c.far = 40; L.shadow.bias = -0.0004; L.shadow.normalBias = 0.02; scene.add(L);
+            return { sun: L, shadows: (root = scene) => root.traverse(o => { if (o.isMesh && !(o.material?.transparent && o.material.opacity < 0.9) && !o.material?.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; } }) };
+        }
+        // ── процедурные текстуры ──
+        const _cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
+        const _tex = (T, c, rep) => { const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; if (rep) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(...rep); } return t; };
+        function woodTexture(T, base = '#b57a45', rep = [1, 1]) {
+            const [c, g] = _cv(512, 512); g.fillStyle = base; g.fillRect(0, 0, 512, 512); const R = seeded(9);
+            for (let i = 0; i < 90; i++) { const y = R() * 512, a = 1 + R() * 3; g.strokeStyle = R() > .5 ? 'rgba(60,30,10,.18)' : 'rgba(255,230,190,.12)'; g.lineWidth = .6 + R() * 2; g.beginPath();
+                for (let x = 0; x <= 512; x += 16) g.lineTo(x, y + Math.sin(x / 60 + i) * a + Math.sin(x / 13 + i * 3) * .6); g.stroke(); }
+            for (let k = 0; k < 3; k++) { const x = R() * 512, y = R() * 512; g.strokeStyle = 'rgba(70,35,10,.25)'; for (let r = 3; r < 22; r += 4) { g.beginPath(); g.ellipse(x, y, r * 2.4, r, 0, 0, Math.PI * 2); g.stroke(); } }
+            return _tex(T, c, rep);
+        }
+        function qoshqarBand(g, x0, y0, w, h, col) { // ряд «қошқар мүйіз»
+            g.strokeStyle = col; g.lineWidth = Math.max(2, h * 0.09); g.lineCap = 'round';
+            for (let x = x0; x < x0 + w - h * .2; x += h) { const cx = x + h / 2, by = y0 + h * .85, my = y0 + h * .5;
+                g.beginPath(); g.moveTo(cx, by); g.lineTo(cx, my); g.bezierCurveTo(cx, y0 + h * .1, cx - h * .42, y0 + h * .1, cx - h * .36, my - 1); g.moveTo(cx, my); g.bezierCurveTo(cx, y0 + h * .1, cx + h * .42, y0 + h * .1, cx + h * .36, my - 1); g.stroke(); }
+        }
+        function besikEndTexture(T) { // торцевая доска бесіка: роспись по контуру арки
+            const [c, g] = _cv(512, 810); const W = 512, H = 810; g.fillStyle = '#b06a34'; g.fillRect(0, 0, W, H);
+            const tw = woodTexture(T).image; g.globalAlpha = .55; g.drawImage(tw, 0, 0, W, H); g.globalAlpha = 1;
+            const R = W / 2, cy = H - (1.25 - 0.12) / 1.66 * H; // центр верхней арки (в пикселях)
+            const path = (ins) => { g.beginPath(); g.moveTo(ins, H - ins); g.lineTo(ins, cy); g.arc(W / 2, cy, R - ins, Math.PI, 0); g.lineTo(W - ins, H - ins); g.closePath(); };
+            g.lineWidth = 16; g.strokeStyle = '#8c1c1c'; path(18); g.stroke(); g.lineWidth = 4; g.strokeStyle = '#e8c66a'; path(34); g.stroke(); path(8); g.stroke();
+            g.save(); g.translate(W / 2, cy + 40); for (let k = 0; k < 8; k++) { g.rotate(Math.PI / 4); g.fillStyle = k % 2 ? '#1d3557' : '#8c1c1c'; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(34, -60, 0, -118); g.quadraticCurveTo(-34, -60, 0, 0); g.fill(); }
+            g.fillStyle = '#e8c66a'; g.beginPath(); g.arc(0, 0, 22, 0, Math.PI * 2); g.fill(); g.restore();
+            g.fillStyle = '#1d3557'; g.fillRect(60, H - 250, W - 120, 120); qoshqarBand(g, 70, H - 245, W - 140, 110, '#e8c66a');
+            const t = _tex(T, c); t.repeat.set(1 / 1.05, 1 / 1.66); t.offset.set(0.5, -0.12 / 1.66); return t;
+        }
+        function besikSideTexture(T) {
+            const [c, g] = _cv(1024, 200); g.fillStyle = '#b06a34'; g.fillRect(0, 0, 1024, 200); g.globalAlpha = .5; g.drawImage(woodTexture(T).image, 0, 0, 1024, 200); g.globalAlpha = 1;
+            g.fillStyle = '#8c1c1c'; g.fillRect(0, 14, 1024, 172); g.fillStyle = '#e8c66a'; g.fillRect(0, 18, 1024, 5); g.fillRect(0, 177, 1024, 5);
+            qoshqarBand(g, 12, 34, 1010, 132, '#e8c66a');
+            for (let x = 76; x < 1024; x += 132) { g.fillStyle = '#1d3557'; g.beginPath(); g.moveTo(x, 70); g.lineTo(x + 24, 100); g.lineTo(x, 130); g.lineTo(x - 24, 100); g.closePath(); g.fill(); }
+            return _tex(T, c);
+        }
+        function clothTexture(T, { base = '#8e1f22', border = '#e8c66a', pat = '#1d3557', w = 1024, h = 512, rep } = {}) {
+            const [c, g] = _cv(w, h); g.fillStyle = base; g.fillRect(0, 0, w, h); const R = seeded(5);
+            for (let i = 0; i < 4000; i++) { g.fillStyle = `rgba(${R() > .5 ? '0,0,0' : '255,255,255'},${R() * .05})`; g.fillRect(R() * w, R() * h, 2, 2); }
+            g.fillStyle = border; g.fillRect(0, 10, w, 6); g.fillRect(0, h - 16, w, 6); qoshqarBand(g, 0, 24, w, 60, border); qoshqarBand(g, 0, h - 88, w, 60, border);
+            for (let y = 130; y < h - 120; y += 110) for (let x = (y / 110 % 2) * 60 + 50; x < w; x += 120) { g.fillStyle = pat; g.beginPath(); g.moveTo(x, y - 34); g.lineTo(x + 30, y); g.lineTo(x, y + 34); g.lineTo(x - 30, y); g.closePath(); g.fill();
+                g.fillStyle = border; g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); }
+            return _tex(T, c, rep);
+        }
+        function faceTexture(T, { awake = true, skin = '#f0c49c' } = {}) { // лицо в центре u=0.25 (смотрит в +z)
+            const [c, g] = _cv(512, 256); g.fillStyle = skin; g.fillRect(0, 0, 512, 256);
+            const cx = 128, cy = 140; g.fillStyle = 'rgba(240,120,110,.35)'; [[-34, 18], [34, 18]].forEach(([dx, dy]) => { g.beginPath(); g.ellipse(cx + dx, cy + dy, 16, 10, 0, 0, Math.PI * 2); g.fill(); });
+            g.strokeStyle = '#3a2516'; g.fillStyle = '#2a1a10'; g.lineWidth = 3.5; g.lineCap = 'round';
+            [-22, 22].forEach(dx => { if (awake) { g.beginPath(); g.ellipse(cx + dx, cy - 6, 6, 8, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + dx + 2, cy - 9, 2, 0, Math.PI * 2); g.fill(); g.fillStyle = '#2a1a10'; }
+                else { g.beginPath(); g.arc(cx + dx, cy - 8, 8, 0.2, Math.PI - 0.2); g.stroke(); } });
+            g.strokeStyle = '#a0452f'; g.lineWidth = 3; g.beginPath(); awake ? g.arc(cx, cy + 14, 9, 0.25, Math.PI - 0.25) : g.arc(cx, cy + 18, 4, 0.3, Math.PI - 0.3); g.stroke();
+            g.fillStyle = 'rgba(160,90,60,.35)'; g.beginPath(); g.ellipse(cx, cy + 4, 4, 3, 0, 0, Math.PI * 2); g.fill();
+            return _tex(T, c);
+        }
+        function rugFloor(T, scene, y, size = 7, R = 9) {
+            const felt = new T.Mesh(new T.CircleGeometry(R, 80), new T.MeshStandardMaterial({ map: feltTexture(T, '#3b1f14'), roughness: 1 })); felt.material.map.repeat.set(6, 6);
+            felt.rotation.x = -Math.PI / 2; felt.position.y = y - 0.005; scene.add(felt);
+            const rug = new T.Mesh(new T.PlaneGeometry(size, size * 0.72), new T.MeshStandardMaterial({ map: rugTexture(T), roughness: 0.95 }));
+            rug.rotation.x = -Math.PI / 2; rug.position.y = y; scene.add(rug); return rug;
+        }
+
         const BESIK_PARTS = [
             { id: 'taban',   kk: 'Табан',    ru: 'Полозья',        text: 'Изогнутые полозья — на них бесік качается. Мать могла укачивать ребёнка одной рукой, не отрываясь от дел.' },
             { id: 'qabyrga', kk: 'Бесік ағашы', ru: 'Корпус и спинки', text: 'Деревянный короб с резными спинками. Бесік делали из ивы или берёзы и передавали из поколения в поколение — первый бесік дарит семья матери (нағашы).' },
@@ -6107,50 +6198,84 @@
             { id: 'tubek',   kk: 'Шүмек пен түбек', ru: 'Трубка и горшочек', text: 'Уникальная «гигиеническая» система: через отверстие в дне по трубке-шүмек всё стекает в горшочек-түбек. Ребёнок остаётся сухим.' },
         ];
         function buildBesik(T, scene, S) {
-            const parts = {}; const W = 2.6, D = 1.1, H = 0.7;
-            const wood = new T.MeshStandardMaterial({ color: 0xb5651d, roughness: 0.5 }); const dark = new T.MeshStandardMaterial({ color: 0x7a3a12, roughness: 0.5 });
-            const rock = new T.Group(); scene.add(rock);
-            // табан
-            { const g = new T.Group(); [D / 2, -D / 2].forEach(z => { const pts = []; for (let i = 0; i <= 20; i++) { const x = -W / 2 - 0.3 + (W + 0.6) * i / 20; pts.push(new T.Vector3(x, 0.25 * Math.pow(x / (W / 2 + 0.3), 2), z)); } g.add(tube(T, pts, 0.07, dark)); });
-              rock.add(g); registerPart(parts, 'taban', g, new T.Vector3(0, -0.8, 0), () => new T.Vector3(W / 2, 0.18, D / 2)); }
-            // корпус + спинки
-            { const g = new T.Group(); const bottom = new T.Mesh(new T.BoxGeometry(W, 0.06, D), wood); bottom.position.y = 0.35; g.add(bottom);
-              [D / 2, -D / 2].forEach(z => { const s = new T.Mesh(new T.BoxGeometry(W, H, 0.06), wood); s.position.set(0, 0.35 + H / 2, z); g.add(s); });
-              [W / 2, -W / 2].forEach(x => { const sh = new T.Shape(); sh.moveTo(-D / 2, 0); sh.lineTo(D / 2, 0); sh.lineTo(D / 2, H + 0.5); sh.absarc(0, H + 0.5, D / 2, 0, Math.PI, false); sh.lineTo(-D / 2, 0);
-                const hole = new T.Path(); hole.absarc(0, H + 0.55, 0.22, 0, Math.PI * 2, true); sh.holes.push(hole);
-                const m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 0.08, bevelEnabled: false }), dark); m.rotation.y = Math.PI / 2; m.position.set(x - 0.04, 0.35, 0); g.add(m); });
-              rock.add(g); registerPart(parts, 'qabyrga', g, new T.Vector3(), () => new T.Vector3(-W / 2, H + 0.9, 0)); }
-            // арқалық
-            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, W + 0.5, 12), dark); m.rotation.z = Math.PI / 2; m.position.y = 0.35 + H + 0.95; g.add(m);
-              rock.add(g); registerPart(parts, 'arqalyq', g, new T.Vector3(0, 1.2, 0), () => new T.Vector3(0.6, 0.35 + H + 0.95, 0)); }
-            // жабу
-            { const g = new T.Group(); const tex = ornamentTexture(T, 512, 256); tex.repeat.set(2, 1);
-              const m = new T.Mesh(new T.CylinderGeometry(D / 2 + 0.12, D / 2 + 0.12, W - 0.1, 32, 1, true, -Math.PI / 2, Math.PI), new T.MeshStandardMaterial({ map: tex, transparent: true, opacity: 0.6, side: T.DoubleSide, roughness: 1, depthWrite: false }));
-              m.rotation.z = Math.PI / 2; m.position.y = 0.35 + H + 0.5; m.scale.set(1, 1, 1); g.add(m);
-              rock.add(g); registerPart(parts, 'zhabu', g, new T.Vector3(0, 2.4, 0), () => new T.Vector3(-0.4, 0.35 + H + 1.0, 0.3)); }
-            // бау
-            { const g = new T.Group(); [-0.5, 0.45].forEach(x => { const b = new T.Mesh(new T.TorusGeometry(D / 2 + 0.02, 0.05, 6, 24, Math.PI), new T.MeshStandardMaterial({ color: 0xc23b2b, roughness: 0.8 })); b.position.set(x, 0.62, 0); b.rotation.y = Math.PI / 2; g.add(b); });
-              rock.add(g); registerPart(parts, 'bau', g, new T.Vector3(0, 0.9, 0), () => new T.Vector3(0.45, 1.1, 0)); }
-            // жастық + младенец в пелёнке
-            { const g = new T.Group(); const p = new T.Mesh(new T.CapsuleGeometry(0.22, 0.35, 6, 16), new T.MeshStandardMaterial({ color: 0xf2e6c8, roughness: 1 })); p.rotation.x = Math.PI / 2; p.rotation.z = Math.PI / 2; p.position.set(-0.85, 0.55, 0); g.add(p);
-              const baby = new T.Mesh(new T.CapsuleGeometry(0.22, 0.9, 6, 16), new T.MeshStandardMaterial({ color: 0xffffff, roughness: 1 })); baby.rotation.z = Math.PI / 2; baby.position.set(0, 0.6, 0); g.add(baby);
-              const head = new T.Mesh(new T.SphereGeometry(0.2, 16, 12), new T.MeshStandardMaterial({ color: 0xe9b98f })); head.position.set(-0.75, 0.75, 0); g.add(head);
-              rock.add(g); registerPart(parts, 'zhastyq', g, new T.Vector3(0, 0.6, 0), () => new T.Vector3(-0.85, 0.75, 0.2)); }
-            // шүмек + түбек
-            { const g = new T.Group(); g.add(tube(T, [new T.Vector3(0.2, 0.5, 0), new T.Vector3(0.25, 0.25, 0), new T.Vector3(0.35, 0.0, 0)], 0.035, new T.MeshStandardMaterial({ color: 0xd9c49a })));
-              const pot = new T.Mesh(new T.CylinderGeometry(0.18, 0.13, 0.25, 16), new T.MeshStandardMaterial({ color: 0x8a5a2a, roughness: 0.6 })); pot.position.set(0.35, -0.08, 0); g.add(pot);
-              rock.add(g); registerPart(parts, 'tubek', g, new T.Vector3(0, -0.9, 0.8), () => new T.Vector3(0.35, -0.08, 0.15)); }
-            const floor = new T.Mesh(new T.CircleGeometry(4, 64), new T.MeshStandardMaterial({ color: 0x3a2516, roughness: 1 })); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.22; scene.add(floor);
-            let rocking = false;
-            const tick = (dt, t) => { rock.rotation.z = rocking ? Math.sin(t * 2.2) * 0.12 : rock.rotation.z * 0.9; };
-            S.st.phi = 1.1; S.st.theta = 0.7;
+            const look = studioLook(S, { shadow: [2.5, 7, 4], shadowSize: 3.5, exposure: 1.1 });
+            const parts = {}; const L = 2.4, D = 0.95, y0 = 0.42, sideH = 0.5, barY = 1.56, Rc = 1.25;
+            const woodD = new T.MeshStandardMaterial({ map: woodTexture(T, '#6e3a18'), roughness: 0.45, metalness: 0.02 });
+            const endM = new T.MeshStandardMaterial({ map: besikEndTexture(T), roughness: 0.42, metalness: 0.02 });
+            const sideM = new T.MeshStandardMaterial({ map: besikSideTexture(T), roughness: 0.42 });
+            const woodL = new T.MeshStandardMaterial({ map: woodTexture(T, '#b8834e'), roughness: 0.5 });
+            // качание: поворот вокруг центра кривизны табан — как настоящая люлька, вбок
+            const pivot = new T.Group(); pivot.position.y = Rc; scene.add(pivot); const rock = new T.Group(); rock.position.y = -Rc; pivot.add(rock);
+            const ends = [L / 2 + 0.04, -L / 2 - 0.04];
+            // табан — изогнутые полозья под каждой торцевой доской
+            { const g = new T.Group(); const sh = new T.Shape(), N = 24, Z = 0.68;
+              for (let i = 0; i <= N; i++) { const z = -Z + 2 * Z * i / N; const y = Rc - Math.sqrt(Rc * Rc - z * z); i ? sh.lineTo(z, y) : sh.moveTo(z, y); }
+              sh.quadraticCurveTo(Z + 0.06, 0.34, Z - 0.05, 0.36); sh.lineTo(-Z + 0.05, 0.36); sh.quadraticCurveTo(-Z - 0.06, 0.34, -Z, Rc - Math.sqrt(Rc * Rc - Z * Z));
+              ends.forEach(x => { const m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: true, bevelSize: 0.015, bevelThickness: 0.015, bevelSegments: 2, curveSegments: 24 }), woodD); m.rotation.y = Math.PI / 2; m.position.x = x - 0.05; g.add(m); });
+              rock.add(g); registerPart(parts, 'taban', g, new T.Vector3(0, -0.7, 0), () => new T.Vector3(L / 2 + 0.05, 0.05, 0.6)); }
+            // корпус: дно, борта с росписью, торцевые доски-арки
+            { const g = new T.Group();
+              const bottom = new T.Mesh(new T.BoxGeometry(L, 0.05, D), woodL); bottom.position.y = y0; g.add(bottom);
+              [D / 2, -D / 2].forEach(z => { const s = new T.Mesh(new T.BoxGeometry(L, sideH, 0.045), [woodL, woodL, woodL, woodL, sideM, sideM]); s.position.set(0, y0 + sideH / 2, z); g.add(s);
+                  const rail = new T.Mesh(new T.CylinderGeometry(0.035, 0.035, L + 0.06, 12), woodD); rail.rotation.z = Math.PI / 2; rail.position.set(0, y0 + sideH + 0.02, z); g.add(rail); });
+              const sh = new T.Shape(), hw = (D + 0.1) / 2; sh.moveTo(-hw, 0.12); sh.lineTo(hw, 0.12); sh.lineTo(hw, 1.25); sh.absarc(0, 1.25, hw, 0, Math.PI, false); sh.lineTo(-hw, 0.12);
+              const hole = new T.Path(); hole.absarc(0, barY, 0.075, 0, Math.PI * 2, true); sh.holes.push(hole);
+              const heart = new T.Path(); heart.moveTo(0, 1.12); heart.bezierCurveTo(0.16, 1.22, 0.12, 1.36, 0, 1.3); heart.bezierCurveTo(-0.12, 1.36, -0.16, 1.22, 0, 1.12); sh.holes.push(heart);
+              ends.forEach(x => { const m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 0.07, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2, curveSegments: 32 }), endM);
+                  m.rotation.y = Math.PI / 2; m.position.x = x - 0.035; g.add(m); });
+              rock.add(g); registerPart(parts, 'qabyrga', g, new T.Vector3(), () => new T.Vector3(-L / 2 - 0.04, 1.62, 0.3)); }
+            // арқалық + тұмар и үкі
+            { const g = new T.Group(); const bar = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, L + 0.42, 20), woodD); bar.rotation.z = Math.PI / 2; bar.position.y = barY; g.add(bar);
+              [-1, 1].forEach(s => { const k = new T.Mesh(new T.SphereGeometry(0.075, 16, 12), woodD); k.position.set(s * (L / 2 + 0.22), barY, 0); g.add(k); });
+              const thread = new T.Mesh(new T.CylinderGeometry(0.004, 0.004, 0.32, 4), new T.MeshStandardMaterial({ color: 0xc23b2b })); thread.position.set(0.55, barY - 0.18, 0); g.add(thread);
+              const tri = new T.Shape(); tri.moveTo(-0.08, 0); tri.lineTo(0.08, 0); tri.lineTo(0, -0.13); tri.closePath();
+              const tumar = new T.Mesh(new T.ExtrudeGeometry(tri, { depth: 0.025, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008 }), new T.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.85, roughness: 0.3 }));
+              tumar.position.set(0.55, barY - 0.33, -0.012); g.add(tumar); g.userData.tumar = tumar;
+              for (let k = 0; k < 9; k++) { const f = new T.Mesh(new T.ConeGeometry(0.018, 0.2, 6), new T.MeshStandardMaterial({ color: 0xf6f3ea, roughness: 1 })); const a = k / 9 * Math.PI * 2;
+                  f.position.set(Math.cos(a) * 0.03, barY + 0.13, Math.sin(a) * 0.03); f.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); g.add(f); }
+              rock.add(g); registerPart(parts, 'arqalyq', g, new T.Vector3(0, 1.0, 0), () => new T.Vector3(-0.5, barY + 0.05, 0)); }
+            // бесік жабу — бархатное покрывало, перекинутое через арқалық, с кистями
+            { const g = new T.Group(); const nu = 48, nv = 28, geo = new T.PlaneGeometry(1, 1, nu, nv), p = geo.attributes.position;
+              const prof = new T.CatmullRomCurve3([new T.Vector3(0, 1.36, 0.36), new T.Vector3(0, barY + 0.06, 0.06), new T.Vector3(0, barY + 0.06, -0.08), new T.Vector3(0, 1.38, -0.5), new T.Vector3(0, 1.0, -0.62), new T.Vector3(0, 0.82, -0.66)]);
+              for (let i = 0; i < p.count; i++) { const u = p.getX(i) + 0.5, v = 0.5 - p.getY(i); const q = prof.getPoint(v); const x = (u - 0.5) * (L + 0.1);
+                  p.setXYZ(i, x, q.y - 0.05 * Math.sin(Math.PI * u) * v, q.z + 0.018 * Math.sin(u * 34) * v * v); }
+              geo.computeVertexNormals();
+              const m = new T.Mesh(geo, new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#7d1418', pat: '#2b4a7a' }), roughness: 0.82, side: T.DoubleSide })); g.add(m);
+              const tas = new T.MeshStandardMaterial({ color: 0xe0b54e, metalness: 0.5, roughness: 0.45 });
+              for (let k = 0; k <= 14; k++) { const t = new T.Mesh(new T.ConeGeometry(0.025, 0.11, 8), tas); t.rotation.x = Math.PI; t.position.set((k / 14 - 0.5) * (L + 0.05), 0.75, -0.665); g.add(t); }
+              rock.add(g); registerPart(parts, 'zhabu', g, new T.Vector3(0, 1.6, -0.4), () => new T.Vector3(-0.2, 1.35, -0.5)); }
+            // ребёнок: төсек, жастық, құндақ, лицо
+            { const g = new T.Group();
+              const bed = new T.Mesh(new T.BoxGeometry(L - 0.06, 0.12, D - 0.08), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#2b4a7a', pat: '#8e1f22', rep: [2, 1] }), roughness: 0.9 })); bed.position.y = y0 + 0.09; g.add(bed);
+              const pil = new T.Mesh(new T.CapsuleGeometry(0.16, 0.42, 8, 20), new T.MeshStandardMaterial({ color: 0xf3ead8, roughness: 0.9 })); pil.rotation.x = Math.PI / 2; pil.scale.set(1, 1, 0.6); pil.position.set(-0.98, y0 + 0.22, 0); g.add(pil);
+              const sw = new T.Mesh(new T.CapsuleGeometry(0.21, 0.8, 10, 24), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#f4efe4', border: '#c9a14a', pat: '#c9a1a1' }), roughness: 0.9 })); sw.rotation.z = Math.PI / 2; sw.scale.set(1, 1, 1.15); sw.position.set(0.12, y0 + 0.31, 0); g.add(sw);
+              const blank = new T.Mesh(new T.CapsuleGeometry(0.25, 0.55, 10, 24, ), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#a3271d', pat: '#e8c66a' }), roughness: 0.85 })); blank.rotation.z = Math.PI / 2; blank.scale.set(0.9, 1, 1.12); blank.position.set(0.25, y0 + 0.31, 0); g.add(blank);
+              const head = new T.Mesh(new T.SphereGeometry(0.15, 32, 20), new T.MeshStandardMaterial({ map: faceTexture(T, { awake: false }), roughness: 0.65 })); head.position.set(-0.78, y0 + 0.36, 0); head.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(new T.Vector3(0, 0, -1), new T.Vector3(-1, 0, 0), new T.Vector3(0, 1, 0))).premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), 0.35)); g.add(head);
+              const cap = new T.Mesh(new T.SphereGeometry(0.16, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#b0242a' }), roughness: 0.8 })); cap.position.copy(head.position); cap.quaternion.copy(head.quaternion); cap.rotateX(-0.25); cap.scale.setScalar(1.04); g.add(cap);
+              rock.add(g); registerPart(parts, 'zhastyq', g, new T.Vector3(0, 0.55, 0), () => new T.Vector3(-0.85, y0 + 0.33, 0.12)); }
+            // бау — тканые ремни поверх құндақ
+            { const g = new T.Group(); const bm = new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#c23b2b', pat: '#f0d882', w: 256, h: 128 }), roughness: 0.8 });
+              [-0.3, 0.45].forEach(x => { const b = new T.Mesh(new T.TorusGeometry(D / 2 - 0.02, 0.022, 6, 40, Math.PI), bm); b.scale.z = 3; b.rotation.y = Math.PI / 2; b.position.set(x, y0 + 0.14, 0); g.add(b); });
+              rock.add(g); registerPart(parts, 'bau', g, new T.Vector3(0, 0.75, 0), () => new T.Vector3(0.45, y0 + 0.14 + D / 2 - 0.02, 0)); }
+            // шүмек пен түбек
+            { const g = new T.Group(); const bone = new T.MeshStandardMaterial({ color: 0xe8d9b4, roughness: 0.45 });
+              g.add(tube(T, [new T.Vector3(0.12, y0 + 0.22, 0), new T.Vector3(0.14, y0 - 0.02, 0), new T.Vector3(0.18, 0.2, 0)], 0.03, bone));
+              const pts = [[0.02, 0], [0.13, 0.01], [0.17, 0.06], [0.16, 0.15], [0.12, 0.2], [0.13, 0.23]].map(([r, y]) => new T.Vector2(r, y));
+              const pot = new T.Mesh(new T.LatheGeometry(pts, 32), new T.MeshStandardMaterial({ color: 0x8a4e22, roughness: 0.35, metalness: 0.05, side: T.DoubleSide })); pot.position.set(0.18, 0.02, 0); g.add(pot);
+              rock.add(g); registerPart(parts, 'tubek', g, new T.Vector3(0, -0.5, 1.0), () => new T.Vector3(0.3, 0.14, 0.1)); }
+            rugFloor(T, scene, 0, 4.2, 7);
+            look.shadows();
+            let rocking = false, amp = 0;
+            const tick = (dt, t) => { amp += ((rocking ? 0.16 : 0) - amp) * Math.min(1, dt * 1.5); pivot.rotation.x = Math.sin(t * 2.1) * amp;
+                const tm = parts.arqalyq.grp.userData.tumar; if (tm) tm.rotation.z = Math.sin(t * 2.1 + 0.6) * amp * 1.5; };
+            S.st.phi = 0.92; S.st.theta = 0.6;
             return { parts, tick, api: { toggle: () => (rocking = !rocking) } };
         }
 
         function BesikScene() {
             const [rock, setRock] = useState(false); const sp = useSpeech();
             const LULLABY = 'Әлди-әлди, ақ бөпем, ақ бесікке жата ғой. Ақ бесікке жатсаң да, тәтті ұйқыға бата ғой.';
-            return <AnatomyViewer PARTS={BESIK_PARTS} scene={buildBesik} opts={{ distance: 7.5, target: [0, 0.7, 0], minDist: 3, maxDist: 16 }}
+            return <AnatomyViewer PARTS={BESIK_PARTS} scene={buildBesik} opts={{ distance: 7, target: [0, 0.85, 0], minDist: 3, maxDist: 16 }}
                 intro={<div><p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Бесікке салу</b> — праздник первого укладывания младенца в колыбель (обычно на 40-й день). Бесік вносит и готовит уважаемая женщина, гостям раздают шашу.</p>
                     {rock && <p className="text-[#F0D882] text-xs italic mt-2">«{LULLABY}»</p>}</div>}
                 controls={(api) => <>
@@ -6166,58 +6291,91 @@
             { id: 'qaishy', kk: 'Қайшы',   ru: 'Ножницы',        text: 'Путы перерезает энергичный, удачливый и уважаемый человек — считается, что ребёнок унаследует его качества. Ему дарят подарок.' },
         ];
         function buildTusau(T, scene, S) {
+            const look = studioLook(S, { shadow: [3, 9, 5], shadowSize: 6, exposure: 1.1 });
             const parts = {};
-            const skin = new T.MeshStandardMaterial({ color: 0xe9b98f, roughness: 0.7 }); const cloth = new T.MeshStandardMaterial({ color: 0x3a7bd5, roughness: 0.8 });
+            const skin = new T.MeshStandardMaterial({ color: 0xf0c49c, roughness: 0.6 });
+            const shirt = new T.MeshStandardMaterial({ color: 0xf6f1e6, roughness: 0.85 });
+            const pants = new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#22355c', pat: '#3a5a92', w: 256, h: 256 }), roughness: 0.85 });
+            const velvet = new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#9b1c22', pat: '#e8c66a', w: 512, h: 256 }), roughness: 0.7, side: T.DoubleSide });
+            const gold = new T.MeshStandardMaterial({ color: 0xd9b45a, metalness: 0.85, roughness: 0.3 });
+            const boot = new T.MeshStandardMaterial({ color: 0x8a2a1a, roughness: 0.4, metalness: 0.05 });
+            // ── сәби: тоддлер с крупной головой, камзол, тақия с үкі ──
             const kid = new T.Group(); scene.add(kid);
-            const torso = new T.Mesh(new T.CapsuleGeometry(0.32, 0.45, 6, 16), cloth); torso.position.y = 1.0; kid.add(torso);
-            const head = new T.Mesh(new T.SphereGeometry(0.3, 20, 16), skin); head.position.y = 1.65; kid.add(head);
-            const hat = new T.Mesh(new T.ConeGeometry(0.28, 0.35, 16), new T.MeshStandardMaterial({ color: 0xc23b2b })); hat.position.y = 1.98; kid.add(hat);
-            const owl = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), new T.MeshStandardMaterial({ color: 0xffffff })); owl.position.y = 2.18; kid.add(owl); // үкі
-            const legs = [-0.14, 0.14].map(x => { const l = new T.Group(); l.position.set(x, 0.62, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.1, 0.36, 4, 10), cloth); m.position.y = -0.28; l.add(m); kid.add(l); return l; });
-            const arms = [-0.42, 0.42].map(x => { const a = new T.Group(); a.position.set(x, 1.2, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.08, 0.35, 4, 10), skin); m.position.y = -0.22; a.add(m); kid.add(a); return a; });
-            registerPart(parts, 'bala', kid, new T.Vector3(), () => new T.Vector3(0, 1.75, 0)); parts.bala.locked = true;
-            // ала жіп — две спирали (чёрная и белая) «восьмёркой» вокруг лодыжек
-            const rope = new T.Group(); scene.add(rope); const halves = [];
+            const legs = [-0.13, 0.13].map(x => { const l = new T.Group(); l.position.set(x, 0.66, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.1, 0.3, 6, 14), pants); m.position.y = -0.24; l.add(m);
+                const b = new T.Mesh(new T.CapsuleGeometry(0.085, 0.1, 6, 14), boot); b.rotation.x = Math.PI / 2; b.position.set(0, -0.53, 0.05); l.add(b); kid.add(l); return l; });
+            const torso = new T.Mesh(new T.CapsuleGeometry(0.29, 0.3, 8, 20), shirt); torso.scale.set(1, 1, 0.85); torso.position.y = 0.98; kid.add(torso);
+            const vest = new T.Mesh(new T.CylinderGeometry(0.29, 0.33, 0.48, 32, 1, true, 0.35, Math.PI * 2 - 0.7), velvet); vest.scale.z = 0.88; vest.position.y = 0.95; kid.add(vest);
+            const trim = new T.Mesh(new T.TorusGeometry(0.325, 0.018, 6, 40, Math.PI * 2 - 0.7), gold); trim.rotation.set(Math.PI / 2, 0, Math.PI / 2 + 0.35); trim.scale.y = 0.88; trim.position.y = 0.71; kid.add(trim);
+            const head = new T.Mesh(new T.SphereGeometry(0.31, 40, 28), new T.MeshStandardMaterial({ map: faceTexture(T, { awake: true }), roughness: 0.6 })); head.position.y = 1.55; kid.add(head);
+            [-1, 1].forEach(s => { const e = new T.Mesh(new T.SphereGeometry(0.06, 12, 10), skin); e.position.set(s * 0.3, 1.55, 0); e.scale.set(0.6, 1, 1); kid.add(e); });
+            const cap = new T.Mesh(new T.SphereGeometry(0.315, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2.6), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#1d3557', pat: '#c23b2b', w: 512, h: 256 }), roughness: 0.7 })); cap.position.y = 1.57; kid.add(cap);
+            const capRim = new T.Mesh(new T.TorusGeometry(0.255, 0.02, 6, 40), gold); capRim.rotation.x = Math.PI / 2; capRim.position.y = 1.78; kid.add(capRim);
+            for (let k = 0; k < 11; k++) { const f = new T.Mesh(new T.ConeGeometry(0.02, 0.26, 6), new T.MeshStandardMaterial({ color: 0xf8f6ef, roughness: 1 })); const a = k / 11 * Math.PI * 2;
+                f.position.set(Math.cos(a) * 0.03, 1.98, Math.sin(a) * 0.03); f.rotation.set(Math.sin(a) * 0.4, 0, -Math.cos(a) * 0.4); kid.add(f); } // үкі
+            const arms = [-1, 1].map(s => { const a = new T.Group(); a.position.set(s * 0.33, 1.13, 0); const m = new T.Mesh(new T.CapsuleGeometry(0.075, 0.3, 6, 12), shirt); m.position.y = -0.2; a.add(m);
+                const h = new T.Mesh(new T.SphereGeometry(0.075, 14, 10), skin); h.position.y = -0.41; a.add(h); a.rotation.set(-0.7, 0, s * 0.35); kid.add(a); return a; });
+            registerPart(parts, 'bala', kid, new T.Vector3(), () => new T.Vector3(0, 1.95, 0)); parts.bala.locked = true;
+            // ── ала жіп: чёрно-белый жгут «восьмёркой» вокруг лодыжек ──
+            const rope = new T.Group(); kid.add(rope); const halves = [];
             [0, 1].forEach(side => { const h = new T.Group(); rope.add(h); halves.push(h);
-                [0x111111, 0xffffff].forEach((c, ci) => { const pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60 * Math.PI * 2; const cx = (side ? 0.14 : -0.14);
-                    pts.push(new T.Vector3(cx + Math.cos(t) * 0.14 + Math.cos(t * 9 + ci * Math.PI) * 0.012, 0.12 + Math.sin(t * 9 + ci * Math.PI) * 0.012, Math.sin(t) * 0.14)); }
-                  h.add(tube(T, pts, 0.016, new T.MeshStandardMaterial({ color: c, roughness: 0.7 }), 80)); }); });
-            const bridge = tube(T, [new T.Vector3(-0.02, 0.12, 0), new T.Vector3(0.02, 0.12, 0)], 0.02, new T.MeshStandardMaterial({ color: 0x777777 })); rope.add(bridge);
-            registerPart(parts, 'alazhip', rope, new T.Vector3(), () => new T.Vector3(0.28, 0.12, 0)); parts.alazhip.locked = true;
-            // ақ жол
-            const path = new T.Mesh(new T.PlaneGeometry(1.2, 9), new T.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 1, side: T.DoubleSide })); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.01, -3.5);
-            const pg = new T.Group(); pg.add(path); scene.add(pg); registerPart(parts, 'aqzhol', pg, new T.Vector3(), () => new T.Vector3(0.6, 0.02, -5)); parts.aqzhol.locked = true;
-            // қайшы
-            const sc = new T.Group(); const blade = new T.MeshStandardMaterial({ color: 0xcfd3da, metalness: 0.9, roughness: 0.25 });
-            const b1 = new T.Group(), b2 = new T.Group(); [b1, b2].forEach((b, i) => { const m = new T.Mesh(new T.BoxGeometry(0.6, 0.03, 0.07), blade); m.position.x = 0.3; b.add(m);
-                const r = new T.Mesh(new T.TorusGeometry(0.09, 0.025, 6, 16), new T.MeshStandardMaterial({ color: 0xc23b2b })); r.position.x = -0.12; r.position.z = i ? 0.08 : -0.08; r.rotation.x = Math.PI / 2; b.add(r); sc.add(b); });
-            sc.position.set(1.6, 0.6, 0.6); sc.rotation.y = Math.PI; scene.add(sc);
-            registerPart(parts, 'qaishy', sc, new T.Vector3(), () => new T.Vector3(0.3, 0, 0)); parts.qaishy.locked = true;
-            const floor = new T.Mesh(new T.CircleGeometry(6, 64), new T.MeshStandardMaterial({ color: 0x2a0c08, roughness: 1 })); floor.rotation.x = -Math.PI / 2; scene.add(floor);
-
-            let phase = 'idle', t0 = 0, now = 0;
+                [0x151515, 0xffffff].forEach((c, ci) => { const pts = []; for (let i = 0; i <= 80; i++) { const t = i / 80 * Math.PI * 2; const cx = side ? 0.13 : -0.13;
+                    pts.push(new T.Vector3(cx + Math.cos(t) * 0.12 + Math.cos(t * 10 + ci * Math.PI) * 0.014, 0.2 + Math.sin(t * 10 + ci * Math.PI) * 0.014, 0.02 + Math.sin(t) * 0.12)); }
+                    h.add(tube(T, pts, 0.017, new T.MeshStandardMaterial({ color: c, roughness: 0.75 }), 120)); }); });
+            const bridge = new T.Group(); rope.add(bridge);
+            [0x151515, 0xffffff].forEach((c, ci) => bridge.add(tube(T, Array.from({ length: 9 }, (_, i) => new T.Vector3(-0.02 + i * 0.005, 0.2 + Math.sin(i * 1.6 + ci * Math.PI) * 0.012, 0.14)), 0.017, new T.MeshStandardMaterial({ color: c }), 16)));
+            registerPart(parts, 'alazhip', rope, new T.Vector3(), () => new T.Vector3(0.26, 0.2, 0.08)); parts.alazhip.locked = true;
+            // ── ақ жол: белая ткань с золотой каймой и мягкими складками ──
+            const [cv, g2] = _cv(256, 1024); g2.fillStyle = '#fbf8f1'; g2.fillRect(0, 0, 256, 1024);
+            g2.fillStyle = '#c9a14a'; g2.fillRect(10, 0, 8, 1024); g2.fillRect(238, 0, 8, 1024); g2.fillStyle = '#a3271d';
+            for (let y = 24; y < 1024; y += 48) [32, 224].forEach(x => { g2.beginPath(); g2.moveTo(x, y - 10); g2.lineTo(x + 8, y); g2.lineTo(x, y + 10); g2.lineTo(x - 8, y); g2.closePath(); g2.fill(); });
+            const pathGeo = new T.PlaneGeometry(1.3, 9, 20, 120), pp = pathGeo.attributes.position; for (let i = 0; i < pp.count; i++) pp.setZ(i, 0.012 * Math.sin(pp.getY(i) * 5 + pp.getX(i) * 3) + 0.008 * Math.sin(pp.getY(i) * 13));
+            pathGeo.computeVertexNormals();
+            const path = new T.Mesh(pathGeo, new T.MeshStandardMaterial({ map: _tex(T, cv), roughness: 0.92, side: T.DoubleSide })); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.012, -3.6);
+            const pg = new T.Group(); pg.add(path); scene.add(pg); registerPart(parts, 'aqzhol', pg, new T.Vector3(), () => new T.Vector3(0.65, 0.03, -5.5)); parts.aqzhol.locked = true;
+            // ── қайшы: настоящие ножницы — сужающиеся лезвия, винт, кольца ──
+            const sc = new T.Group(); const steel = new T.MeshStandardMaterial({ color: 0xdfe3ea, metalness: 1, roughness: 0.18 });
+            const bl = new T.Shape(); bl.moveTo(0, -0.035); bl.lineTo(0.62, -0.004); bl.quadraticCurveTo(0.66, 0, 0.62, 0.01); bl.lineTo(0, 0.03); bl.lineTo(-0.1, 0.02); bl.lineTo(-0.1, -0.025); bl.closePath();
+            const blades = [0, 1].map(i => { const b = new T.Group(); const m = new T.Mesh(new T.ExtrudeGeometry(bl, { depth: 0.012, bevelEnabled: true, bevelSize: 0.004, bevelThickness: 0.004 }), steel); m.position.z = i ? 0.006 : -0.018; if (i) m.scale.y = -1; b.add(m);
+                const ringG = new T.TorusGeometry(0.085, 0.022, 10, 28); const r = new T.Mesh(ringG, new T.MeshStandardMaterial({ color: 0xb0242a, roughness: 0.35 })); r.position.set(-0.19, i ? -0.06 : 0.06, 0); b.add(r);
+                const sh = new T.Mesh(new T.CylinderGeometry(0.016, 0.016, 0.12, 8), steel); sh.rotation.z = Math.PI / 2 + (i ? 0.45 : -0.45); sh.position.set(-0.1, i ? -0.025 : 0.025, 0); b.add(sh); sc.add(b); return b; });
+            const screw = new T.Mesh(new T.CylinderGeometry(0.022, 0.022, 0.05, 16), gold); screw.rotation.x = Math.PI / 2; sc.add(screw);
+            sc.scale.setScalar(1.25); const scHome = new T.Vector3(1.4, 0.55, 0.7); sc.position.copy(scHome); sc.rotation.set(-Math.PI / 2, 0, Math.PI * 0.85); scene.add(sc);
+            registerPart(parts, 'qaishy', sc, new T.Vector3(), () => new T.Vector3(0.45, 0, 0)); parts.qaishy.locked = true;
+            rugFloor(T, scene, 0, 6, 10);
+            // ── шашу: конфеты и монеты, которые бросают после обряда ──
+            const candyCols = [0xe63946, 0xf4a261, 0x2a9d8f, 0xe9c46a, 0x8ecae6, 0xffffff], shashu = [];
+            for (let i = 0; i < 90; i++) { const coin = i % 3 === 0; const m = new T.Mesh(coin ? new T.CylinderGeometry(0.05, 0.05, 0.01, 16) : new T.CapsuleGeometry(0.03, 0.05, 4, 8), coin ? gold : new T.MeshStandardMaterial({ color: candyCols[i % candyCols.length], roughness: 0.3 }));
+                m.visible = false; scene.add(m); shashu.push({ m, v: new T.Vector3(), w: new T.Vector3(), rest: false }); }
+            look.shadows();
+            let phase = 'idle', t0 = 0, now = 0, sing = 0;
             const tick = (dt, t) => {
                 now = t; const k = t - t0;
+                if (phase === 'idle') { kid.rotation.z = Math.sin(t * 1.6) * 0.03; arms.forEach((a, i) => a.rotation.x = -0.7 + Math.sin(t * 2 + i) * 0.08); }
                 if (phase === 'cut') {
-                    const a = Math.min(1, k / 1.0);
-                    sc.position.lerpVectors(new T.Vector3(1.6, 0.6, 0.6), new T.Vector3(0.35, 0.14, 0.05), a);
-                    const snip = k > 1 ? Math.abs(Math.sin((k - 1) * 10)) * 0.4 : 0.3; b1.rotation.y = snip; b2.rotation.y = -snip;
-                    if (k > 1.8) { phase = 'fall'; t0 = t; }
+                    const a = Math.min(1, k / 1.0), e = a * a * (3 - 2 * a);
+                    sc.position.lerpVectors(scHome, new T.Vector3(0.02, 0.24, 0.34), e); sc.rotation.set(-Math.PI / 2 * (1 - e), e * -0.2, Math.PI * 0.85 * (1 - e) + e * Math.PI / 2);
+                    const snip = k > 1 ? (0.5 - 0.5 * Math.cos((k - 1) * 14)) * 0.45 : 0.35 * e; blades[0].rotation.z = snip; blades[1].rotation.z = -snip;
+                    if (k > 1.7) { phase = 'fall'; t0 = t; bridge.visible = false;
+                        shashu.forEach(s => { s.m.visible = true; s.rest = false; s.m.position.set((Math.random() - 0.5) * 1.6, 2.4 + Math.random() * 1.2, (Math.random() - 0.5) * 1.6 - 0.4); s.v.set((Math.random() - 0.5) * 2.4, Math.random() * 1.5, (Math.random() - 0.5) * 2.4); s.w.set(Math.random() * 9, Math.random() * 9, Math.random() * 9); }); }
                 } else if (phase === 'fall') {
-                    halves[0].position.set(-k * 0.6, Math.max(-0.11, -k * 0.2), 0); halves[1].position.set(k * 0.6, Math.max(-0.11, -k * 0.2), 0);
-                    sc.position.lerp(new T.Vector3(1.8, 0.6, 1.2), 0.05); bridge.visible = false;
-                    if (k > 1.0) { phase = 'walk'; t0 = t; }
+                    halves[0].position.set(-Math.min(0.35, k * 0.5), -Math.min(0.19, k * 0.4), 0); halves[1].position.set(Math.min(0.35, k * 0.5), -Math.min(0.19, k * 0.4), 0);
+                    sc.position.lerp(scHome, 0.05); blades.forEach(b => b.rotation.z *= 0.9);
+                    if (k > 1.2) { phase = 'walk'; t0 = t; }
                 } else if (phase === 'walk') {
-                    const sw = Math.sin(k * 6); legs[0].rotation.x = sw * 0.5; legs[1].rotation.x = -sw * 0.5; arms[0].rotation.x = -sw * 0.4; arms[1].rotation.x = sw * 0.4;
-                    kid.position.z = -Math.min(6.5, k * 0.9); kid.position.y = Math.abs(Math.sin(k * 6)) * 0.04;
+                    const sw = Math.sin(k * 6); legs[0].rotation.x = sw * 0.45; legs[1].rotation.x = -sw * 0.45; arms[0].rotation.x = -0.6 - sw * 0.3; arms[1].rotation.x = -0.6 + sw * 0.3; kid.rotation.z = sw * 0.05;
+                    kid.position.z = -Math.min(6.5, k * 0.85); kid.position.y = Math.abs(Math.sin(k * 6)) * 0.04;
+                    halves.forEach(h => h.visible = false);
                     S.st.target.z += (kid.position.z - S.st.target.z) * 0.03;
-                    if (k > 7.5) { phase = 'done'; legs.forEach(l => l.rotation.x = 0); }
+                    if (k > 8) { phase = 'done'; legs.forEach(l => l.rotation.x = 0); }
                 }
+                shashu.forEach(s => { if (!s.m.visible || s.rest) return; s.v.y -= 9.8 * dt; s.m.position.addScaledVector(s.v, dt); s.m.rotation.x += s.w.x * dt; s.m.rotation.y += s.w.y * dt;
+                    if (s.m.position.y < 0.03) { s.m.position.y = 0.03; s.v.y *= -0.35; s.v.x *= 0.6; s.v.z *= 0.6; s.w.multiplyScalar(0.5); if (Math.abs(s.v.y) < 0.3) { s.rest = true; s.m.rotation.x = s.m.geometry.type.includes('Cylinder') ? 0 : Math.PI / 2; } } });
             };
-            const run = () => { phase = 'cut'; t0 = now; kid.position.set(0, 0, 0); halves.forEach(h => h.position.set(0, 0, 0)); bridge.visible = true; S.st.target.set(0, 0.9, 0); };
-            S.st.phi = 1.15; S.st.theta = 0.9; S.setAuto(false);
+            const run = () => { phase = 'cut'; t0 = now; kid.position.set(0, 0, 0); kid.rotation.z = 0; halves.forEach(h => { h.position.set(0, 0, 0); h.visible = true; }); bridge.visible = true; shashu.forEach(s => s.m.visible = false); S.st.target.set(0, 0.9, 0); };
+            S.st.phi = 1.2; S.st.theta = 0.8; S.setAuto(false);
             return { parts, tick, api: { run } };
         }
+
         function TusauScene() {
             return <AnatomyViewer PARTS={TUSAU_PARTS} scene={buildTusau} explodable={false} opts={{ distance: 7, target: [0, 0.9, 0], minDist: 3, maxDist: 16, autoRotate: false }}
                 intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Тұсаукесер</b> — обряд «перерезания пут». Нажмите «Тұсау кесу»: ножницы разрежут ала жіп, и малыш пойдёт по ақ жол. Поют «Тұсау кесер» жыры: «Қаз-қаз, балам, қаз балам...».</p>}
@@ -6234,63 +6392,113 @@
             { id: 'sut',  kk: 'Сүт',  ru: 'Молоко', text: 'Молоко (или айран, қатық) — чистота и новое начало года.' },
             { id: 'qazan', kk: 'Қазан', ru: 'Котёл', text: 'Наурыз көже варят в большом казане из семи продуктов — по числу «жеті»: семь — священное число. Его угощают в семи домах, а в гости ходят по семь раз.' },
         ];
+        function flameTexture(T) { const [c, g] = _cv(128, 256); const gr = g.createRadialGradient(64, 190, 4, 64, 160, 120); gr.addColorStop(0, 'rgba(255,250,210,1)'); gr.addColorStop(0.25, 'rgba(255,190,60,.95)'); gr.addColorStop(0.6, 'rgba(240,90,20,.55)'); gr.addColorStop(1, 'rgba(200,40,0,0)');
+            g.fillStyle = gr; g.beginPath(); g.moveTo(64, 6); g.bezierCurveTo(118, 120, 112, 250, 64, 250); g.bezierCurveTo(16, 250, 10, 120, 64, 6); g.fill(); return _tex(T, c); }
         function buildKozhe(T, scene, S) {
-            const parts = {};
-            // қазан
-            { const g = new T.Group(); const pts = []; for (let i = 0; i <= 20; i++) { const t = i / 20; pts.push(new T.Vector2(0.4 + 1.2 * Math.sin(t * Math.PI / 2), -1 + t * 1.3)); }
-              const m = new T.Mesh(new T.LatheGeometry(pts, 48), new T.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.7, roughness: 0.4, side: T.DoubleSide })); g.add(m);
-              const rim = new T.Mesh(new T.TorusGeometry(1.6, 0.05, 8, 48), new T.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.3 })); rim.rotation.x = Math.PI / 2; rim.position.y = 0.3; g.add(rim);
-              [1, -1].forEach(s => { const h = new T.Mesh(new T.TorusGeometry(0.18, 0.04, 6, 16), rim.material); h.position.set(s * 1.65, 0.25, 0); h.rotation.y = Math.PI / 2; g.add(h); });
-              const soup = new T.Mesh(new T.CircleGeometry(1.5, 48), new T.MeshStandardMaterial({ color: 0xe6d3a8, roughness: 0.4, emissive: 0x332a10 })); soup.rotation.x = -Math.PI / 2; soup.position.y = 0.05; soup.material.userData.keepEmissive = true; g.add(soup); g.userData.soup = soup;
-              // ошақ-тұғыр и огонь
-              [0, 2.1, 4.2].forEach(a => { const leg = new T.Mesh(new T.BoxGeometry(0.12, 1.3, 0.12), new T.MeshStandardMaterial({ color: 0x333333, metalness: 0.6 })); leg.position.set(Math.cos(a) * 1.4, -1.4, Math.sin(a) * 1.4); g.add(leg); });
-              const fire = new T.Mesh(new T.ConeGeometry(0.5, 0.9, 12), new T.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.8 })); fire.position.y = -1.7; g.add(fire); g.userData.fire = fire;
-              { const L = new T.PointLight(0xff8a30, 1.4, 6); L.position.set(0, -1.4, 0); g.add(L); }
-              scene.add(g); registerPart(parts, 'qazan', g, new T.Vector3(), () => new T.Vector3(1.6, 0.3, 0)); parts.qazan.locked = true; }
-            // ингредиенты на кругу
-            const ING = [['su', 0x4aa3ff, 'drop'], ['et', 0xa3281e, 'box'], ['tuz', 0xffffff, 'cubes'], ['mai', 0xf2d24a, 'box'], ['un', 0xf5efe0, 'mound'], ['dan', 0xd9a441, 'grains'], ['sut', 0xfafafa, 'drop']];
-            const items = [];
-            ING.forEach(([id, c, kind], i) => {
-                const a = i / ING.length * Math.PI * 2; const home = new T.Vector3(Math.cos(a) * 3.3, 1.2 + Math.sin(i * 1.3) * 0.3, Math.sin(a) * 3.3);
-                const g = new T.Group(); const mat = new T.MeshStandardMaterial({ color: c, roughness: 0.5, emissive: 0x000000 });
-                if (kind === 'drop') { const m = new T.Mesh(new T.SphereGeometry(0.3, 20, 16), mat); m.scale.y = 1.3; g.add(m); const tip = new T.Mesh(new T.ConeGeometry(0.2, 0.35, 16), mat); tip.position.y = 0.4; g.add(tip); }
-                else if (kind === 'box') { const m = new T.Mesh(new T.BoxGeometry(0.6, 0.35, 0.45), mat); m.rotation.set(0.3, 0.4, 0); g.add(m); }
-                else if (kind === 'cubes') { for (let k = 0; k < 6; k++) { const m = new T.Mesh(new T.BoxGeometry(0.12, 0.12, 0.12), mat); m.position.set((k % 3 - 1) * 0.16, Math.floor(k / 3) * 0.14, (k % 2) * 0.1); m.rotation.set(k, k * 2, 0); g.add(m); } }
-                else if (kind === 'mound') { const m = new T.Mesh(new T.ConeGeometry(0.4, 0.4, 20), mat); g.add(m); }
-                else { for (let k = 0; k < 14; k++) { const m = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), mat); m.scale.y = 1.6; m.position.set(Math.cos(k) * 0.2 * (k % 3) / 2, (k % 4) * 0.06, Math.sin(k) * 0.2 * (k % 3) / 2); g.add(m); } }
-                g.position.copy(home); scene.add(g);
-                registerPart(parts, id, g, new T.Vector3(), () => new T.Vector3(0, 0.3, 0)); parts[id].locked = true;
-                items.push({ g, home });
+            const look = studioLook(S, { shadow: [4, 9, 6], shadowSize: 6, exposure: 1.05, sun: 0.9 });
+            const parts = {}, FL = -1.6;
+            // ── ошақ: три камня, дрова и живой огонь ──
+            const stoneM = new T.MeshStandardMaterial({ color: 0x6b6660, roughness: 0.95 });
+            [0, 2.09, 4.19].forEach((a, i) => { const geo = new T.DodecahedronGeometry(0.42, 1), p = geo.attributes.position; for (let k = 0; k < p.count; k++) { const s = 1 + 0.12 * Math.sin(p.getX(k) * 9 + i) * Math.cos(p.getZ(k) * 7); p.setXYZ(k, p.getX(k) * s, p.getY(k) * s * 0.85, p.getZ(k) * s); } geo.computeVertexNormals();
+                const m = new T.Mesh(geo, stoneM); m.position.set(Math.cos(a) * 1.15, FL + 0.32, Math.sin(a) * 1.15); m.rotation.y = a; scene.add(m); });
+            const logM = new T.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.9, emissive: 0x501000, emissiveIntensity: 0.6 }); logM.userData.keepEmissive = true;
+            [0.3, 1.9, 3.6].forEach(a => { const l = new T.Mesh(new T.CylinderGeometry(0.07, 0.09, 1.3, 10), logM); l.rotation.set(Math.PI / 2 - 0.15, a, 0); l.position.set(0, FL + 0.12, 0); l.rotation.order = 'YXZ'; scene.add(l); });
+            const fT = flameTexture(T), flames = [];
+            for (let i = 0; i < 7; i++) { const s = new T.Sprite(new T.SpriteMaterial({ map: fT, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); const a = i / 7 * Math.PI * 2;
+                s.position.set(Math.cos(a) * 0.25, FL + 0.45, Math.sin(a) * 0.25); s.userData.ph = Math.random() * 6; scene.add(s); flames.push(s); }
+            const fireL = new T.PointLight(0xff8a30, 2.2, 7, 1.6); fireL.position.set(0, FL + 0.55, 0); scene.add(fireL);
+            const EN = 50, ep = new Float32Array(EN * 3), ev = []; for (let i = 0; i < EN; i++) ev.push({ life: Math.random() });
+            const eg = new T.BufferGeometry(); eg.setAttribute('position', new T.BufferAttribute(ep, 3));
+            const embers = new T.Points(eg, new T.PointsMaterial({ map: glowTexture(T), color: 0xffa040, size: 0.12, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); scene.add(embers);
+            // ── қазан: литой чугун с отогнутым краем и ушками ──
+            { const g = new T.Group(); const prof = []; for (let i = 0; i <= 28; i++) { const a = i / 28 * Math.PI / 2; prof.push(new T.Vector2(Math.max(0.02, Math.sin(a) * 1.42), -Math.cos(a) * 1.0 + 0.08)); }
+              prof.push(new T.Vector2(1.46, 0.26), new T.Vector2(1.58, 0.33), new T.Vector2(1.6, 0.37), new T.Vector2(1.5, 0.36), new T.Vector2(1.38, 0.2));
+              const [ic, ig] = _cv(512, 512); ig.fillStyle = '#2a2826'; ig.fillRect(0, 0, 512, 512); const R = seeded(3); for (let i = 0; i < 6000; i++) { ig.fillStyle = `rgba(${R() > .5 ? '0,0,0' : '120,110,100'},${R() * .25})`; ig.fillRect(R() * 512, R() * 512, 2, 2); }
+              const iron = new T.MeshStandardMaterial({ map: _tex(T, ic), color: 0xffffff, metalness: 0.65, roughness: 0.55, side: T.DoubleSide });
+              g.add(new T.Mesh(new T.LatheGeometry(prof, 72), iron));
+              [1, -1].forEach(s => { const h = new T.Mesh(new T.TorusGeometry(0.16, 0.045, 10, 24, Math.PI), iron); h.position.set(s * 1.5, 0.14, 0); h.rotation.set(0, s > 0 ? Math.PI / 2 : -Math.PI / 2, 0); g.add(h); });
+              const [sc2, sg2] = _cv(512, 512); const sgr = sg2.createRadialGradient(256, 256, 20, 256, 256, 256); sgr.addColorStop(0, '#f2e6c4'); sgr.addColorStop(1, '#d9c28c'); sg2.fillStyle = sgr; sg2.fillRect(0, 0, 512, 512);
+              for (let i = 0; i < 260; i++) { const x = 256 + (R() - .5) * 460, y = 256 + (R() - .5) * 460; sg2.fillStyle = R() > .6 ? 'rgba(170,120,50,.6)' : 'rgba(255,250,230,.7)'; sg2.beginPath(); sg2.ellipse(x, y, 3 + R() * 4, 2 + R() * 2, R() * 3, 0, Math.PI * 2); sg2.fill(); }
+              for (let i = 0; i < 30; i++) { sg2.strokeStyle = 'rgba(255,220,120,.5)'; sg2.lineWidth = 2; sg2.beginPath(); sg2.arc(256 + (R() - .5) * 400, 256 + (R() - .5) * 400, 4 + R() * 10, 0, Math.PI * 2); sg2.stroke(); }
+              const soup = new T.Mesh(new T.CircleGeometry(1.36, 64), new T.MeshStandardMaterial({ map: _tex(T, sc2), roughness: 0.25, metalness: 0 })); soup.rotation.x = -Math.PI / 2; soup.position.y = 0.12; g.add(soup);
+              const bubbles = []; for (let i = 0; i < 18; i++) { const b = new T.Mesh(new T.SphereGeometry(0.06, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshStandardMaterial({ color: 0xfaf2dc, roughness: 0.1, transparent: true, opacity: 0.85 })); b.visible = false; g.add(b); bubbles.push({ b, t: Math.random() * 2 }); }
+              const wave = new T.Mesh(new T.RingGeometry(0.9, 1, 48), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })); wave.rotation.x = -Math.PI / 2; wave.position.y = 0.13; g.add(wave);
+              g.position.y = FL + 1.72; scene.add(g); Object.assign(g.userData, { soup, bubbles, wave });
+              registerPart(parts, 'qazan', g, new T.Vector3(), () => new T.Vector3(1.6, 0.37, 0.15)); parts.qazan.locked = true; }
+            const kz = parts.qazan.grp, kzTop = new T.Vector3(0, kz.position.y + 0.15, 0);
+            // ── дастархан и посуда с семью продуктами ──
+            const dast = new T.Mesh(new T.RingGeometry(2.4, 4.1, 64, 1, -0.2, Math.PI + 0.4), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#f3e7cc', border: '#a3271d', pat: '#2b4a7a', rep: [4, 1] }), roughness: 0.95, side: T.DoubleSide }));
+            dast.rotation.x = Math.PI / 2; dast.position.y = FL + 0.005; scene.add(dast);
+            rugFloor(T, scene, FL, 9, 11);
+            const woodB = new T.MeshStandardMaterial({ map: woodTexture(T, '#8a5328'), roughness: 0.45 });
+            const porcelain = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15, metalness: 0 });
+            const bowl = (r, h, m) => { const pts = []; for (let i = 0; i <= 14; i++) { const a = i / 14 * Math.PI / 2; pts.push(new T.Vector2(r * Math.sin(a) * 0.95 + 0.02, h * (1 - Math.cos(a)))); } pts.push(new T.Vector2(r * 0.97, h + 0.01), new T.Vector2(r * 0.88, h)); return new T.Mesh(new T.LatheGeometry(pts, 40), m); };
+            const mk = (c, r = 0.5, extra = {}) => new T.MeshStandardMaterial({ color: c, roughness: r, ...extra });
+            const ING = ['su', 'et', 'tuz', 'mai', 'un', 'dan', 'sut'];
+            const items = ING.map((id, i) => {
+                const a = Math.PI * (0.08 + 0.84 * i / (ING.length - 1)), home = new T.Vector3(Math.cos(a) * 3.15, FL, Math.sin(a) * 3.15);
+                const g = new T.Group(); g.position.copy(home); g.rotation.y = -a; scene.add(g); let content = new T.Group(), liquid = null, top = 0.3;
+                if (id === 'su' || id === 'sut') { const b = bowl(0.42, 0.3, porcelain); g.add(b); const band = new T.Mesh(new T.TorusGeometry(0.405, 0.012, 6, 40), mk(id === 'su' ? 0x1d4fa0 : 0xc9a14a, 0.3)); band.rotation.x = Math.PI / 2; band.position.y = 0.26; g.add(band);
+                    liquid = new T.Mesh(new T.CircleGeometry(0.37, 40), id === 'su' ? mk(0x4f9bd9, 0.05, { metalness: 0.1, transparent: true, opacity: 0.85 }) : mk(0xfbfaf4, 0.2)); liquid.rotation.x = -Math.PI / 2; liquid.position.y = 0.24; g.add(liquid);
+                    const drop = new T.Mesh(new T.SphereGeometry(0.2, 20, 14), liquid.material); drop.scale.y = 1.3; drop.visible = false; content.add(drop); }
+                else if (id === 'et') { const dish = new T.Mesh(new T.CylinderGeometry(0.55, 0.45, 0.08, 40), woodB); dish.scale.z = 0.7; dish.position.y = 0.04; g.add(dish);
+                    for (let k = 0; k < 5; k++) { const geo = new T.BoxGeometry(0.22, 0.13, 0.17, 3, 2, 2), p = geo.attributes.position; for (let j = 0; j < p.count; j++) p.setXYZ(j, p.getX(j) * (1 + 0.15 * Math.sin(j)), p.getY(j), p.getZ(j) * (1 + 0.12 * Math.cos(j * 2))); geo.computeVertexNormals();
+                        const m = new T.Mesh(geo, [mk(0x8e2a22, 0.55), mk(0x8e2a22, 0.55), mk(0xeadcc2, 0.6), mk(0x7a221c, 0.55), mk(0x9e3428, 0.55), mk(0x9e3428, 0.55)]); m.position.set((k % 3 - 1) * 0.24, 0.15 + Math.floor(k / 3) * 0.1, (k % 2 - 0.5) * 0.18); m.rotation.set(0.2 * k, k, 0.1); content.add(m); } top = 0.42; }
+                else if (id === 'tuz') { g.add(bowl(0.28, 0.2, woodB)); for (let k = 0; k < 60; k++) { const m = new T.Mesh(new T.BoxGeometry(0.035, 0.035, 0.035), mk(0xffffff, 0.3)); const r = Math.sqrt(Math.random()) * 0.22, t = Math.random() * 6.28; m.position.set(Math.cos(t) * r, 0.17 + (0.22 - r) * 0.5 + Math.random() * 0.03, Math.sin(t) * r); m.rotation.set(k, k * 2, k * 3); content.add(m); } }
+                else if (id === 'mai') { const dish = new T.Mesh(new T.CylinderGeometry(0.4, 0.33, 0.05, 40), porcelain); dish.position.y = 0.03; g.add(dish);
+                    const geo = new T.BoxGeometry(0.42, 0.2, 0.3, 4, 2, 4); const m = new T.Mesh(geo, mk(0xf4d86a, 0.35)); m.position.y = 0.16; content.add(m); }
+                else if (id === 'un') { g.add(bowl(0.42, 0.28, woodB)); const geo = new T.ConeGeometry(0.38, 0.3, 40, 6), p = geo.attributes.position; for (let j = 0; j < p.count; j++) p.setY(j, p.getY(j) * (0.8 + 0.1 * Math.sin(j * 1.7))); geo.computeVertexNormals();
+                    const m = new T.Mesh(geo, mk(0xf6f1e4, 0.95)); m.position.y = 0.36; content.add(m); top = 0.5; }
+                else if (id === 'dan') { g.add(bowl(0.4, 0.26, woodB)); const im = new T.InstancedMesh(new T.SphereGeometry(0.028, 8, 6), mk(0xd9a441, 0.5), 160), d = new T.Object3D();
+                    for (let k = 0; k < 160; k++) { const r = Math.sqrt(Math.random()) * 0.33, t = Math.random() * 6.28; d.position.set(Math.cos(t) * r, 0.2 + (0.33 - r) * 0.35 + Math.random() * 0.04, Math.sin(t) * r); d.rotation.set(Math.random() * 3, Math.random() * 3, 0); d.scale.set(1, 1.7, 1); d.updateMatrix(); im.setMatrixAt(k, d.matrix); } content.add(im); }
+                g.add(content);
+                registerPart(parts, id, g, new T.Vector3(), () => new T.Vector3(0, top, 0)); parts[id].locked = true;
+                return { g, content, liquid, home };
             });
-            // пар
-            const steamN = 60, sp = new Float32Array(steamN * 3); for (let i = 0; i < steamN; i++) { sp[i * 3] = (Math.random() - 0.5) * 2; sp[i * 3 + 1] = Math.random() * 3; sp[i * 3 + 2] = (Math.random() - 0.5) * 2; }
-            const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3));
-            const steam = new T.Points(sg, new T.PointsMaterial({ map: glowTexture(T), color: 0xffffff, size: 0.6, transparent: true, opacity: 0, depthWrite: false })); scene.add(steam);
-            let cook = null, now = 0;
+            const SN = 70, sp = new Float32Array(SN * 3); for (let i = 0; i < SN; i++) { sp[i * 3] = (Math.random() - 0.5) * 2; sp[i * 3 + 1] = Math.random() * 3; sp[i * 3 + 2] = (Math.random() - 0.5) * 2; }
+            const sgeo = new T.BufferGeometry(); sgeo.setAttribute('position', new T.BufferAttribute(sp, 3));
+            const steam = new T.Points(sgeo, new T.PointsMaterial({ map: glowTexture(T), color: 0xffffff, size: 0.9, transparent: true, opacity: 0.12, depthWrite: false })); steam.position.y = kz.position.y; scene.add(steam);
+            look.shadows(); flames.forEach(f => f.castShadow = false);
+            let cook = null, now = 0, heat = 0.3;
+            const inv = new T.Matrix4();
             const tick = (dt, t) => {
-                now = t; const q = parts.qazan.grp.userData; q.fire.scale.y = 1 + Math.sin(t * 9) * 0.15;
-                items.forEach((it, i) => { if (!cook || cook.i <= i) it.g.position.y = it.home.y + Math.sin(t * 1.5 + i) * 0.08; it.g.rotation.y += dt * 0.4; });
+                now = t; const q = kz.userData;
+                flames.forEach((f, i) => { const s = 0.55 + 0.25 * Math.sin(t * 9 + f.userData.ph) + 0.15 * Math.sin(t * 23 + i); f.scale.set(0.45 * s + 0.1, 0.9 * s + 0.2, 1); f.material.opacity = 0.75 + 0.25 * Math.sin(t * 13 + i); });
+                fireL.intensity = 2 + Math.sin(t * 11) * 0.35 + Math.sin(t * 27) * 0.2;
+                const ea = embers.geometry.attributes.position; ev.forEach((e, i) => { e.life += dt * 0.6; if (e.life > 1) { e.life = 0; e.x = (Math.random() - 0.5) * 0.6; e.z = (Math.random() - 0.5) * 0.6; }
+                    ea.setXYZ(i, (e.x || 0) + Math.sin(t * 2 + i) * 0.1 * e.life, FL + 0.3 + e.life * 1.3, (e.z || 0)); }); ea.needsUpdate = true;
+                heat += ((cook ? 1 : 0.3) - heat) * dt * 0.5;
+                q.bubbles.forEach(b => { b.t -= dt * (0.5 + heat * 2); if (b.t <= 0) { b.t = 0.6 + Math.random() * 2.2; const r = Math.sqrt(Math.random()) * 1.2, a = Math.random() * 6.28; b.b.position.set(Math.cos(a) * r, 0.12, Math.sin(a) * r); }
+                    const life = Math.max(0, 1 - b.t / 0.6); b.b.visible = b.t < 0.6 && heat > 0.35; b.b.scale.setScalar(0.4 + life * 1.1); });
+                steam.material.opacity = 0.08 + heat * 0.32;
+                const p = steam.geometry.attributes.position; for (let i = 0; i < SN; i++) { let y = p.getY(i) + dt * (0.4 + heat * 0.6); if (y > 3.5) y = 0.2; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(t + i) * dt * 0.1); } p.needsUpdate = true;
+                if (q.wave.material.opacity > 0) { q.wave.scale.multiplyScalar(1 + dt * 1.6); q.wave.material.opacity -= dt * 0.9; }
                 if (cook) {
-                    const k = t - cook.t0; const i = Math.floor(k / 0.9);
-                    for (let j = 0; j < items.length; j++) {
-                        const it = items[j]; const local = k - j * 0.9;
-                        if (local > 0 && local < 0.9) { const a = local / 0.9; it.g.visible = true; it.g.position.set(it.home.x * (1 - a), it.home.y + Math.sin(a * Math.PI) * 1.2 - a * (it.home.y - 0.1), it.home.z * (1 - a)); it.g.scale.setScalar(1 - a * 0.7); if (cook.i !== j) { cook.i = j; S._setActive?.(ING[j][0]); } }
-                        else if (local >= 0.9) it.g.visible = false;
-                    }
-                    q.soup.material.color.lerp(new T.Color(0xf3ead2), 0.01);
-                    steam.material.opacity = Math.min(0.5, k * 0.08);
-                    if (k > items.length * 0.9 + 0.5 && !cook.done) { cook.done = true; S._setActive?.('qazan'); }
+                    const k = t - cook.t0;
+                    items.forEach((it, j) => { const local = k - j * 1.05, dur = 0.95;
+                        if (local > 0 && local < dur) { const a = local / dur, e = a * a * (3 - 2 * a);
+                            if (cook.i !== j) { cook.i = j; S._setActive?.(ING[j]); if (it.liquid) { it.content.children[0].visible = true; } }
+                            // траектория в локальных координатах тарелки
+                            inv.copy(it.g.matrixWorld).invert(); const tgt = kzTop.clone().applyMatrix4(inv), start = new T.Vector3(0, 0.35, 0);
+                            it.content.position.lerpVectors(start, tgt, e).y += Math.sin(a * Math.PI) * 1.6 - (it.liquid ? 0 : 0.2 * a); if (!it.liquid) it.content.position.sub(new T.Vector3(0, 0.35 * (1 - e), 0));
+                            it.content.scale.setScalar(1 - e * 0.55); it.content.rotation.y = a * 4;
+                            if (it.liquid) it.liquid.scale.setScalar(Math.max(0.01, 1 - e));
+                        } else if (local >= dur && !it.done) { it.done = true; it.content.visible = false; q.wave.scale.setScalar(0.4); q.wave.material.opacity = 0.7; }
+                    });
+                    q.soup.material.color.lerp(new T.Color(0xfff6e0), dt * 0.3);
+                    if (k > items.length * 1.05 + 0.6 && !cook.fin) { cook.fin = true; S._setActive?.('qazan'); }
                 }
-                const p = steam.geometry.attributes.position; for (let i = 0; i < steamN; i++) { let y = p.getY(i) + dt * 0.6; if (y > 3.5) y = 0.2; p.setY(i, y); } p.needsUpdate = true;
             };
-            const run = () => { cook = { t0: now, i: -1 }; items.forEach(it => { it.g.visible = true; it.g.scale.setScalar(1); it.g.position.copy(it.home); }); };
-            const reset = () => { cook = null; steam.material.opacity = 0; items.forEach(it => { it.g.visible = true; it.g.scale.setScalar(1); it.g.position.copy(it.home); }); };
-            S.st.phi = 1.05;
+            const reset = () => { cook = null; items.forEach(it => { it.done = false; it.content.visible = true; it.content.position.set(0, 0, 0); it.content.scale.setScalar(1); it.content.rotation.set(0, 0, 0);
+                if (it.liquid) { it.liquid.scale.setScalar(1); it.content.children[0].visible = false; } }); };
+            const run = () => { reset(); cook = { t0: now, i: -1 }; };
+            S.st.phi = 1.02; S.st.theta = 0.0;
             return { parts, tick, api: { run, reset } };
         }
+
         function KozheScene() {
             return <AnatomyViewer PARTS={KOZHE_PARTS} scene={(T, sc, S) => { const r = buildKozhe(T, sc, S); return r; }} explodable={false} stepLabel="құрам"
-                opts={{ distance: 11, target: [0, 0.3, 0], minDist: 5, maxDist: 22 }}
+                opts={{ distance: 12, target: [0, -1.1, 0.8], minDist: 5, maxDist: 22, autoRotate: false }}
                 intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Наурыз көже</b> — праздничный суп из 7 продуктов (22 марта, Наурыз — Новый год по солнцу). Нажмите «Пісіру», и все семь продуктов отправятся в казан.</p>}
                 controls={(api) => <>
                     <button className={btn3d + ' flex-1'} style={btnStyle(true)} onClick={() => api.run?.()}>🔥 Пісіру · Сварить</button>
