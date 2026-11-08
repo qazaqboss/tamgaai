@@ -5104,6 +5104,10 @@
             const acc = i => { const a = j.accessors[i], bv = j.bufferViews[a.bufferView], off = bin + (bv.byteOffset || 0) + (a.byteOffset || 0), n = a.count * C[a.type];
                 const A = a.componentType === 5126 ? Float32Array : a.componentType === 5125 ? Uint32Array : a.componentType === 5123 ? Uint16Array : Uint8Array;
                 return { arr: new A(buf.slice(off, off + n * A.BYTES_PER_ELEMENT)), size: C[a.type] }; };
+            const texCache = {};
+            const tex = (ti) => { if (texCache[ti]) return texCache[ti]; const im = j.images[j.textures[ti].source], bv = j.bufferViews[im.bufferView];
+                const url = URL.createObjectURL(new Blob([new Uint8Array(buf, bin + (bv.byteOffset || 0), bv.byteLength)], { type: im.mimeType || 'image/jpeg' }));
+                const t = new T.TextureLoader().load(url, () => URL.revokeObjectURL(url)); t.flipY = false; t.encoding = T.sRGBEncoding; t.anisotropy = 4; return (texCache[ti] = t); };
             const out = [];
             const walk = (ni, pm, pn = '') => { const n = j.nodes[ni], m = new T.Matrix4(), nm = /^Object_\d+$/.test(n.name || '') ? pn : (n.name || '');
                 if (n.matrix) m.fromArray(n.matrix); else m.compose(new T.Vector3(...(n.translation || [0, 0, 0])), new T.Quaternion(...(n.rotation || [0, 0, 0, 1])), new T.Vector3(...(n.scale || [1, 1, 1])));
@@ -5113,7 +5117,7 @@
                     if (p.attributes.NORMAL !== undefined) g.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL).arr, 3));
                     if (p.attributes.TEXCOORD_0 !== undefined) g.setAttribute('uv', new T.BufferAttribute(acc(p.attributes.TEXCOORD_0).arr, 2));
                     if (p.indices !== undefined) g.setIndex(new T.BufferAttribute(acc(p.indices).arr, 1));
-                    g.applyMatrix4(m); out.push({ name: nm, mat: j.materials[p.material] || {}, geo: g }); });
+                    g.applyMatrix4(m); const mt = j.materials[p.material] || {}, bt = mt.pbrMetallicRoughness?.baseColorTexture; out.push({ name: nm, mat: mt, geo: g, map: bt ? tex(bt.index) : null }); });
                 (n.children || []).forEach(c => walk(c, m, nm)); };
             j.scenes[j.scene || 0].nodes.forEach(ni => walk(ni, new T.Matrix4()));
             return out;
@@ -5773,7 +5777,7 @@
                     const parts = res.parts || {};
                     Object.values(parts).forEach(p => { if (!p.grp.parent) scene.add(p.grp); });
                     apiRef.current = { ...(res.api || {}), S, parts, setActive }; force(n => n + 1);
-                    const meshes = []; Object.values(parts).forEach(p => p.grp.traverse(o => { if (o.isMesh || o.isLine) meshes.push(o); }));
+                    const meshList = () => { const m = []; new Set(Object.values(parts).map(p => p.grp)).forEach(g => g.traverse(o => { if (o.isMesh || o.isLine) m.push(o); })); return m; };
                     let cur = 0;
                     S.onFrame((dt, t) => {
                         cur += (st.current.explode - cur) * Math.min(1, dt * 6);
@@ -5787,8 +5791,8 @@
                         const items = PARTS.filter(d => parts[d.id] && parts[d.id].grp.visible).map(d => ({ id: d.id, el: labelEls.current[d.id], anchor: () => parts[d.id].anchor().applyMatrix4(parts[d.id].grp.matrixWorld) }));
                         update(S, items, st.current.active);
                     });
-                    S.onClick(e => { if (res.onClick?.(e)) return; const h = S.pick(e, meshes); const id = h?.object?.userData.part || null; setActive(a => (id && a !== id) ? id : null); });
-                    S.el.addEventListener('pointermove', e => { if (!e.buttons) S.el.style.cursor = S.pick(e, meshes) ? 'pointer' : 'grab'; });
+                    S.onClick(e => { if (res.onClick?.(e)) return; const h = S.pick(e, meshList()); const id = h?.object?.userData.part || null; setActive(a => (id && a !== id) ? id : null); });
+                    S.el.addEventListener('pointermove', e => { if (!e.buttons) S.el.style.cursor = S.pick(e, meshList()) ? 'pointer' : 'grab'; });
                     return res.dispose;
                 },
             }, []);
@@ -5959,11 +5963,49 @@
             return { parts, tick, onClick, api: { play, demo, setFret: (f) => { fret = f; } } };
         }
 
+
+        // ── Настоящая 3D-домбыра (текстуры по фото) — разбор по деталям ──
+        function buildDombraGLB(T, scene, S) {
+            const s = 9 / 170.7, M = new T.Matrix4().makeTranslation(0, -4.5, 0).multiply(new T.Matrix4().makeScale(s, s, s)).multiply(new T.Matrix4().makeTranslation(0, 42.4, 0)).premultiply(new T.Matrix4().makeRotationY(Math.PI / 2));
+            const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const rig = new T.Group(); rig.position.set(-0.3, 3.1, 0); rig.rotation.z = -0.98; scene.add(rig); // по диагонали — как в атласе
+            const grp = (id, explode, dir) => { const g = new T.Group(); g.userData.id = id; rig.add(g); return (parts[id] = { grp: g, base: V(0, 0, 0), explode, mats: [], dir, anchor: () => V(0, 3, 0) }); };
+            grp('shanaq', V(0, 0, -1.7), V(0.2, -0.3, -1)); grp('qaqpaq', V(0, 0, 1.5), V(-0.8, -0.2, 0.6)); grp('tiek', V(0, -0.3, 2.9), V(0, 0, 1));
+            grp('ishek', V(-0.9, -0.2, 2.0), V(0.3, 1, 0.4)); grp('moiyn', V(0, 0.75, 0.2), V(-1, 0.3, 0.4)); grp('bas', V(0, 1.35, 0.3), V(-0.6, 1, 0.3)); grp('qulaq', V(0.5, 1.6, -1.1), V(0.2, 0.4, -1));
+            // детали без своей геометрии — живут на соседней части
+            const share = (id, of, pt) => { parts[id] = { ...parts[of], anchor: () => pt.clone() }; };
+            share('tesik', 'qaqpaq', V(0, -2.3, 0.16)); share('tuyme', 'shanaq', V(0, -4.46, 0.08)); share('perne', 'moiyn', V(0.12, -0.1, 0.12));
+            const map = { shanaq: 'shanaq', qaqpaq: 'qaqpaq', tiek: 'tiek', ishek: 'ishek', moiyn: 'moiyn', moiyn_top: 'moiyn', bas: 'bas', bas_nut: 'bas', qulaq: 'qulaq' };
+            let stringsGrp = parts.ishek.grp, amp = 0;
+            loadSimpleGLB(T, 'models/dombra.glb').then(list => list.forEach(({ name, mat, geo, map: tx }) => {
+                const id = map[name]; if (!id) return; geo.applyMatrix4(M); if (!geo.attributes.normal) geo.computeVertexNormals();
+                const c = mat.pbrMetallicRoughness?.baseColorFactor || [1, 1, 1, 1];
+                const m = new T.MeshStandardMaterial({ map: tx, color: tx ? 0xffffff : new T.Color(c[0], c[1], c[2]), roughness: name === 'ishek' ? 0.35 : 0.55, metalness: name === 'ishek' ? 0.3 : 0.04, side: T.DoubleSide });
+                const mesh = new T.Mesh(geo, m); mesh.userData.part = id; const p = parts[id]; p.grp.add(mesh); p.mats.push(m);
+                // якорь подписи — вершина, дальше всего в направлении dir
+                const d = p.dir.clone().normalize(), v = new T.Vector3(); let best = p._best ?? -1e9; const pa = geo.attributes.position;
+                for (let i = 0; i < pa.count; i += 2) { v.fromBufferAttribute(pa, i); const k = v.dot(d); if (k > best) { best = k; p._a = v.clone(); } }
+                p._best = best; const a = p._a; p.anchor = () => a.clone();
+            })).catch(e => console.warn('dombra.glb', e));
+            const play = (si, fr) => { const f = fr ?? 0; pluck(DOMBRA_STRINGS[si] * Math.pow(2, PERNE[f] / 12)); amp = 0.035; };
+            let fret = 0;
+            const tick = (dt, t) => { if (amp > 0.0005) { amp *= Math.pow(0.03, dt); stringsGrp.position.x += Math.sin(t * 95) * amp; } };
+            const demo = () => { const seq = [[0,0],[1,0],[0,2],[1,0],[0,3],[1,0],[0,4],[1,2],[0,4],[1,2],[0,3],[1,0],[0,2],[1,0],[0,0],[1,0],[0,0],[1,4],[1,3],[1,2],[1,0],[0,4],[0,3],[0,0]];
+                seq.forEach(([si, fr], k) => setTimeout(() => play(si, fr), k * 210)); };
+            const key = new T.DirectionalLight(0xfff1dc, 0.9); key.position.set(3, 8, 6); scene.add(key);
+            S.st.phi = 1.42; S.st.theta = 0.5;
+            return { parts, tick, api: { play: (si) => play(si, fret), demo, setFret: (f) => { fret = f; } } };
+        }
+
         function DombraAtlas() {
-            const [fret, setFret] = useState(0);
-            return <AnatomyViewer PARTS={DOMBRA_PARTS} scene={buildDombra} opts={{ distance: 15, target: [0, 3.3, 0], minDist: 4, maxDist: 25, autoRotate: false }}
+            const [fret, setFret] = useState(0); const [real, setReal] = useState(true);
+            return <AnatomyViewer key={real ? 'real' : 'sx'} PARTS={DOMBRA_PARTS} scene={real ? buildDombraGLB : buildDombra} opts={real ? { distance: innerWidth < 640 ? 21 : 12.5, target: innerWidth < 640 ? [0.6, 1.6, 0] : [0, 2.7, 0], minDist: 3, maxDist: 25, autoRotate: false } : { distance: 15, target: [0, 3.3, 0], minDist: 4, maxDist: 25, autoRotate: false }}
                 intro={<p className="text-[#999] text-xs">Домбыра — две струны, строй «кварта» (ре–соль). Нажмите на струну в 3D, выберите перне (лад) или включите наигрыш. Нажмите на подпись, чтобы узнать о части.</p>}
                 controls={(api) => <>
+                    <div className="flex rounded-full border border-[#2a2418] overflow-hidden text-[10px] tracking-widest uppercase shrink-0">
+                        {[[true, '⌂ Нақты'], [false, '◈ Сызба']].map(([v, l]) => <button key={l} onClick={() => { setReal(v); setFret(0); }} className="px-3 py-1.5 whitespace-nowrap"
+                            style={{ background: real === v ? '#C5A55A' : 'transparent', color: real === v ? '#000' : '#C5A55A' }}>{l}</button>)}
+                    </div>
                     <div className="flex gap-1 w-full overflow-x-auto">
                         {PERNE.map((s, i) => <button key={i} onClick={() => { setFret(i); api.setFret?.(i); }} className="shrink-0 w-7 h-7 rounded-full text-[10px] border"
                             style={{ borderColor: fret === i ? '#C5A55A' : '#2a2a2a', color: fret === i ? '#000' : '#999', background: fret === i ? '#C5A55A' : 'transparent' }}>{i}</button>)}
