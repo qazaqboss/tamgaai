@@ -4536,8 +4536,9 @@
         //  3D ШЕЖІРЕ — Бәйтерек
         // ═════════════════════════════════════════════════════════════════════
         // ── Спиральное шежіре: Алаш в центре, поколения — витки спирали, узлы раскрываются по клику ──
-        const SP = { R: 2.9, POW: 0.82, TWIST: 0.23, DY: 0.85 };
-        const spiralRadius = d => d === 0 ? 0 : SP.R * Math.pow(d, SP.POW) + 1.2;
+        // Бәйтерек сверху вниз: Алаш наверху, каждое поколение — ниже; ветви расходятся в разные стороны и закручиваются спиралью
+        const SP = { TWIST: 0.38, DY: 2.8, GAP: 1.9, MIN: 1.6 };
+        const spiralRadius = (d, Rmax, maxD) => d === 0 ? 0 : Math.max(SP.MIN * Math.sqrt(d), Rmax * Math.pow(d / Math.max(1, maxD), 0.72));
         function buildTreeRecs(root) {
             const all = [], byId = {};
             const walk = (n, parent, depth) => { const r = { n, parent, depth, kids: [], path: parent ? [...parent.path, n] : [n] }; all.push(r); byId[n.id] = r; if (parent) parent.kids.push(r); (n.children || []).forEach(c => walk(c, r, depth + 1)); return r; };
@@ -4557,9 +4558,9 @@
             const me = (() => { try { return localStorage.getItem('shejire_user'); } catch { return null; } })();
 
             const err = useThree(mountRef, {
-                opts: { distance: 46, target: [0, -6, 0], maxDist: 170, minDist: 3, autoRotate: false, fog: false },
+                opts: { distance: 46, target: [0, -6, 0], maxDist: 220, minDist: 3, autoRotate: false, fog: false },
                 run: (S) => {
-                    const { T, scene } = S; stageRef.current = S; S.st.theta = 0.35; S.st.phi = 0.78;
+                    const { T, scene } = S; stageRef.current = S; S.st.theta = 0.35; S.st.phi = 1.22;
                     addStarDust(T, scene, 1400, 110);
                     const { all, byId, root } = buildTreeRecs(TREE_DATA);
                     const glow = glowTexture(T), sphG = new T.SphereGeometry(1, 32, 20);
@@ -4594,18 +4595,16 @@
                         if (nd) { const b = makeTextSprite(T, `+${nd}`, { size: 0.36, color: '#000', bg: 'rgba(240,216,130,0.95)', weight: 700, res: 1.6 }); b.position.set(rad + 0.55, rad * 0.3, 0); b.userData.rec = r; g.add(b); r.badge = b; }
                         r.cur = r.parent?.cur ? r.parent.cur.clone() : new T.Vector3(); r.tgt = r.cur.clone(); g.position.copy(r.cur);
                     };
-                    // ── рёбра: дуга по спирали между полярными координатами ──
-                    const edgeMat = (main) => new T.MeshStandardMaterial({ color: main ? 0xC5A55A : 0x8a7444, emissive: main ? 0x4a3608 : 0x1a1408, roughness: 0.4, metalness: 0.6 });
-                    const polar = v => ({ a: Math.atan2(v.z, v.x), r: Math.hypot(v.x, v.z), y: v.y });
+                    // ── ветви: от родителя вниз и в сторону, толщина — по числу открытых потомков ──
+                    const edgeMat = (main) => new T.MeshStandardMaterial({ color: main ? 0xC5A55A : 0x8a6a3e, emissive: main ? 0x4a3608 : 0x1a1206, roughness: main ? 0.35 : 0.7, metalness: main ? 0.6 : 0.2 });
                     const rebuildEdge = (r) => {
-                        if (!r.parent) return; const A = polar(r.parent.cur), B = polar(r.cur);
-                        let da = B.a - A.a; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
-                        const a0 = A.r < 0.01 ? B.a : A.a, pts = [];
-                        for (let i = 0; i <= 20; i++) { const t = i / 20, e = t * t * (3 - 2 * t);
-                            const a = A.r < 0.01 ? B.a : a0 + da * e, rr = A.r + (B.r - A.r) * t, y = A.y + (B.y - A.y) * e;
-                            pts.push(new T.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr)); }
+                        if (!r.parent) return; const A = r.parent.cur, B = r.cur, dy = A.y - B.y;
+                        const h = new T.Vector3(B.x - A.x, 0, B.z - A.z);
+                        // ветвь сначала уходит вбок от ствола, затем мягко опускается к узлу — силуэт дерева
+                        const P1 = A.clone().add(new T.Vector3(h.x * 0.15, -dy * 0.45, h.z * 0.15)), P2 = B.clone().add(new T.Vector3(-h.x * 0.25, dy * 0.55, -h.z * 0.25));
                         const main = (r.n.isMainLine || r.n.highlight) && (r.parent.n.isMainLine || r.parent.depth === 0);
-                        const geo = new T.TubeGeometry(new T.CatmullRomCurve3(pts), 24, main ? 0.075 : 0.04, 7, false);
+                        const w = Math.min(0.22, 0.04 + 0.028 * Math.log2(1 + (r.vis || 0)));
+                        const geo = new T.TubeGeometry(new T.CubicBezierCurve3(A.clone(), P1, P2, B.clone()), 20, main ? Math.max(w, 0.09) : w, 7, false);
                         if (!r.edge) { r.edge = new T.Mesh(geo, edgeMat(main)); r.edge.userData.main = main; scene.add(r.edge); } else { r.edge.geometry.dispose(); r.edge.geometry = geo; }
                     };
 
@@ -4618,23 +4617,34 @@
                         let cur = 0; const total = Math.max(1, leaves.length);
                         const slot = (r) => { if (!r.open) { r.slot = cur + 0.5; cur += 1; return r.slot; } const sl = r.kids.map(slot); r.slot = (sl[0] + sl[sl.length - 1]) / 2; return r.slot; };
                         slot(root);
+                        const maxD = Math.max(1, ...visible.map(r => r.depth)), Rwant = Math.max(4, total * SP.GAP / (Math.PI * 2)), Rmax = Math.min(Rwant, 26 + Math.sqrt(total) * 0.8);
+                        const crowd = Rwant / Rmax, DY = SP.DY * Math.min(2.2, Math.sqrt(crowd)); let li = 0; // тесно — растягиваем дерево вниз и разводим листья по ярусам
+                        const visCount = r => (r.vis = r.open ? r.kids.reduce((n, k) => n + 1 + visCount(k), 0) : 0);
+                        visCount(root);
                         visible.forEach(r => { if (!r.g) makeNode(r);
-                            const a = (r.slot / total) * Math.PI * 2 + r.depth * SP.TWIST, rr = spiralRadius(r.depth);
-                            r.tgt = new T.Vector3(Math.cos(a) * rr, -r.depth * SP.DY, Math.sin(a) * rr);
+                            const a = (r.slot / total) * Math.PI * 2 + r.depth * SP.TWIST, rr = spiralRadius(r.depth, Rmax, maxD);
+                            const stag = (!r.open && crowd > 1.2) ? ((li++ % 4) * DY * 0.32) : 0;
+                            r.tgt = new T.Vector3(Math.cos(a) * rr, -r.depth * DY - stag, Math.sin(a) * rr);
                             r.g.visible = true; if (r.edge) r.edge.visible = true;
                             if (r.badge) r.badge.visible = !r.open; });
                         const vis = new Set(visible);
                         all.forEach(r => { if (r.g && !vis.has(r)) { r.hiding = true; } else r.hiding = false; });
                         pickables = visible.flatMap(r => [r.mesh, r.label, r.badge].filter(Boolean));
-                        // кольца-«орбиты» поколений
+                        // ось времени: тонкий ствол и кольца «жеті ата» каждые 7 поколений
                         ringsGroup.children.slice().forEach(c => { c.geometry.dispose(); ringsGroup.remove(c); });
-                        const depths = [...new Set(visible.map(r => r.depth))].filter(d => d > 0);
-                        depths.forEach(d => { const rr = spiralRadius(d); const m = new T.Mesh(new T.RingGeometry(rr - 0.02, rr + 0.02, 160), new T.MeshBasicMaterial({ color: 0xC5A55A, transparent: true, opacity: d % 7 === 0 ? 0.22 : 0.07, side: T.DoubleSide, depthWrite: false }));
-                            m.rotation.x = -Math.PI / 2; m.position.y = -d * SP.DY; ringsGroup.add(m); });
+                        const axis = new T.Mesh(new T.CylinderGeometry(0.012, 0.012, maxD * DY, 6), new T.MeshBasicMaterial({ color: 0xC5A55A, transparent: true, opacity: 0.08, depthWrite: false }));
+                        axis.position.y = -maxD * DY / 2; ringsGroup.add(axis);
+                        for (let d = 7; d <= maxD; d += 7) { const rr = spiralRadius(d, Rmax, maxD); const m = new T.Mesh(new T.RingGeometry(rr * 0.98, rr * 1.02 + 0.05, 160), new T.MeshBasicMaterial({ color: 0xC5A55A, transparent: true, opacity: 0.12, side: T.DoubleSide, depthWrite: false }));
+                            m.rotation.x = -Math.PI / 2; m.position.y = -d * DY; ringsGroup.add(m);
+                            const tl = makeTextSprite(T, `${d} ата`, { size: 0.5, color: '#C5A55A', res: 1.4 }); tl.material.opacity = 0.55; tl.position.set(rr + 1.2, -d * DY, 0); ringsGroup.add(tl); }
+                        // спиральная «лента поколений» — золотая пыль, закрученная вдоль дерева
+                        const hp = []; for (let i = 0; i <= maxD * 24; i++) { const d = i / 24, rr = spiralRadius(Math.max(0.2, d), Rmax, maxD) * 0.55 + 0.4, a = d * (SP.TWIST + 0.9); hp.push(Math.cos(a) * rr, -d * DY, Math.sin(a) * rr); }
+                        const hg = new T.BufferGeometry(); hg.setAttribute('position', new T.Float32BufferAttribute(hp, 3));
+                        ringsGroup.add(new T.Points(hg, new T.PointsMaterial({ map: glow, color: 0xF0D882, size: 0.35, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending })));
                         animT = 1.2;
                     };
                     const fit = (fly = true) => { let R = 4, ymin = 0; visible.forEach(r => { R = Math.max(R, Math.hypot(r.tgt.x, r.tgt.z)); ymin = Math.min(ymin, r.tgt.y); });
-                        const c = new T.Vector3(0, ymin / 2, 0), d = Math.min(165, (R * 2 + 6) / (2 * Math.tan(S.camera.fov * Math.PI / 360) * Math.min(1, S.camera.aspect)) * 0.95);
+                        const tf = 2 * Math.tan(S.camera.fov * Math.PI / 360), c = new T.Vector3(0, ymin / 2, 0), d = Math.min(210, Math.max((R * 2 + 6) / (tf * Math.min(1, S.camera.aspect)), (-ymin + 8) / tf) * 1.08);
                         if (fly) S.flyTo(c, d); else { S.st.target.copy(c); S.st.dist = d; } };
                     layout();
                     visible.forEach(r => { r.cur.copy(r.tgt); r.g.position.copy(r.cur); rebuildEdge(r); });
@@ -4683,7 +4693,7 @@
                     api.current.openId = (id) => { const r = byId[id]; if (r) { if (!expanded.has(id)) expanded.add(id); openPath(r); } };
                     api.current.expandAll = () => { const q = [root]; let n = 0; while (q.length && n < 1500) { const r = q.shift(); expanded.add(r.n.id); n += 1 + r.kids.length; r.kids.forEach(k => q.push(k)); } layout(); select(null, false); fit(); };
                     api.current.collapse = () => { expanded.clear(); expanded.add(root.n.id); root.kids.forEach(k => expanded.add(k.n.id)); layout(); select(null, false); fit(); };
-                    api.current.reset = () => { select(null, false); S.st.theta = 0.35; S.st.phi = 0.78; fit(); };
+                    api.current.reset = () => { select(null, false); S.st.theta = 0.35; S.st.phi = 1.22; fit(); };
                     if (meRec) setTimeout(() => highlightPath(meRec), 300);
                 },
             }, []);
@@ -4702,7 +4712,7 @@
                             <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-3 block">← Назад</button>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D · БӘЙТЕРЕК</p>
                             <h2 className="text-3xl md:text-5xl font-serif text-white">Шежіре ағашы</h2>
-                            <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін — спираль бойымен. Есімді басыңыз — ұрпақтары ашылады. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, Shift — жылжыту.</p>
+                            <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін — жоғарыдан төмен, бұтақтар спиральмен тарайды. Есімді басыңыз — ұрпақтары ашылады. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, Shift — жылжыту.</p>
                         </div>
                         <div className="pointer-events-auto flex flex-col items-end gap-2 mr-40">
                             <form onSubmit={e => { e.preventDefault(); if (!api.current.find?.(q)) setHover({ name: 'Табылмады · Не найдено', x: 20, y: 120 }); }} className="flex gap-2">
