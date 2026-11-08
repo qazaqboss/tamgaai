@@ -1183,6 +1183,36 @@
             ]
         };
 
+        // ── Полное шежіре Қарамашақ-Төртқара (tumalas.kz, 28 644 имени) — подгружается и прививается к нашей ветке ──
+        const TORTKARA = { ready: false, failed: false, count: 0, promise: null };
+        const normName = x => String(x).toLowerCase().replace(/…/g, '').replace(/[\s\-–—]+/g, '');
+        let tkId = 0;
+        function tkName(x) { return (Array.isArray(x) ? x[0] : x).replace(/…$/, '').trim(); }
+        function tkConvert(x, gen) {
+            const arr = Array.isArray(x), name = tkName(x), node = { id: 'tk' + (tkId++), name, gen };
+            if (!arr && /…$/.test(x)) { node.more = true; node.era = 'әрі қарай — tumalas.kz'; }
+            if (arr) node.children = x[1].map(c => tkConvert(c, gen + 1));
+            TORTKARA.count++; return node;
+        }
+        function graftInto(our, tk) {
+            const kids = Array.isArray(tk) ? tk[1] : []; if (!kids.length) return;
+            const ours = (our.children || []).slice(), used = new Set(), out = [];
+            const kidNames = new Set(kids.map(k => normName(tkName(k))));
+            kids.forEach(k => { const nm = normName(tkName(k)); const o = ours.find(c => !used.has(c) && normName(c.name) === nm);
+                if (o) { used.add(o); if (o.siblings) { o.siblings = o.siblings.filter(x => !kidNames.has(normName(x))); if (!o.siblings.length) delete o.siblings; } graftInto(o, k); out.push(o); TORTKARA.count++; }
+                else out.push(tkConvert(k, (our.gen || 0) + 1)); });
+            ours.forEach(o => { if (!used.has(o)) out.push(o); });
+            our.children = out;
+        }
+        function findNodeById(n, id) { if (n.id === id) return n; for (const c of n.children || []) { const r = findNodeById(c, id); if (r) return r; } return null; }
+        function loadTortkara() {
+            if (TORTKARA.promise) return TORTKARA.promise;
+            TORTKARA.promise = fetch(new URL('data/tortkara.json', document.baseURI)).then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(json => { const t = findNodeById(TREE_DATA, 'tortqara'); if (t) { graftInto(t, json); t.era = (t.era || 'Төртқара атасы') + ' · шежіре: tumalas.kz'; } TORTKARA.ready = true; })
+                .catch(e => { console.warn('Төртқара шежіресі жүктелмеді', e); TORTKARA.ready = true; TORTKARA.failed = true; });
+            return TORTKARA.promise;
+        }
+
         // --- Layout Components ---
 
         function Background() {
@@ -1454,7 +1484,7 @@
                 });
             };
 
-            const expandAll   = () => setExpanded(new Set(getAllIds(TREE_DATA)));
+            const expandAll   = () => { const ids = new Set(), q = [TREE_DATA]; while (q.length && ids.size < 800) { const n = q.shift(); ids.add(n.id); (n.children || []).forEach(c => q.push(c)); } setExpanded(ids); };
             const collapseAll = () => setExpanded(new Set(['alash']));
 
             const focusMe = () => {
@@ -4548,7 +4578,7 @@
             const walk = (n, parent, depth) => { const r = { n, parent, depth, kids: [], path: parent ? [...parent.path, n] : [n] }; all.push(r); byId[n.id] = r; if (parent) parent.kids.push(r); (n.children || []).forEach(c => walk(c, r, depth + 1)); return r; };
             walk(root, null, 0); return { all, byId, root: all[0] };
         }
-        const countDesc = r => r.kids.reduce((s, k) => s + 1 + countDesc(k), 0);
+        const countDesc = r => r.nd != null ? r.nd : (r.nd = r.kids.reduce((s, k) => s + 1 + countDesc(k), 0));
 
         function Tree3DScreen({ onBack, onClassic }) {
             const mountRef = useRef(null);
@@ -4585,7 +4615,7 @@
                         ring.rotation.x = Math.PI / 2; g.add(ring); r.ring = ring;
                         const gl = new T.Sprite(new T.SpriteMaterial({ map: glow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: n.highlight ? 0.6 : imp ? 0.35 : 0.18 }));
                         gl.scale.setScalar(rad * 5); g.add(gl); r.glow = gl;
-                        const s = makeTextSprite(T, n.name, { size: r.depth === 0 ? 1.15 : imp ? 0.62 : 0.5, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : '#d6c59a', weight: imp ? 700 : 600, bg: 'rgba(10,8,4,0.8)', res: 2 });
+                        const s = makeTextSprite(T, n.name + (n.more ? ' …' : ''), { size: r.depth === 0 ? 1.15 : imp ? 0.62 : 0.5, color: n.highlight ? '#FFF3C4' : imp ? '#F2E6C4' : '#d6c59a', weight: imp ? 700 : 600, bg: 'rgba(10,8,4,0.8)', res: 2 });
                         s.position.set(0, rad + 0.62, 0); s.userData.rec = r; g.add(s); r.label = s;
                         if (n.label) { const l2 = makeTextSprite(T, n.label, { size: 0.32, color: '#C5A55A', res: 1.6 }); l2.position.set(0, rad + 1.15, 0); g.add(l2); }
                         // ағайындар — маленькие зелёные «листья» вокруг
@@ -4686,7 +4716,7 @@
                     api.current.byId = (id) => { const r = byId[id]; if (r) openPath(r); return !!r; };
                     api.current.toggleId = (id) => { const r = byId[id]; if (r) toggle(r); };
                     api.current.openId = (id) => { const r = byId[id]; if (r) { if (!expanded.has(id)) expanded.add(id); openPath(r); } };
-                    api.current.expandAll = () => { all.forEach(r => expanded.add(r.n.id)); layout(); select(null, false); fit(); };
+                    api.current.expandAll = () => { const q = [root]; let n = 0; while (q.length && n < 1500) { const r = q.shift(); expanded.add(r.n.id); n += 1 + r.kids.length; r.kids.forEach(k => q.push(k)); } layout(); select(null, false); fit(); };
                     api.current.collapse = () => { expanded.clear(); expanded.add(root.n.id); root.kids.forEach(k => expanded.add(k.n.id)); layout(); select(null, false); fit(); };
                     api.current.reset = () => { select(null, false); S.st.theta = 0.35; S.st.phi = 0.78; fit(); };
                     if (meRec) setTimeout(() => highlightPath(meRec), 300);
@@ -4778,6 +4808,13 @@
 
         function TreeScreen({ onBack }) {
             const [mode, setMode] = useState('3d');
+            const [ready, setReady] = useState(TORTKARA.ready);
+            useEffect(() => { if (!ready) loadTortkara().then(() => setReady(true)); }, []);
+            if (!ready) return (
+                <div className="fixed inset-0 z-40 keep-dark flex flex-col items-center justify-center gap-4" style={{ background: '#080808' }}>
+                    <div className="w-12 h-12 rounded-full border-2 border-[#C5A55A] border-t-transparent animate-spin" />
+                    <p className="text-[#C5A55A] text-xs tracking-[0.3em] uppercase">Шежіре жүктелуде · 28 644 есім</p>
+                </div>);
             if (mode === '2d') return (
                 <div>
                     <button onClick={() => setMode('3d')} className="fixed top-5 right-20 z-50 px-4 py-2 rounded-full text-[10px] tracking-widest uppercase border" style={btnStyle(false)}>◈ 3D көрініс</button>
@@ -7721,7 +7758,7 @@
                         <div className="flex-1">
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.4em] uppercase">Жаңа · реалистичный конь</p>
                             <h4 className="text-xl md:text-2xl font-serif">Бәйге Pro — 900 м</h4>
-                            <p className="text-[#777] text-xs mt-1">Анатомический конь с суставами и настоящим галопом, тени, пыль, 4 камеры, выносливость.</p>
+                            <p className="text-[#777] text-xs mt-1">Реалистичные 3D-кони с настоящей анимацией галопа, тени, пыль, 4 камеры, выносливость.</p>
                         </div>
                         <span className="text-[#C5A55A] text-xs tracking-widest uppercase group-hover:translate-x-1 transition-transform">▶ Ойнау</span>
                     </a>

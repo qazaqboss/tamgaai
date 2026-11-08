@@ -61,12 +61,13 @@
 </div>
 <div id="msg" class="ui"></div>
 <div id="stam" class="ui panel"><div class="lbl"><span>Тұлпардың күші · выносливость</span><span id="hStam">100%</span></div><div class="bar"><div class="fill" id="fStam"></div></div></div>
+<div id="credit" class="ui" style="right:16px;bottom:96px;font-size:9px;opacity:.55">Модель коня: «Horse Run» — Amitesh Nandan, Sketchfab · CC BY-ND 4.0</div>
 <div id="hint" class="ui panel"><kbd>↑</kbd> қамшы (ритмично) &nbsp; <kbd>←</kbd><kbd>→</kbd> дорожка<br><kbd>C</kbd> камера &nbsp; <kbd>R</kbd> заново</div>
 <div id="mini" class="ui panel"><div style="font-size:9px;letter-spacing:.25em;text-transform:uppercase;opacity:.65">Трасса</div><div class="track" id="miniTrack"></div></div>
 <div id="touch"><div style="display:flex;gap:8px"><button data-k="ArrowLeft">◀</button><button data-k="ArrowRight">▶</button></div><button class="whip" data-k="ArrowUp">ҚАМШЫ</button></div>
 <div id="intro" class="overlay"><div class="card">
   <div class="k">Ұлттық ойын · 3D</div><h2>Бәйге</h2>
-  <p>Скачки на 900 метров по степи. Ваш вороной тұлпар против четырёх соперников.</p>
+  <p>Скачки на 900 метров по степи. Ваш тұлпар (синий жокей) против четырёх соперников. Кони — реалистичная 3D-модель с анимацией галопа.</p>
   <ul><li><b>↑</b> — удар камчой: конь ускоряется, но тратит силы</li><li>Бейте ритмично — уставший конь не ускоряется</li><li><b>← →</b> — смена дорожки, обходите соперников</li><li><b>C</b> — сменить камеру</li></ul>
   <button class="btn" id="startBtn">▶ БАСТАУ</button>
 </div></div>
@@ -75,13 +76,16 @@
   <button class="btn" id="againBtn">↺ ҚАЙТА</button><a href="/" style="text-decoration:none"><button class="btn alt">TAMGA AI</button></a>
 </div></div>
 
-<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-<script>
-'use strict';
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // ═══════════════════════════════════════════════════════════════════════
 //  ДВИЖОК КОНЯ — анатомический корпус + скелет ног + галоп
 // ═══════════════════════════════════════════════════════════════════════
 const T = THREE;
+const $ = id => document.getElementById(id);
+const HORSE_YAW = +(new URLSearchParams(location.search).get('yaw') ?? -Math.PI / 2);
 
 // «Лофт»: поверхность вдоль кривой с эллиптическими сечениями (корпус, шея, голова, хвост)
 function loft(path, prof, { seg = 48, rad = 28 } = {}) {
@@ -304,7 +308,32 @@ function makeHorse(coatName = 'black', rider = {}) {
     arms[0].hand.getWorldPosition(tmpB); pos.setXYZ(0, tmpB.x, tmpB.y, tmpB.z); pos.setXYZ(1, tmpA.x + 0.07, tmpA.y, tmpA.z);
     arms[1].hand.getWorldPosition(tmpB); pos.setXYZ(2, tmpB.x, tmpB.y, tmpB.z); pos.setXYZ(3, tmpA.x - 0.07, tmpA.y, tmpA.z); pos.needsUpdate = true;
   }
-  return { root, body, legs, reins, gait, crack: () => { whipT = 0.35; }, shadowable, hindPos: () => body.localToWorld(new T.Vector3(0, 1.3, -0.9)) };
+  // ── реалистичный конь: модель «Horse Run» (Sketchfab, CC BY-ND 4.0) с морф-анимацией галопа ──
+  let mixer = null;
+  if (HORSE_GLB) {
+    // прячем процедурного коня, оставляем жокея (он сидит на «body»)
+    body.children.forEach(c => { if (c !== jockey) c.visible = false; });
+    reins.visible = false;
+    const holder = new T.Group(); holder.scale.setScalar(HORSE_GLB.scale); holder.rotation.y = HORSE_GLB.yaw; holder.position.y = HORSE_GLB.y; root.add(holder);
+    const m = HORSE_GLB.scene.clone(true); let morph = null;
+    m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (!o.morphTargetInfluences) o.visible = false; else morph = o; } });
+    holder.add(m); var morphMesh = morph, morphBase = morph.position.clone(); mixer = new T.AnimationMixer(holder); const act = mixer.clipAction(HORSE_GLB.clip); act.play(); act.time = Math.random() * HORSE_GLB.clip.duration;
+    jockey.position.set(0, HORSE_GLB.seatY, HORSE_GLB.seatZ);
+  }
+  const gaitProc = gait;
+  const gaitGLB = (dt, speed, time) => {
+    gaitProc(dt, speed, time);
+    if (!mixer) return;
+    // 1 цикл галопа модели = 1.5 с при ~16 м/с; на шагу почти замирает
+    mixer.update(dt * (speed < 0.5 ? 0.04 : Math.max(0.25, speed / 16)));
+    // убираем «бег вперёд», запечённый в морфах: среднее смещение вершин
+    const w = morphMesh.morphTargetInfluences, md = HORSE_GLB.meanD; let ox = 0, oy = 0, oz = 0;
+    for (let i = 0; i < w.length; i++) { ox += w[i] * md[i * 3]; oy += w[i] * md[i * 3 + 1]; oz += w[i] * md[i * 3 + 2]; }
+    morphMesh.position.set(morphBase.x - ox * morphMesh.scale.x, morphBase.y - oy * morphMesh.scale.y * 0, morphBase.z - oz * morphMesh.scale.z);
+    body.position.y = 0.035 * Math.sin(time * Math.PI * 2 / 1.5 * Math.max(0.12, speed / 16)) * Math.min(1, speed / 8);
+    body.rotation.x = 0; jockey.position.y = HORSE_GLB.seatY - body.position.y * 0.5;
+  };
+  return { root, body, legs, reins, gait: gaitGLB, crack: () => { whipT = 0.35; }, shadowable, hindPos: () => body.localToWorld(new T.Vector3(0, 1.3, -0.9)) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -419,6 +448,30 @@ const RIDERS = [
 ];
 let field = [], me, state = 'intro', raceT = 0, countdown = 3, camMode = 0, finishOrder = [], stamina = 1, shake = 0;
 const mini = document.getElementById('miniTrack');
+// загрузка модели коня
+let HORSE_GLB = null;
+try {
+  $('startBtn').textContent = 'Тұлпарлар жүктелуде…'; $('startBtn').disabled = true;
+  const gltf = await new GLTFLoader().loadAsync(new URL('horse_run.glb', import.meta.url).href, e => { if (e.total) $('startBtn').textContent = `Тұлпарлар жүктелуде… ${Math.round(e.loaded / e.total * 100)}%`; });
+  let mesh = null; gltf.scene.traverse(o => { if (o.isMesh && o.morphTargetInfluences) mesh = o; });
+  if (mesh) {
+    gltf.scene.traverse(o => { if (o.isMesh && !o.morphTargetInfluences) o.visible = false; });
+    gltf.scene.updateMatrixWorld(true); const bb = new T.Box3(), pa = mesh.geometry.attributes.position, vv = new T.Vector3();
+    for (let i = 0; i < pa.count; i++) bb.expandByPoint(vv.fromBufferAttribute(pa, i).applyMatrix4(mesh.matrixWorld)); const sz = bb.getSize(new T.Vector3());
+    const mt = mesh.geometry.morphAttributes.position, meanD = new Float32Array(mt.length * 3);
+    mt.forEach((a, i) => { let x = 0, y = 0, z = 0; for (let k = 0; k < a.count; k++) { x += a.getX(k); y += a.getY(k); z += a.getZ(k); } meanD[i * 3] = x / a.count; meanD[i * 3 + 1] = y / a.count; meanD[i * 3 + 2] = z / a.count; });
+    if (!mesh.geometry.morphTargetsRelative) { const b = mesh.geometry.attributes.position; let x = 0, y = 0, z = 0; for (let k = 0; k < b.count; k++) { x += b.getX(k); y += b.getY(k); z += b.getZ(k); } for (let i = 0; i < mt.length; i++) { meanD[i * 3] -= x / b.count; meanD[i * 3 + 1] -= y / b.count; meanD[i * 3 + 2] -= z / b.count; } }
+    const len = Math.max(sz.x, sz.z), scale = 2.95 / len;                        // длина коня с головой ≈ 2.45 м
+    const c = bb.getCenter(new T.Vector3()); gltf.scene.position.set(-c.x, -bb.min.y, -c.z);
+    const wrap = new T.Group(); wrap.add(gltf.scene);
+    HORSE_GLB = { scene: wrap, clip: gltf.animations[0], scale, yaw: HORSE_YAW + (sz.x > sz.z ? 0 : Math.PI / 2), y: 0, seatY: 1.3, seatZ: -0.05, size: sz, meanD };
+    mesh.material.envMapIntensity = 0.6;
+    console.log('HORSE', JSON.stringify({ sz, scale }));
+  }
+} catch (e) { console.warn('horse_run.glb не загрузился — процедурный конь', e); }
+$('startBtn').textContent = '▶ БАСТАУ'; $('startBtn').disabled = false;
+window.__bayge = { get H() { return HORSE_GLB; }, get me() { return me; }, get field() { return field; }, get state() { return state; }, T };
+
 function setupRace() {
   field.forEach(h => { scene.remove(h.h.root, h.h.reins); });
   mini.innerHTML = ''; finishOrder = []; raceT = 0; countdown = 3; stamina = 1;
@@ -454,10 +507,9 @@ function whip() {
     const p = me.h.hindPos(); for (let i = 0; i < 26; i++) sparks.emit(p, new T.Vector3((Math.random() - .5) * 4, 1 + Math.random() * 3, -2 - Math.random() * 3), 0.5 + Math.random() * 0.4, 0.12 + Math.random() * 0.1); }
   else msg('Тұлпар шаршады…', 0.8);
 }
-const $ = id => document.getElementById(id);
 let msgT = 0; function msg(t, d = 1.2) { $('msg').textContent = t; msgT = d; }
 function restart() { $('result').style.display = 'none'; setupRace(); state = 'count'; }
-$('startBtn').onclick = () => { $('intro').style.display = 'none'; state = 'count'; };
+$('startBtn').onclick = () => { if ($('startBtn').disabled) return; $('intro').style.display = 'none'; state = 'count'; };
 $('againBtn').onclick = restart;
 
 const clock = new T.Clock(); let time = 0;
