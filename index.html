@@ -1832,22 +1832,169 @@
 
         // --- Информация о токене ТАМГА ---
 
+        // ═══════════ 3D-ТОКЕН TAMĠA: золотая монета с рельефом тамғи ═══════════
+        function tokenHash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).toUpperCase().padStart(8, '0'); }
+        // Рисуем сторону монеты в трёх «режимах»: h — высота (рельеф), c — цвет, r — шероховатость
+        function drawCoinFace(side, d, mode) {
+            const S = 1024, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), C = S / 2;
+            const hi = mode === 'h' ? '#fff' : mode === 'r' ? '#3a3a3a' : '#fff1c0';     // выпуклое: блестит, светлое
+            const lo = mode === 'h' ? '#000' : mode === 'r' ? '#9a9a9a' : '#b98a2e';     // поле: матовое, темнее
+            const mid = mode === 'h' ? '#7a7a7a' : mode === 'r' ? '#6a6a6a' : '#d8b25a';
+            g.fillStyle = lo; g.fillRect(0, 0, S, S);
+            if (mode === 'c') { const gr = g.createRadialGradient(C * 0.8, C * 0.7, 40, C, C, C); gr.addColorStop(0, '#e2bc63'); gr.addColorStop(1, '#a87a22'); g.fillStyle = gr; g.fillRect(0, 0, S, S); }
+            if (mode === 'h') { const gr = g.createRadialGradient(C, C, 0, C, C, C); gr.addColorStop(0, '#262626'); gr.addColorStop(1, '#0a0a0a'); g.fillStyle = gr; g.fillRect(0, 0, S, S); } // лёгкая «линза» поля
+            g.fillStyle = hi; g.strokeStyle = hi;
+            // кант
+            g.lineWidth = 30; g.beginPath(); g.arc(C, C, 494, 0, Math.PI * 2); g.stroke();
+            // жемчужный поясок
+            for (let k = 0; k < 96; k++) { const a = k / 96 * Math.PI * 2; g.beginPath(); g.arc(C + Math.cos(a) * 458, C + Math.sin(a) * 458, 7, 0, Math.PI * 2); g.fill(); }
+            const curved = (txt, r, size, startDeg = -90, weight = 600) => {
+                g.font = `${weight} ${size}px Cinzel, "Times New Roman", serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+                const widths = [...txt].map(ch => g.measureText(ch).width + size * 0.12), tot = widths.reduce((a, b) => a + b, 0);
+                const bottom = startDeg > 0, dir = bottom ? -1 : 1; // внизу читаем слева направо, буквы не вверх ногами
+                let a = startDeg * Math.PI / 180 - dir * tot / r / 2;
+                [...txt].forEach((ch, i) => { const w = widths[i]; a += dir * w / r / 2; g.save(); g.translate(C + Math.cos(a) * r, C + Math.sin(a) * r); g.rotate(a + (bottom ? -Math.PI / 2 : Math.PI / 2)); g.fillText(ch, 0, 0); g.restore(); a += dir * w / r / 2; });
+            };
+            g.lineWidth = 6; g.beginPath(); g.arc(C, C, 352, 0, Math.PI * 2); g.stroke();
+            g.lineWidth = 3; g.beginPath(); g.arc(C, C, 340, 0, Math.PI * 2); g.stroke();
+            if (side === 'front') {
+                curved('TAMĠA', 402, 64, -90, 700);
+                curved(`${d.tribeName} · ${d.juz}`.toUpperCase(), 402, 40, 90 + 0, 600);
+                // боковые звёздочки-ромбы
+                [180, 0].forEach(deg => { const a = deg * Math.PI / 180; g.save(); g.translate(C + Math.cos(a) * 402, C + Math.sin(a) * 402); g.rotate(a); g.beginPath(); g.moveTo(0, -16); g.lineTo(10, 0); g.lineTo(0, 16); g.lineTo(-10, 0); g.closePath(); g.fill(); g.restore(); });
+                // қошқар мүйіз — четыре завитка вокруг тамғи
+                g.lineWidth = 9; g.lineCap = 'round';
+                for (let k = 0; k < 4; k++) { g.save(); g.translate(C, C); g.rotate(k * Math.PI / 2 + Math.PI / 4); g.translate(0, -272);
+                    g.beginPath(); g.moveTo(0, 30); g.lineTo(0, 0); g.bezierCurveTo(0, -42, -46, -42, -40, -6); g.moveTo(0, 0); g.bezierCurveTo(0, -42, 46, -42, 40, -6); g.stroke(); g.restore(); }
+                // тамға
+                if (mode !== 'h') { g.shadowColor = mode === 'c' ? 'rgba(80,50,0,.6)' : 'transparent'; g.shadowBlur = 18; }
+                g.font = `400 330px Cinzel, "Segoe UI Symbol", "Noto Sans Symbols 2", serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+                g.fillText(d.tamga, C, C - 10); g.shadowBlur = 0;
+                g.font = '600 34px Inter, sans-serif'; g.fillStyle = mode === 'h' ? '#bbb' : mid; g.fillText(`«${d.tamgaName}»`, C, C + 200);
+            } else {
+                curved(`ИЕСІ · ${d.owner}`.toUpperCase(), 402, 50, -90, 700);
+                curved(`SOULBOUND · ${d.year}`, 402, 38, 90, 600);
+                // кольцо тамғ всех родов
+                g.font = '400 40px Cinzel, "Segoe UI Symbol", serif';
+                d.ring.forEach((t, k, arr) => { const a = k / arr.length * Math.PI * 2 - Math.PI / 2; g.save(); g.translate(C + Math.cos(a) * 296, C + Math.sin(a) * 296); g.rotate(a + Math.PI / 2); g.fillText(t, 0, 0); g.restore(); });
+                g.lineWidth = 4; g.beginPath(); g.arc(C, C, 252, 0, Math.PI * 2); g.stroke();
+                // шаңырақ — символ семьи и рода
+                g.lineWidth = 16; g.beginPath(); g.arc(C, C - 40, 110, 0, Math.PI * 2); g.stroke();
+                g.lineWidth = 9; for (const sx of [-1, 1]) for (const o of [-38, 0, 38]) { g.beginPath(); g.moveTo(C + o - 74 * sx, C - 40 - 80); g.quadraticCurveTo(C + o + sx * 8, C - 40 - 20 * sx, C + o + 74 * sx, C - 40 + 80); g.stroke(); }
+                for (let k = 0; k < 20; k++) { const a = k / 20 * Math.PI * 2; g.beginPath(); g.moveTo(C + Math.cos(a) * 120, C - 40 + Math.sin(a) * 120); g.lineTo(C + Math.cos(a) * 160, C - 40 + Math.sin(a) * 160); g.lineWidth = 6; g.stroke(); }
+                g.font = '700 58px Cinzel, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(`${d.depth} БУЫН`, C, C + 128);
+                g.font = '600 28px "JetBrains Mono", monospace, Inter'; g.fillStyle = mode === 'h' ? '#aaa' : mid; g.fillText(`0x${d.id}`, C, C + 186);
+            }
+            return c;
+        }
+
+        function Token3D() {
+            const mountRef = useRef(null); const api = useRef({});
+            const me = (() => { try { return localStorage.getItem('shejire_user'); } catch { return null; } })();
+            const prof = (() => { try { return (me && (JSON.parse(localStorage.getItem('shejire_profile_' + me) || 'null') || CABINET_USERS[me]?.profile)) || null; } catch { return null; } })();
+            const keys = Object.keys(TRIBES_DB);
+            const [tribe, setTribe] = useState(prof && TRIBES_DB[prof.tribe] ? prof.tribe : keys[0]);
+            const [owner, setOwner] = useState(prof?.name || 'Сіздің есіміңіз');
+            const depth = prof?.lineage ? prof.lineage.split('\n').filter(Boolean).length : 7;
+            const [side, setSide] = useState('front');
+            const t = TRIBES_DB[tribe];
+            const id = tokenHash(owner + '|' + tribe + '|' + depth);
+            const data = { tamga: t.tamga, tamgaName: t.tamgaName || '', tribeName: t.name, juz: (t.juz || '').replace(/жүз/i, 'ЖҮЗ'), owner, depth, id, year: 2026, ring: [...new Set(Object.values(TRIBES_DB).map(x => x.tamga))].slice(0, 28) };
+            const dataRef = useRef(data); dataRef.current = data;
+
+            const err = useThree(mountRef, {
+                opts: { distance: 7.2, target: [0, 0, 0], minDist: 4, maxDist: 14, autoRotate: false, fog: false },
+                run: (S) => {
+                    const { T, scene, renderer, camera } = S; S.st.phi = Math.PI / 2 - 0.08; S.st.theta = 0;
+                    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+                    // окружение для металла: тёмная студия со светящимися софтбоксами
+                    const pm = new T.PMREMGenerator(renderer), env = new T.Scene();
+                    env.add(new T.Mesh(new T.SphereGeometry(50, 32, 16), new T.MeshBasicMaterial({ color: 0x0d0a06, side: T.BackSide })));
+                    const box = (w, h, x, y, z, c) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: c, side: T.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m); };
+                    box(30, 8, 0, 22, 10, 0xfff3d6); box(10, 30, -24, 0, 12, 0xffe1a8); box(8, 24, 26, 4, -6, 0xc9d8ff); box(40, 6, 0, -20, -10, 0x6b4a1e); box(6, 6, 10, 10, 30, 0xffffff);
+                    scene.environment = pm.fromScene(env, 0.04).texture;
+                    scene.children.filter(o => o.isLight).forEach(l => l.intensity *= 0.5);
+                    // монета
+                    const R = 2, H = 0.26;
+                    const mk = (cv, srgb) => { const tx = new T.CanvasTexture(cv); tx.center.set(0.5, 0.5); tx.rotation = Math.PI / 2; tx.anisotropy = 8; if (srgb) tx.encoding = T.sRGBEncoding; return tx; };
+                    const faceMat = (sd) => new T.MeshStandardMaterial({ metalness: 1, roughness: 1, envMapIntensity: 1.25, bumpScale: 0.045 });
+                    const front = faceMat(), back = faceMat();
+                    const knurl = document.createElement('canvas'); knurl.width = 1024; knurl.height = 16; { const g = knurl.getContext('2d'); for (let x = 0; x < 1024; x += 8) { g.fillStyle = '#fff'; g.fillRect(x, 0, 4, 16); g.fillStyle = '#000'; g.fillRect(x + 4, 0, 4, 16); } }
+                    const kt = new T.CanvasTexture(knurl); kt.wrapS = T.RepeatWrapping; kt.repeat.x = 3;
+                    const rim = new T.MeshStandardMaterial({ color: 0xd9ad4f, metalness: 1, roughness: 0.32, bumpMap: kt, bumpScale: 0.02, envMapIntensity: 1.3 });
+                    const coin = new T.Group(); scene.add(coin);
+                    const body = new T.Mesh(new T.CylinderGeometry(R, R, H, 160, 1), [rim, front, back]); body.rotation.x = Math.PI / 2; coin.add(body);
+                    // фаска по краю
+                    const bev = new T.Mesh(new T.TorusGeometry(R - 0.01, 0.035, 12, 160), rim); bev.position.z = H / 2; coin.add(bev);
+                    const bev2 = bev.clone(); bev2.position.z = -H / 2; coin.add(bev2);
+                    const paint = () => {
+                        for (const [sd, m] of [['front', front], ['back', back]]) {
+                            [m.map, m.bumpMap, m.roughnessMap].forEach(x => x?.dispose());
+                            m.map = mk(drawCoinFace(sd, dataRef.current, 'c'), true); m.bumpMap = mk(drawCoinFace(sd, dataRef.current, 'h')); m.roughnessMap = mk(drawCoinFace(sd, dataRef.current, 'r'));
+                            m.needsUpdate = true;
+                        }
+                    };
+                    paint(); document.fonts?.ready.then(paint);
+                    // искры вокруг
+                    const spT = glowTexture(T), sparks = [];
+                    for (let i = 0; i < 26; i++) { const s = new T.Sprite(new T.SpriteMaterial({ map: spT, color: 0xffe7a8, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+                        const a = Math.random() * Math.PI * 2, r = 2.3 + Math.random() * 1.6; s.position.set(Math.cos(a) * r, Math.sin(a) * r * 0.9, (Math.random() - 0.5) * 2); s.userData.ph = Math.random() * 6; scene.add(s); sparks.push(s); }
+                    // «чеканка»: золотая пыль собирается в монету
+                    const N = 1400, pg = new T.BufferGeometry(), from = new Float32Array(N * 3), to = new Float32Array(N * 3), pos = new Float32Array(N * 3);
+                    for (let i = 0; i < N; i++) { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * R;
+                        to.set([Math.cos(a) * r, Math.sin(a) * r, (Math.random() - 0.5) * H], i * 3);
+                        const u = Math.random() * Math.PI * 2, v = Math.acos(2 * Math.random() - 1), d = 7 + Math.random() * 6; from.set([Math.sin(v) * Math.cos(u) * d, Math.sin(v) * Math.sin(u) * d, Math.cos(v) * d], i * 3); }
+                    pg.setAttribute('position', new T.BufferAttribute(pos, 3));
+                    const dust = new T.Points(pg, new T.PointsMaterial({ map: spT, color: 0xffd98a, size: 0.12, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); scene.add(dust);
+                    let mint = 0, flip = 0, flipTo = 0, spin = 0;
+                    const shine = new T.PointLight(0xfff2c8, 0, 9); scene.add(shine);
+                    api.current = {
+                        mint: () => { mint = 0.0001; }, flip: () => { flipTo = flipTo ? 0 : Math.PI; }, repaint: paint,
+                        png: () => { renderer.render(scene, camera); const a = document.createElement('a'); a.download = `TAMGA-${dataRef.current.id}.png`; a.href = renderer.domElement.toDataURL('image/png'); a.click(); },
+                    };
+                    api.current.mint();
+                    S.onClick(() => api.current.flip());
+                    S.onFrame((dt, tm) => {
+                        if (mint > 0 && mint < 1) mint = Math.min(1, mint + dt / 2.6);
+                        const k = mint, e = k < 0.62 ? 0 : 1 - Math.pow(1 - (k - 0.62) / 0.38, 3);
+                        for (let i = 0; i < N * 3; i++) { const q = Math.min(1, Math.max(0, (k * 1.35 - (i % 97) / 400))); const qq = 1 - Math.pow(1 - q, 3); pos[i] = from[i] + (to[i] - from[i]) * qq; }
+                        pg.attributes.position.needsUpdate = true; dust.material.opacity = k < 0.65 ? 1 : Math.max(0, 1 - (k - 0.65) / 0.3); dust.visible = dust.material.opacity > 0.01;
+                        coin.scale.setScalar(0.001 + e * 0.999);
+                        spin += dt * (k < 1 ? 7 * (1 - e) : 0);
+                        flip += (flipTo - flip) * Math.min(1, dt * 5);
+                        coin.rotation.y = flip + spin + Math.sin(tm * 0.6) * 0.32 * e; coin.rotation.x = Math.sin(tm * 0.45) * 0.08; coin.position.y = Math.sin(tm * 0.9) * 0.06;
+                        // блик пробегает по монете
+                        const sw = (tm * 0.35) % 1; shine.position.set(-4 + sw * 8, 2 - sw * 4, 3.2); shine.intensity = Math.sin(sw * Math.PI) * 2.2 * e;
+                        sparks.forEach(s => { const v = Math.max(0, Math.sin(tm * 2 + s.userData.ph)); s.material.opacity = v * v * e; s.scale.setScalar(0.15 + v * 0.35); });
+                    });
+                    return () => pm.dispose();
+                },
+            }, []);
+            useEffect(() => { api.current.repaint?.(); }, [tribe, owner]);
+            const sel = 'bg-[#0d0d0d] border border-[#2a2418] rounded-full px-3 py-2 text-xs text-[#E8D5A0] outline-none focus:border-[#C5A55A]';
+            return (
+                <div className="keep-dark rounded-3xl overflow-hidden" style={{ border: '1px solid rgba(197,165,90,.16)', background: 'radial-gradient(ellipse at 50% 40%, #1d1608 0%, #0a0805 55%, #050403 100%)' }}>
+                    <div className="relative" style={{ height: 'clamp(400px, 64vh, 600px)' }}>
+                        <div ref={mountRef} className="absolute inset-0" />
+                        {err && <div className="absolute inset-0 flex items-center justify-center text-[#C5A55A] text-sm">{err}</div>}
+                        <div className="absolute top-4 left-4 text-[10px] tracking-[0.35em] uppercase text-[#C5A55A99] pointer-events-none">Soulbound · {t.name}</div>
+                        <div className="absolute top-4 right-4 text-[10px] font-mono text-[#C5A55A99] pointer-events-none">0x{id}</div>
+                        <p className="absolute bottom-3 inset-x-0 text-center text-[10px] text-[#777] pointer-events-none">Басыңыз — аудару · айналдырыңыз — қараңыз · Нажмите — перевернуть</p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 p-4" style={{ borderTop: '1px solid rgba(197,165,90,.1)', background: 'rgba(8,8,8,.7)' }}>
+                        <select value={tribe} onChange={e => setTribe(e.target.value)} className={sel}>{keys.map(k => <option key={k} value={k}>{TRIBES_DB[k].tamga}  {TRIBES_DB[k].name}</option>)}</select>
+                        <input value={owner} maxLength={22} onChange={e => setOwner(e.target.value || ' ')} className={sel + ' w-44'} placeholder="Есіміңіз" />
+                        <button className={btn3d} style={btnStyle(false)} onClick={() => { api.current.flip?.(); setSide(s => s === 'front' ? 'back' : 'front'); }}>⟲ {side === 'front' ? 'Сырты' : 'Беті'}</button>
+                        <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.mint?.()}>✦ Соғу</button>
+                        <button className={btn3d} style={btnStyle(true)} onClick={() => api.current.png?.()}>⬇ PNG</button>
+                    </div>
+                </div>
+            );
+        }
+
         function TokenInfoScreen({ onBack }) {
             const [selectedFeature, setSelectedFeature] = useState('governance');
-            const [tokenFlipped, setTokenFlipped] = useState(false);
 
-            // Cycling tribe tamga
-            const tribeList = useMemo(() => Object.values(TRIBES_DB), []);
-            const [tribeIdx, setTribeIdx] = React.useState(0);
-            const [tribeVis, setTribeVis] = React.useState(true);
-            useEffect(() => {
-                const iv = setInterval(() => {
-                    setTribeVis(false);
-                    setTimeout(() => { setTribeIdx(i => (i + 1) % tribeList.length); setTribeVis(true); }, 350);
-                }, 2400);
-                return () => clearInterval(iv);
-            }, [tribeList.length]);
-            const activeTribe = tribeList[tribeIdx];
 
             return (
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-24 min-h-screen">
@@ -1870,232 +2017,12 @@
                         <OrnamentLine />
                     </header>
 
-                    {/* Token Visual - Coin Style */}
+                    {/* 3D-токен */}
                     <section className="mb-16 md:mb-24">
-                        <h3 className="text-2xl font-serif text-[#C5A55A] mb-12 text-center">ВАШ ЦИФРОВОЙ АРТЕФАКТ</h3>
-                        
-                        <div className="flex justify-center mb-12">
-                            <div 
-                                onClick={() => setTokenFlipped(!tokenFlipped)}
-                                className="relative w-72 h-72 md:w-96 md:h-96 cursor-pointer group"
-                                style={{
-                                    perspective: '1200px'
-                                }}
-                            >
-                                {/* 3D Coin Container */}
-                                <div
-                                    className="relative w-full h-full transition-transform duration-700"
-                                    style={{
-                                        transformStyle: 'preserve-3d',
-                                        transform: tokenFlipped ? 'rotateY(180deg) rotateX(5deg)' : 'rotateY(0deg) rotateX(0deg)'
-                                    }}
-                                >
-                                    {/* Front Side — minimal glass style matching homepage */}
-                                    <div className="absolute inset-0 rounded-full overflow-hidden flex flex-col items-center justify-center"
-                                        style={{
-                                            backfaceVisibility: 'hidden',
-                                            background: 'radial-gradient(circle at 40% 35%, #1a1916 0%, #0e0e0c 50%, #080807 100%)',
-                                            border: '1px solid rgba(197,165,90,0.12)',
-                                        }}>
-
-                                        {/* SVG layer: tamga symbols ring only, no gold rim */}
-                                        <svg viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg"
-                                            style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'}}>
-                                            <defs>
-                                                <linearGradient id="fDim" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%"   stopColor="#C8A84E" stopOpacity="0.5"/>
-                                                    <stop offset="50%"  stopColor="#9A7828" stopOpacity="0.35"/>
-                                                    <stop offset="100%" stopColor="#6A5010" stopOpacity="0.5"/>
-                                                </linearGradient>
-                                                <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%">
-                                                    <feGaussianBlur stdDeviation="5" result="b"/>
-                                                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                                                </filter>
-                                            </defs>
-
-                                            {/* Outer edge — very subtle */}
-                                            <circle cx="210" cy="210" r="207" fill="none" stroke="rgba(197,165,90,0.1)" strokeWidth="1"/>
-
-                                            {/* Tribal tamga symbols ring */}
-                                            <g fill="url(#fDim)" fontSize="13"
-                                               fontFamily="'Cinzel','Arial',sans-serif"
-                                               textAnchor="middle" dominantBaseline="middle">
-                                                {[
-                                                    [0,'⩚'],[15,'⋔'],[30,'⊓'],[45,'∀'],
-                                                    [60,'⫙'],[75,'⩔'],[90,'⊼'],[105,'⧊'],
-                                                    [120,'⩝'],[135,'◯'],[150,'△'],[165,'⧖'],
-                                                    [180,'⊥'],[195,'⨼'],[210,'⫝'],[225,'⩓'],
-                                                    [240,'⧗'],[255,'⊗'],[270,'⊕'],[285,'Ψ'],
-                                                    [300,'Φ'],[315,'Ω'],[330,'Σ'],[345,'Λ']
-                                                ].map(([deg,sym])=>(
-                                                    <text key={deg} transform={`rotate(${deg} 210 210) translate(0,-182)`} x="210" y="210">{sym}</text>
-                                                ))}
-                                            </g>
-
-                                            {/* Inner separator ring */}
-                                            <circle cx="210" cy="210" r="162" fill="none" stroke="rgba(197,165,90,0.1)" strokeWidth="0.5"/>
-                                        </svg>
-
-                                        {/* Center content — cycling tamga like homepage */}
-                                        <div className="relative z-10 flex flex-col items-center justify-center text-center px-8"
-                                             style={{opacity: tribeVis ? 1 : 0, transform: tribeVis ? 'scale(1) translateY(0)' : 'scale(0.88) translateY(6px)', transition: 'opacity 0.32s ease, transform 0.32s ease'}}>
-
-                                            {/* Big tamga symbol */}
-                                            <div className="mb-5" style={{
-                                                fontSize: 'clamp(60px, 14vw, 88px)',
-                                                color: '#C5A55A',
-                                                textShadow: '0 0 30px rgba(197,165,90,0.55), 0 0 60px rgba(197,165,90,0.2)',
-                                                lineHeight: 1,
-                                                fontFamily: "'Cinzel','Arial',sans-serif"
-                                            }}>{activeTribe.tamga}</div>
-
-                                            {/* Tribe name */}
-                                            <p className="text-xs md:text-sm tracking-[0.25em] uppercase mb-1" style={{
-                                                fontFamily:"'Cinzel',serif",
-                                                color:'#C5A55A',
-                                                letterSpacing:'0.2em'
-                                            }}>{activeTribe.tamgaName} · ТАМҒА</p>
-
-                                            {/* Juz */}
-                                            <p className="text-[9px] md:text-[10px] tracking-widest uppercase" style={{color:'#4a4030'}}>
-                                                {activeTribe.name} · {activeTribe.juz}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Back Side - Reverse (matching SVG style) */}
-                                    <div
-                                        className="absolute inset-0 rounded-full overflow-hidden"
-                                        style={{
-                                            backfaceVisibility: 'hidden',
-                                            transform: 'rotateY(180deg)',
-                                            boxShadow: '0 20px 60px rgba(197,165,90,0.4), inset -20px -20px 40px rgba(0,0,0,0.8)'
-                                        }}
-                                    >
-                                        <svg viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%'}}>
-                                            <defs>
-                                                <radialGradient id="bkBg" cx="50%" cy="35%" r="65%">
-                                                    <stop offset="0%" stopColor="#181410"/>
-                                                    <stop offset="50%" stopColor="#0d0b08"/>
-                                                    <stop offset="100%" stopColor="#050404"/>
-                                                </radialGradient>
-                                                <linearGradient id="bkRim" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#E8CC7A"/>
-                                                    <stop offset="25%" stopColor="#C5A550"/>
-                                                    <stop offset="50%" stopColor="#F0D882"/>
-                                                    <stop offset="75%" stopColor="#9A7520"/>
-                                                    <stop offset="100%" stopColor="#7A5510"/>
-                                                </linearGradient>
-                                                <linearGradient id="bkGold" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                    <stop offset="0%" stopColor="#F0D882"/>
-                                                    <stop offset="35%" stopColor="#C5A550"/>
-                                                    <stop offset="100%" stopColor="#8B6914"/>
-                                                </linearGradient>
-                                                <linearGradient id="bkShim" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#E8CC7A" stopOpacity="0.85"/>
-                                                    <stop offset="50%" stopColor="#C5A550" stopOpacity="0.6"/>
-                                                    <stop offset="100%" stopColor="#8B6914" stopOpacity="0.85"/>
-                                                </linearGradient>
-                                                <filter id="bkGlow" x="-30%" y="-30%" width="160%" height="160%">
-                                                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                                                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                                                </filter>
-                                            </defs>
-
-                                            {/* Rim */}
-                                            <circle cx="210" cy="210" r="209" fill="url(#bkRim)"/>
-                                            <g stroke="#0d0b08" strokeWidth="1.2" opacity="0.5">
-                                                {Array.from({length:72}).map((_,i)=>(
-                                                    <line key={i} x1="210" y1="2" x2="210" y2="12" transform={`rotate(${i*5} 210 210)`}/>
-                                                ))}
-                                            </g>
-                                            {/* Face */}
-                                            <circle cx="210" cy="210" r="196" fill="url(#bkBg)"/>
-                                            {/* Outer rings */}
-                                            <circle cx="210" cy="210" r="192" fill="none" stroke="url(#bkShim)" strokeWidth="0.8" strokeOpacity="0.7"/>
-                                            <circle cx="210" cy="210" r="188" fill="none" stroke="url(#bkShim)" strokeWidth="0.3" strokeOpacity="0.35"/>
-
-                                            {/* Tamga symbols ring — same as front, real tamgas */}
-                                            <g fill="url(#bkShim)" fontSize="12" fontFamily="'Cinzel','Arial',sans-serif" textAnchor="middle" dominantBaseline="middle" opacity="0.8">
-                                                {[
-                                                    [0,   '⩚'],[15,  '⋔'],[30,  '⊓'],[45,  '∀'],
-                                                    [60,  '⫙'],[75,  '⩔'],[90,  '⊼'],[105, '⧊'],
-                                                    [120, '⩝'],[135, '◯'],[150, '△'],[165, '⧖'],
-                                                    [180, '⊥'],[195, '⨼'],[210, '⫝'],[225, '⩓'],
-                                                    [240, '⧗'],[255, '⊗'],[270, '⊕'],[285, 'Ψ'],
-                                                    [300, 'Φ'],[315, 'Ω'],[330, 'Σ'],[345, 'Λ']
-                                                ].map(([deg,sym])=>(
-                                                    <text key={deg} transform={`rotate(${deg} 210 210) translate(0,-170)`} x="210" y="210">{sym}</text>
-                                                ))}
-                                            </g>
-
-                                            {/* Inner rings */}
-                                            <circle cx="210" cy="210" r="154" fill="none" stroke="url(#bkShim)" strokeWidth="0.6" strokeOpacity="0.6"/>
-                                            <circle cx="210" cy="210" r="150" fill="none" stroke="url(#bkShim)" strokeWidth="0.3" strokeOpacity="0.3"/>
-                                            <circle cx="210" cy="210" r="147" fill="#060504" fillOpacity="0.97"/>
-
-                                            {/* Hour ticks */}
-                                            <g stroke="url(#bkShim)" strokeOpacity="0.4" strokeWidth="0.5">
-                                                {[0,30,60,90,120,150,180,210,240,270,300,330].map(d=>(
-                                                    <line key={d} x1="210" y1="58" x2="210" y2="66" transform={`rotate(${d} 210 210)`}/>
-                                                ))}
-                                            </g>
-
-                                            {/* ── OWNER SECTION (centered) ── */}
-                                            {/* Label ВЛАДЕЛЕЦ */}
-                                            <text x="210" y="148"
-                                                fontFamily="'Cinzel',serif" fontSize="7" fontWeight="400"
-                                                fill="#5a4010" textAnchor="middle" letterSpacing="6">ВЛАДЕЛЕЦ</text>
-
-                                            {/* Name */}
-                                            <text x="210" y="178"
-                                                fontFamily="'Cinzel',serif" fontSize="18" fontWeight="400"
-                                                fill="url(#bkGold)" textAnchor="middle" letterSpacing="3"
-                                                filter="url(#bkGlow)">Ваше Имя</text>
-
-                                            {/* Divider 1 */}
-                                            <line x1="148" y1="196" x2="272" y2="196" stroke="url(#bkShim)" strokeWidth="0.4" strokeOpacity="0.5"/>
-
-                                            {/* Depth label */}
-                                            <text x="210" y="222"
-                                                fontFamily="'Cinzel',serif" fontSize="7" fontWeight="400"
-                                                fill="#5a4010" textAnchor="middle" letterSpacing="6">ГЛУБИНА РОДА</text>
-
-                                            {/* 7/7 ATA */}
-                                            <text x="210" y="252"
-                                                fontFamily="'Cinzel',serif" fontSize="28" fontWeight="400"
-                                                fill="url(#bkGold)" textAnchor="middle" letterSpacing="4"
-                                                filter="url(#bkGlow)">7 / 7  АТА</text>
-
-                                            {/* Divider 2 */}
-                                            <line x1="148" y1="268" x2="272" y2="268" stroke="url(#bkShim)" strokeWidth="0.4" strokeOpacity="0.5"/>
-
-                                            {/* ID label */}
-                                            <text x="210" y="288"
-                                                fontFamily="'Cinzel',serif" fontSize="7" fontWeight="400"
-                                                fill="#5a4010" textAnchor="middle" letterSpacing="6">ИДЕНТИФИКАТОР</text>
-
-                                            {/* Token ID */}
-                                            <text x="210" y="308"
-                                                fontFamily="'Cinzel',serif" fontSize="9" fontWeight="400"
-                                                fill="#7a6020" textAnchor="middle" letterSpacing="3">0xTAMGA · 2026</text>
-
-                                            {/* Cardinal dots */}
-                                            <circle cx="210" cy="30" r="1.5" fill="url(#bkShim)" opacity="0.4"/>
-                                            <circle cx="210" cy="390" r="1.5" fill="url(#bkShim)" opacity="0.4"/>
-                                            <circle cx="30" cy="210" r="1.5" fill="url(#bkShim)" opacity="0.4"/>
-                                            <circle cx="390" cy="210" r="1.5" fill="url(#bkShim)" opacity="0.4"/>
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                {/* Glow Aura */}
-                                <div className="absolute -inset-12 rounded-full opacity-0 group-hover:opacity-25 blur-3xl transition-opacity duration-700 animate-pulse" style={{background:'radial-gradient(circle, #C5A550, #8B6914)'}}/>
-                            </div>
-                        </div>
-
-                        <p className="text-center text-[#666] text-sm md:text-base max-w-2xl mx-auto">
-                            Нажмите на токен для просмотра информации • Каждый ТАМГА уникален и привязан к вашей генеалогии через блокчейн
+                        <h3 className="text-2xl font-serif text-[#C5A55A] mb-8 text-center">ВАШ ЦИФРОВОЙ АРТЕФАКТ</h3>
+                        <Token3D />
+                        <p className="text-center text-[#666] text-sm md:text-base max-w-2xl mx-auto mt-6">
+                            Тамға вашего рода на лицевой стороне, ваше имя, глубина шежіре и уникальный ID — на обороте. Каждый TAMĠA уникален и привязан к вашей родословной.
                         </p>
                     </section>
 
@@ -4440,7 +4367,7 @@
             let raf = 0, last = performance.now(), alive = true;
             const loop = (now) => {
                 if (!alive) return;
-                const dt = Math.min(0.05, (now - last) / 1000); last = now; idle += dt;
+                const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; idle += dt;
                 if (st.fly) { // плавный перелёт камеры
                     const f = st.fly; f.t = Math.min(1, f.t + dt / f.dur); const k = 1 - Math.pow(1 - f.t, 3);
                     st.target.lerpVectors(f.from, f.to, k); st.dist = f.d0 + (f.d1 - f.d0) * k;
