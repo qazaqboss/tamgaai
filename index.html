@@ -8,8 +8,8 @@
     <title>Шежіре · TAMGA AI — Цифровое наследие кочевников</title>
     <meta name="description" content="Родовое 3D-древо от Алаша до вас, тамги 21 рода, уроки казахского языка, 3D-атлас юрты и домбры и постер «Өмір ағашы» для печати.">
     <meta name="theme-color" content="#0b0a08">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="TAMGA AI">
     <meta property="og:url" content="https://tamgaai.vercel.app/">
@@ -6923,27 +6923,246 @@
         }
 
         // Конь (+ всадник). Нос смотрит в +Z
-        function makeHorse(T, { coat = 0x7a4a24, mane = 0x2a1a0a, rider = true, robe = 0x1d4fa0, hat = 'kalpak' } = {}) {
-            const g = new T.Group(); const coatM = lam(T, coat), maneM = lam(T, mane);
-            const bodyG = new T.Group(); g.add(bodyG);
-            const body = new T.Mesh(new T.CapsuleGeometry(0.42, 1.25, 6, 12), coatM); body.rotation.x = Math.PI / 2; body.position.y = 1.4; bodyG.add(body);
-            const neck = new T.Mesh(new T.CylinderGeometry(0.19, 0.32, 0.95, 10), coatM); neck.position.set(0, 1.92, 0.82); neck.rotation.x = 0.65; bodyG.add(neck);
-            const head = new T.Mesh(new T.BoxGeometry(0.27, 0.3, 0.66), coatM); head.position.set(0, 2.25, 1.18); head.rotation.x = 0.4; bodyG.add(head);
-            [-0.08, 0.08].forEach(x => { const e = new T.Mesh(new T.ConeGeometry(0.05, 0.16, 6), coatM); e.position.set(x, 2.47, 0.98); bodyG.add(e); });
-            const mn = new T.Mesh(new T.BoxGeometry(0.08, 0.2, 0.9), maneM); mn.position.set(0, 2.07, 0.72); mn.rotation.x = 0.65; bodyG.add(mn);
-            const tail = new T.Mesh(new T.CylinderGeometry(0.03, 0.1, 0.9, 6), maneM); tail.position.set(0, 1.2, -1.05); tail.rotation.x = -0.5; bodyG.add(tail);
-            const saddle = new T.Mesh(new T.BoxGeometry(0.62, 0.12, 0.6), lam(T, 0x9b2a22)); saddle.position.set(0, 1.84, -0.05); bodyG.add(saddle);
-            const legs = [[-0.22, 0.55], [0.22, 0.55], [-0.22, -0.55], [0.22, -0.55]].map(([x, z]) => { const p = new T.Group(); p.position.set(x, 1.2, z);
-                const l = new T.Mesh(new T.CylinderGeometry(0.075, 0.06, 1.1, 6), coatM); l.position.y = -0.55; p.add(l);
-                const hf = new T.Mesh(new T.BoxGeometry(0.14, 0.1, 0.16), lam(T, 0x1a1208)); hf.position.y = -1.12; p.add(hf); g.add(p); return p; });
+        // ── Реалистичный конь (тот же движок, что в games/bayge) ──
+        const makeHorseReal = (() => { const T = window.THREE;
+        // «Лофт»: поверхность вдоль кривой с эллиптическими сечениями (корпус, шея, голова, хвост)
+        function loft(path, prof, { seg = 48, rad = 28 } = {}) {
+          const curve = new T.CatmullRomCurve3(path.map(p => new T.Vector3(...p)));
+          const side = new T.Vector3(1, 0, 0), pos = [], idx = [];
+          const flip = new T.Vector3().crossVectors(curve.getTangentAt(0.5), side).y < 0;   // путь «назад» — разворачиваем верх
+          for (let i = 0; i <= seg; i++) {
+            const t = i / seg, c = curve.getPointAt(t), tan = curve.getTangentAt(t);
+            const up = new T.Vector3().crossVectors(tan, side).normalize(); if (flip) up.negate();
+            const p = prof(t);
+            for (let j = 0; j <= rad; j++) {
+              const a = j / rad * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+              const yk = sa < 0 ? (p.bot ?? 1) : (p.top ?? 1);          // разный верх/низ сечения
+              const x = p.w * ca * (1 - (p.flat ?? 0) * Math.abs(sa) * 0.25);
+              const y = p.h * sa * yk + (p.dy ?? 0);
+              pos.push(c.x + side.x * x + up.x * y, c.y + side.y * x + up.y * y, c.z + side.z * x + up.z * y);
+            }
+          }
+          for (let i = 0; i < seg; i++) for (let j = 0; j < rad; j++) {
+            const a = i * (rad + 1) + j, b = a + rad + 1;
+            if (flip) idx.push(a, a + 1, b, b, a + 1, b + 1); else idx.push(a, b, a + 1, b, b + 1, a + 1);
+          }
+          const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+          return g;
+        }
+        const smooth = (a, b, t) => { t = Math.min(1, Math.max(0, (t - a) / (b - a))); return t * t * (3 - 2 * t); };
+        const bump = (t, c, w) => Math.exp(-((t - c) * (t - c)) / (2 * w * w));
+        const lerp = (a, b, t) => a + (b - a) * t;
+
+        // Окрасы: вороной (как на фото), гнедой, рыжий, серый, ахалтекинский золотой
+        const COATS = {
+          black:    { coat: 0x0a0807, sheen: 0.8, mane: 0x040303, hoof: 0x2a2622, socks: [0, 1, 1, 1] },
+          bay:      { coat: 0x5a2c14, sheen: 0.45, mane: 0x120a06, hoof: 0x2a2018, socks: [0, 0, 0, 0], points: 0x1a0f08 },
+          chestnut: { coat: 0x8a4318, sheen: 0.45, mane: 0x6a2e10, hoof: 0x4a3828, socks: [1, 0, 0, 1] },
+          grey:     { coat: 0x6e6c69, sheen: 0.2, mane: 0x4a4846, hoof: 0x3a3a38, socks: [0, 0, 0, 0] },
+          golden:   { coat: 0x8a5a1c, sheen: 0.6, mane: 0x5a3810, hoof: 0x4a3a28, socks: [0, 0, 1, 0] },
+        };
+
+        function makeHorse(coatName = 'black', rider = {}) {
+          const C = typeof coatName === 'number' ? (() => { const c = new T.Color(coatName), l = c.getHSL({}).l; return { coat: coatName, sheen: l < .2 ? .75 : .45, mane: new T.Color(coatName).multiplyScalar(l > .6 ? .55 : .35).getHex(), hoof: 0x2a2018, socks: l < .2 ? [0, 1, 1, 0] : [0, 0, 0, 0] }; })() : COATS[coatName];
+          const coat = new T.MeshStandardMaterial({ color: C.coat, roughness: 0.62 - C.sheen * 0.3, metalness: 0.05 + C.sheen * 0.12, envMapIntensity: 0.25 + C.sheen * 0.45 });
+          const maneM = new T.MeshStandardMaterial({ color: C.mane, roughness: 0.9 });
+          const pointM = new T.MeshStandardMaterial({ color: C.points ?? C.coat, roughness: 1 - C.sheen * 0.75, metalness: C.sheen * 0.2 });
+          const sockM = new T.MeshStandardMaterial({ color: 0xf2efe8, roughness: 0.8 });
+          const hoofM = new T.MeshStandardMaterial({ color: C.hoof, roughness: 0.5 });
+          const darkM = new T.MeshStandardMaterial({ color: 0x050403, roughness: 0.3 });
+          const leatherM = new T.MeshStandardMaterial({ color: 0x5a3416, roughness: 0.6 });
+          const brassM = new T.MeshStandardMaterial({ color: 0xc9a24a, roughness: 0.3, metalness: 0.9 });
+
+          const root = new T.Group();          // позиция на земле, поворот
+          const body = new T.Group();          // корпус: качание и подпрыгивание
+          root.add(body);
+          const shadowable = [];
+          const add = (parent, mesh) => { mesh.castShadow = true; parent.add(mesh); shadowable.push(mesh); return mesh; };
+
+          // ── Корпус: грудь → холка → спина → круп (вдоль +Z = вперёд) ──
+          const torso = loft(
+            [[0, 1.17, 0.86], [0, 1.27, 0.62], [0, 1.30, 0.30], [0, 1.27, -0.05], [0, 1.30, -0.42], [0, 1.31, -0.72], [0, 1.22, -0.92]],
+            t => ({
+              w: 0.05 + 0.25 * smooth(0, 0.14, t) + 0.035 * bump(t, 0.45, 0.16) + 0.02 * bump(t, 0.8, 0.08) - 0.2 * smooth(0.9, 1, t),
+              h: 0.06 + 0.33 * smooth(0, 0.16, t) + 0.04 * bump(t, 0.45, 0.2) - 0.03 * bump(t, 0.7, 0.06) - 0.3 * smooth(0.9, 1, t),
+              top: 1 + 0.18 * bump(t, 0.2, 0.06) + 0.1 * bump(t, 0.82, 0.07),   // холка и круп
+              bot: 1.08 - 0.25 * bump(t, 0.75, 0.08),                           // живот и подтянутый пах
+              flat: 0.4,
+            }), { seg: 60, rad: 32 });
+          add(body, new T.Mesh(torso, coat));
+
+          // ── Шея и голова (группа для кивков) ──
+          const neckG = new T.Group(); neckG.position.set(0, 1.42, 0.62); body.add(neckG);
+          const neck = loft(
+            [[0, -0.12, -0.08], [0, 0.10, 0.08], [0, 0.34, 0.24], [0, 0.56, 0.40], [0, 0.70, 0.52]],
+            t => ({ w: lerp(0.19, 0.075, t), h: lerp(0.30, 0.12, Math.pow(t, 0.8)), top: 0.7 + 0.3 * t, bot: 1.25 - 0.2 * t, flat: 0.6 }), { seg: 30, rad: 24 });
+          add(neckG, new T.Mesh(neck, coat));
+          const headG = new T.Group(); headG.position.set(0, 0.70, 0.52); neckG.add(headG);
+          const head = loft(
+            [[0, 0.02, -0.08], [0, -0.06, 0.08], [0, -0.20, 0.26], [0, -0.34, 0.42], [0, -0.42, 0.52]],
+            t => ({ w: lerp(0.095, 0.06, smooth(0, 0.7, t)) + 0.015 * bump(t, 0.12, 0.08), h: lerp(0.13, 0.065, smooth(0, 0.8, t)) + 0.02 * bump(t, 0.95, 0.06) - 0.06 * smooth(0.97, 1, t),
+                    bot: 1.25 + 0.4 * bump(t, 0.15, 0.1), flat: 0.5 }), { seg: 30, rad: 22 });
+          add(headG, new T.Mesh(head, pointM === coat ? coat : coat));
+          [-1, 1].forEach(s => {
+            const ear = add(headG, new T.Mesh(new T.ConeGeometry(0.035, 0.16, 8), coat)); ear.position.set(s * 0.055, 0.12, -0.06); ear.rotation.set(-0.35, 0, s * -0.2);
+            const eye = add(headG, new T.Mesh(new T.SphereGeometry(0.022, 12, 8), darkM)); eye.position.set(s * 0.085, -0.02, 0.10);
+            const nos = add(headG, new T.Mesh(new T.SphereGeometry(0.016, 8, 6), darkM)); nos.position.set(s * 0.035, -0.38, 0.53);
+          });
+          // уздечка
+          const strapGeo = new T.TorusGeometry(0.1, 0.008, 6, 24);
+          [[0.08, -0.12, 0.03, 0.4], [0.07, -0.33, 0.36, 1.2]].forEach(([s, y, z, rx]) => { const b = add(headG, new T.Mesh(strapGeo, leatherM)); b.scale.set(1, 1.15, 0.9); b.position.set(0, y, z); b.rotation.x = rx; });
+          const bit = new T.Group(); bit.position.set(0, -0.38, 0.42); headG.add(bit);
+          [-1, 1].forEach(s => { const r = add(bit, new T.Mesh(new T.TorusGeometry(0.022, 0.005, 6, 12), brassM)); r.position.x = s * 0.07; r.rotation.y = Math.PI / 2; });
+
+          // ── Грива: пряди вдоль гребня шеи ──
+          const mane = [];
+          maneM.side = T.DoubleSide;
+          for (let i = 0; i < 26; i++) {
+            const t = i / 25, len = 0.2 + 0.06 * Math.sin(i * 2.3), g = new T.PlaneGeometry(0.045, len); g.translate(0, -len / 2, 0);
+            const m = new T.Mesh(g, maneM); m.position.set(-0.02, lerp(-0.02, 0.62, t) + 0.15 - 0.05 * t, lerp(-0.1, 0.42, t)); m.rotation.set(-0.5, 0, -0.55 - 0.15 * Math.sin(i)); add(neckG, m); mane.push(m);
+          }
+          const forelock = add(headG, new T.Mesh(new T.PlaneGeometry(0.06, 0.12), maneM)); forelock.position.set(0, 0.06, 0.04); forelock.rotation.x = 0.4;
+
+          // ── Хвост: цепочка «позвонков» ──
+          const tailRoot = new T.Group(); tailRoot.position.set(0, 1.36, -0.93); body.add(tailRoot);
+          const tail = []; let par = tailRoot;
+          const dock = add(tailRoot, new T.Mesh(new T.CylinderGeometry(0.045, 0.035, 0.16, 10), coat)); dock.position.y = -0.06;
+          for (let i = 0; i < 8; i++) {
+            const seg = new T.Group(); seg.position.set(0, i ? -0.1 : -0.12, 0); par.add(seg);
+            const r0 = 0.03 + i * 0.008, r1 = 0.034 + (i + 1) * 0.008;
+            const m = add(seg, new T.Mesh(new T.CylinderGeometry(r0, r1, 0.12, 10, 1, true), maneM)); m.position.y = -0.05; m.scale.set(0.55, 1, 1);
+            if (i > 2) for (let k = 0; k < 3; k++) { const sg = new T.PlaneGeometry(0.02, 0.18 + Math.random() * 0.12); sg.translate(0, -0.09, 0);
+              const st = add(seg, new T.Mesh(sg, maneM)); st.position.set((k - 1) * r1 * 0.5, -0.06, 0); st.rotation.set(0.1 + Math.random() * 0.2, (k - 1) * 0.6, (k - 1) * 0.25); }
+            tail.push(seg); par = seg;
+          }
+
+          // ── Ноги: скелет с суставами ──
+          // front: плечо(лопатка+плечевая) → локоть → запястье → путовый → копыто
+          // hind:  тазобедренный → коленный (stifle) → скакательный → путовый → копыто
+          const legs = [];
+          function makeLeg(front, sideX, z, sock) {
+            const L = front ? [0.32, 0.42, 0.29, 0.13] : [0.30, 0.46, 0.37, 0.13];
+            const R = front ? [[0.1, 0.07], [0.074, 0.045], [0.043, 0.037], [0.039, 0.046]] : [[0.12, 0.088], [0.088, 0.05], [0.042, 0.036], [0.038, 0.046]];
+            const rest = front ? [-0.18, 0.26, -0.02, -0.38] : [-0.48, 0.92, -0.44, -0.36];
+            const g0 = new T.Group(); g0.position.set(sideX * 0.85, front ? 1.22 : 1.25, z); body.add(g0);
+            const joints = []; let parent = g0;
+            for (let k = 0; k < 4; k++) {
+              const j = new T.Group(); if (k) j.position.y = -L[k - 1]; parent.add(j); joints.push(j);
+              const mat = k === 3 && sock ? sockM : (k >= 2 && C.points ? pointM : coat);
+              const bone = add(j, new T.Mesh(new T.CylinderGeometry(R[k][0], R[k][1], L[k], 12), mat)); bone.position.y = -L[k] / 2;
+              if (k < 3) { const kn = add(j, new T.Mesh(new T.SphereGeometry(R[k + 1][0] * 1.06, 14, 10), mat)); kn.position.y = -L[k]; kn.scale.set(1, 1.2, 1.15); }
+              if (k === 0) bone.scale.set(0.75, 1, 1.2);                     // плечо и бедро (внутри корпуса)
+              if (k === 1) bone.scale.set(0.9, 1, front ? 1.1 : 1.3);         // предплечье / голень
+              parent = j;
+            }
+            const hoof = add(joints[3], new T.Mesh(new T.CylinderGeometry(0.046, 0.06, 0.085, 14), hoofM)); hoof.position.set(0, -L[3] - 0.035, 0.012);
+            const foot = new T.Object3D(); foot.position.set(0, -L[3] - 0.08, 0); joints[3].add(foot);
+            const leg = { front, joints, rest, foot, phase: 0 }; legs.push(leg); return leg;
+          }
+          // порядок: левая задняя, правая задняя, левая передняя, правая передняя (правый галоп)
+          const LH = makeLeg(false, 0.15, -0.68, C.socks[1]), RH = makeLeg(false, -0.15, -0.68, C.socks[2]);
+          const LF = makeLeg(true, 0.15, 0.55, C.socks[0]), RF = makeLeg(true, -0.15, 0.55, C.socks[3]);
+          LH.off = 0.0; RH.off = 0.11; LF.off = 0.38; RF.off = 0.49;
+
+          // ── Седло, потник ──
+          const saddle = add(body, new T.Mesh(new T.BoxGeometry(0.44, 0.07, 0.5), new T.MeshStandardMaterial({ color: 0x3a1c0c, roughness: 0.55 }))); saddle.position.set(0, 1.73, 0.12);
+          const cloth = add(body, new T.Mesh(new T.CylinderGeometry(0.41, 0.41, 0.7, 28, 1, true, Math.PI * 0.68, Math.PI * 0.64), new T.MeshStandardMaterial({ color: rider.cloth ?? 0x9b2a22, roughness: 0.9, side: T.DoubleSide })));
+          cloth.rotation.x = Math.PI / 2; cloth.position.set(0, 1.31, 0.12);
+          const num = rider.number ? (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.font = 'bold 96px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(rider.number, 64, 70); return new T.CanvasTexture(c); })() : null;
+          if (num) [-1, 1].forEach(s => { const p = add(body, new T.Mesh(new T.PlaneGeometry(0.22, 0.22), new T.MeshBasicMaterial({ map: num, transparent: true }))); p.position.set(s * 0.415, 1.32, 0.12); p.rotation.y = s * Math.PI / 2; });
+
+          // ── Жокей в посадке «два стремени» ──
+          const jockey = new T.Group(); jockey.position.set(0, 1.74, 0.16); body.add(jockey);
+          const robe = new T.MeshStandardMaterial({ color: rider.robe ?? 0x1d4fa0, roughness: 0.7 });
+          const skin = new T.MeshStandardMaterial({ color: 0xc89068, roughness: 0.7 });
+          const pants = new T.MeshStandardMaterial({ color: 0xece4d2, roughness: 0.8 });
+          const bootM = new T.MeshStandardMaterial({ color: 0x1a1410, roughness: 0.4 });
+          const hips = new T.Group(); hips.position.set(0, 0.16, -0.02); jockey.add(hips);
+          const torsoJ = new T.Group(); hips.add(torsoJ); torsoJ.rotation.x = 1.05;   // наклон вперёд
+          add(torsoJ, new T.Mesh(new T.CapsuleGeometry(0.15, 0.36, 6, 14), robe)).position.y = 0.26;
+          const sash = add(torsoJ, new T.Mesh(new T.TorusGeometry(0.155, 0.025, 6, 20), new T.MeshStandardMaterial({ color: rider.sash ?? 0xC5A55A, roughness: 0.4, metalness: 0.4 }))); sash.rotation.x = Math.PI / 2; sash.position.y = 0.1;
+          const headJ = new T.Group(); headJ.position.y = 0.58; torsoJ.add(headJ); headJ.rotation.x = -0.95;
+          add(headJ, new T.Mesh(new T.SphereGeometry(0.105, 16, 12), skin)).position.y = 0.08;
+          const cap = add(headJ, new T.Mesh(new T.SphereGeometry(0.115, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), new T.MeshStandardMaterial({ color: rider.cap ?? 0xF0D882, roughness: 0.4 }))); cap.position.y = 0.1;
+          const visor = add(headJ, new T.Mesh(new T.CylinderGeometry(0.09, 0.09, 0.012, 16, 1, false, 0, Math.PI), cap.material)); visor.position.set(0, 0.1, 0.06); visor.rotation.x = 0.2;
+          const arms = [-1, 1].map(s => { const sh = new T.Group(); sh.position.set(s * 0.18, 0.46, 0); torsoJ.add(sh); sh.rotation.set(-2.1, 0, s * 0.08);
+            add(sh, new T.Mesh(new T.CapsuleGeometry(0.045, 0.24, 4, 8), robe)).position.y = -0.14;
+            const el = new T.Group(); el.position.y = -0.28; sh.add(el); el.rotation.x = 0.9;
+            add(el, new T.Mesh(new T.CapsuleGeometry(0.04, 0.22, 4, 8), robe)).position.y = -0.13;
+            const hand = add(el, new T.Mesh(new T.SphereGeometry(0.045, 10, 8), skin)); hand.position.y = -0.27; return { sh, el, hand }; });
+          const jlegs = [-1, 1].map(s => { const th = new T.Group(); th.position.set(s * 0.2, 0, 0); hips.add(th); th.rotation.set(-0.9, 0, s * 0.42);
+            add(th, new T.Mesh(new T.CapsuleGeometry(0.065, 0.3, 4, 8), pants)).position.y = -0.2;
+            const kn = new T.Group(); kn.position.y = -0.4; th.add(kn); kn.rotation.x = 1.9;
+            add(kn, new T.Mesh(new T.CapsuleGeometry(0.055, 0.3, 4, 8), bootM)).position.y = -0.19; return { th, kn }; });
+          // поводья: линия от рук к трензелю (обновляется каждый кадр)
+          const reinGeo = new T.BufferGeometry().setFromPoints([new T.Vector3(), new T.Vector3(), new T.Vector3(), new T.Vector3()]);
+          const reins = new T.LineSegments(reinGeo, new T.LineBasicMaterial({ color: 0x3a2412 })); reins.frustumCulled = false;
+          // камча
+          const whipG = new T.Group(); arms[1].hand.add(whipG); const whip = add(whipG, new T.Mesh(new T.CylinderGeometry(0.008, 0.004, 0.55, 5), leatherM)); whip.position.y = -0.25; whipG.rotation.x = 0.5;
+
+          // ── Анимация ──
+          let cycle = 0, whipT = 0;
+          const tmpA = new T.Vector3(), tmpB = new T.Vector3();
+          function gait(dt, speed, time) {
+            const k = smooth(0.5, 9, speed);                           // 0 — шаг/стоп, 1 — полный галоп
+            const freq = lerp(0.9, 2.35, smooth(0, 18, speed));          // темп (шагов/с)
+            cycle = (cycle + dt * freq) % 1;
+            legs.forEach(L => {
+              const ph = (cycle + L.off) % 1, st = 0.36;                  // доля опоры
+              let a0, a1, a2, a3;
+              if (L.front) {
+                if (ph < st) { const s = ph / st; a0 = lerp(-0.55, 0.52, s); a1 = 0.05; a2 = 0; a3 = -0.35 * Math.sin(s * Math.PI); }
+                else { const u = (ph - st) / (1 - st), e = 0.5 - 0.5 * Math.cos(u * Math.PI);
+                  a0 = lerp(0.52, -0.55, e) - 0.15 * Math.sin(u * Math.PI); a1 = 0.55 * Math.sin(u * Math.PI); a2 = 1.75 * Math.pow(Math.sin(Math.min(1, u * 1.25) * Math.PI), 0.8); a3 = 0.75 * Math.sin(u * Math.PI); }
+              } else {
+                if (ph < st) { const s = ph / st; a0 = lerp(-0.42, 0.55, s); a1 = -0.1 * Math.sin(s * Math.PI); a2 = 0.15 * Math.sin(s * Math.PI); a3 = -0.3 * Math.sin(s * Math.PI); }
+                else { const u = (ph - st) / (1 - st), e = 0.5 - 0.5 * Math.cos(u * Math.PI);
+                  a0 = lerp(0.55, -0.42, e); a1 = 0.45 * Math.sin(u * Math.PI); a2 = 0.85 * Math.sin(Math.min(1, u * 1.2) * Math.PI); a3 = 0.7 * Math.sin(u * Math.PI); }
+              }
+              // шаг при малой скорости — мягкая амплитуда
+              const walk = Math.sin((cycle + L.off) * Math.PI * 2);
+              const w0 = walk * 0.25, w2 = Math.max(0, -walk) * (L.front ? 0.6 : 0.4);
+              const A = [lerp(w0, a0, k), lerp(0, a1, k), lerp(w2, a2, k), lerp(w2 * 0.6, a3, k)];
+              L.joints.forEach((j, i) => { j.rotation.x = L.rest[i] + A[i] * Math.min(1, 0.15 + speed * 0.4); });
+              L.stance = ph < st && speed > 2;
+            });
+            const p2 = cycle * Math.PI * 2;
+            body.position.y = (0.05 * Math.sin(p2 + 0.6) + 0.02) * k + 0.008 * Math.sin(time * 1.4) * (1 - k);
+            body.rotation.x = 0.055 * Math.sin(p2 + 2.0) * k;
+            neckG.rotation.x = -0.05 - 0.08 * k + 0.11 * Math.sin(p2 + 3.6) * k + 0.03 * Math.sin(time * 0.8) * (1 - k);
+            headG.rotation.x = 0.25 + 0.15 * k - 0.06 * Math.sin(p2 + 3.0) * k;
+            tail.forEach((s, i) => { s.rotation.x = (i ? 0.1 + 0.06 * k : 0.25 + 0.95 * k) + Math.sin(p2 - i * 0.7) * 0.09 * (0.3 + k); s.rotation.z = Math.sin(time * 1.3 - i * 0.6) * 0.06; });
+            mane.forEach((m, i) => { m.rotation.x = -0.5 - 0.9 * k + Math.sin(time * 11 + i * 0.7) * 0.15 * k; m.rotation.z = -0.55 + 0.2 * k * Math.sin(time * 7 + i); });
+            // жокей гасит качание
+            jockey.position.y = 1.74 - body.position.y * 0.6; hips.rotation.x = -body.rotation.x * 1.2;
+            torsoJ.rotation.x = lerp(0.35, 1.05, k);
+            jlegs.forEach(l => { l.th.rotation.x = lerp(-0.4, -1.15, k); l.kn.rotation.x = lerp(0.7, 2.15, k); });
+            headJ.rotation.x = -torsoJ.rotation.x + 0.1;
+            whipT = Math.max(0, whipT - dt);
+            arms[1].sh.rotation.x = -2.1 + (whipT > 0 ? Math.sin((1 - whipT / 0.35) * Math.PI) * 1.6 : 0);
+            whipG.rotation.x = 0.5 + (whipT > 0 ? 1.2 : 0);
+            // поводья
+            bit.getWorldPosition(tmpA); const pos = reinGeo.attributes.position;
+            arms[0].hand.getWorldPosition(tmpB); pos.setXYZ(0, tmpB.x, tmpB.y, tmpB.z); pos.setXYZ(1, tmpA.x + 0.07, tmpA.y, tmpA.z);
+            arms[1].hand.getWorldPosition(tmpB); pos.setXYZ(2, tmpB.x, tmpB.y, tmpB.z); pos.setXYZ(3, tmpA.x - 0.07, tmpA.y, tmpA.z); pos.needsUpdate = true;
+          }
+          return { root, body, legs, reins, gait, crack: () => { whipT = 0.35; }, shadowable, hindPos: () => body.localToWorld(new T.Vector3(0, 1.3, -0.9)) };
+        }
+
+
+        return makeHorse; })();
+        // Конь (+ всадник) на реалистичном движке. Нос смотрит в +Z
+        function makeHorse(T, { coat = 0x7a4a24, rider = true, robe = 0x1d4fa0, hat = 'kalpak' } = {}) {
+            const H = makeHorseReal(coat, { robe, cloth: 0x9b2a22 });
+            const g = H.root, bodyG = H.body;
+            // убираем жокея движка — ставим наших всадников в национальной одежде
+            bodyG.children.filter(o => o.isGroup && o.position.y > 1.7 && o.position.z > 0.1 && o.position.z < 0.2).forEach(o => bodyG.remove(o));
             let riderG = null;
-            if (rider) { riderG = makePerson(T, { robe, hat }); riderG.position.set(0, 1.05, -0.05); riderG.userData.legs.forEach((l, i) => { l.rotation.z = (i ? -1 : 1) * 0.9; l.rotation.x = -0.5; }); riderG.userData.arms.forEach(a => a.rotation.x = -0.9); bodyG.add(riderG); }
-            g.add(blobShadow(T, 1.3));
-            let ph = 0;
-            g.userData = { legs, rider: riderG, bodyG,
-                animate: (dt, speed) => { const k = Math.min(1, speed / 12); ph += dt * (3 + speed * 0.55);
-                    const off = [0, 0.5, 0.25, 0.75]; legs.forEach((l, i) => { l.rotation.x = Math.sin(ph + off[i] * Math.PI * 2) * 0.75 * k; });
-                    bodyG.position.y = Math.abs(Math.sin(ph)) * 0.12 * k; bodyG.rotation.x = Math.sin(ph) * 0.04 * k; } };
+            if (rider) { riderG = makePerson(T, { robe, hat }); riderG.userData.baseY = 0.92; riderG.position.set(0, 0.92, 0.12);
+                riderG.userData.legs.forEach((l, i) => { l.rotation.z = (i ? -1 : 1) * 1.0; l.rotation.x = -0.6; }); riderG.userData.arms.forEach(a => a.rotation.x = -0.9); bodyG.add(riderG); }
+            g.add(blobShadow(T, 1.2));
+            let t = 0;
+            g.userData = { legs: H.legs, rider: riderG, bodyG, animate: (dt, speed) => { t += dt; H.gait(dt, speed, t); } };
             return g;
         }
 
@@ -7148,9 +7367,9 @@
             api.hud({ _msg: '◀ ▶ кезекпен басыңыз!' });
             S.onFrame((dt) => {
                 t += dt;
-                if (faller) { fall += dt; const r = faller.userData.rider; r.rotation.z = Math.min(1.6, fall * 2.4) * (faller === A ? 1 : -1); r.position.y = 1.05 - Math.min(1.2, fall * fall * 3);
+                if (faller) { fall += dt; const r = faller.userData.rider; r.rotation.z = Math.min(1.6, fall * 2.4) * (faller === A ? 1 : -1); r.position.y = r.userData.baseY - Math.min(1.2, fall * fall * 3);
                     if (fall > 1.6) { if (wins[0] >= 2 || wins[1] >= 2) { api.end({ win: wins[0] > wins[1], score: wins[0], title: wins[0] > wins[1] ? 'Жеңіс! Қарсыласты аттан аудардыңыз' : 'Жеңілдіңіз', text: `Раундтар ${wins[0]} : ${wins[1]}. Аударыспақ — борьба всадников: кто стащит соперника с коня, тот и победил.` }); faller = null; return; }
-                        faller.userData.rider.rotation.z = 0; faller.userData.rider.position.y = 1.05; faller = null; bal = 0; round++; lvl += 0.12; api.hud({ _msg: `${round}-раунд` }); }
+                        faller.userData.rider.rotation.z = 0; faller.userData.rider.position.y = faller.userData.rider.userData.baseY; faller = null; bal = 0; round++; lvl += 0.12; api.hud({ _msg: `${round}-раунд` }); }
                     return; }
                 const k = input.hit('left') ? 'L' : input.hit('right') ? 'R' : null;
                 if (k) { if (k !== last) { combo = Math.min(combo + 1, 6); bal += 0.045 + combo * 0.006; } else { combo = 0; bal -= 0.02; } last = k; }
@@ -7466,7 +7685,7 @@
                         <h3 className="text-3xl md:text-4xl font-serif">Ұлттық ойындар — 3D әлемде</h3>
                         <p className="text-[#777] text-sm mt-2">11 игр в трёхмерной степи: клавиатура на компьютере, кнопки на телефоне.</p>
                     </div>
-                    <a href="/games/bayge/" className="glass-card rounded-2xl p-5 md:p-6 mb-4 flex items-center gap-5 group" style={{ borderColor: 'rgba(197,165,90,.45)', textDecoration: 'none' }}>
+                    <a href="games/bayge/" className="glass-card rounded-2xl p-5 md:p-6 mb-4 flex items-center gap-5 group" style={{ borderColor: 'rgba(197,165,90,.45)', textDecoration: 'none' }}>
                         <span className="text-4xl md:text-5xl">🐎</span>
                         <div className="flex-1">
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.4em] uppercase">Жаңа · реалистичный конь</p>
