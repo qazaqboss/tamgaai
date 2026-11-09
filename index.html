@@ -5167,13 +5167,18 @@
 
         // ── Реальная 3D-модель юрты: «yurta» © 37-Gimnaziya (Sketchfab), CC BY 4.0 ──
         // Лёгкий загрузчик GLB (float/uint, матрицы узлов) — работает с глобальным three.min.js без GLTFLoader.
-        async function loadSimpleGLB(T, url) {
+        async function loadSimpleGLB(T, url, { morphKey = null } = {}) {
             const buf = await (await fetch(url)).arrayBuffer(); const dv = new DataView(buf);
             const jl = dv.getUint32(12, true); const j = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jl)));
             const bin = 20 + jl + 8, C = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
-            const acc = i => { const a = j.accessors[i], bv = j.bufferViews[a.bufferView], off = bin + (bv.byteOffset || 0) + (a.byteOffset || 0), n = a.count * C[a.type];
-                const A = a.componentType === 5126 ? Float32Array : a.componentType === 5125 ? Uint32Array : a.componentType === 5123 ? Uint16Array : Uint8Array;
-                return { arr: new A(buf.slice(off, off + n * A.BYTES_PER_ELEMENT)), size: C[a.type] }; };
+            const CS = { 5126: 4, 5125: 4, 5123: 2, 5122: 2, 5121: 1, 5120: 1 }, NZ = { 5122: 32767, 5123: 65535, 5121: 255, 5120: 127 };
+            const acc = i => { const a = j.accessors[i], bv = j.bufferViews[a.bufferView], ct = a.componentType, size = C[a.type], cs = CS[ct], stride = bv.byteStride || size * cs, off = bin + (bv.byteOffset || 0) + (a.byteOffset || 0), n = a.count * size;
+                if (stride === size * cs && !a.normalized) { const A = { 5126: Float32Array, 5125: Uint32Array, 5123: Uint16Array, 5122: Int16Array, 5121: Uint8Array, 5120: Int8Array }[ct];
+                    return { arr: new A(buf.slice(off, off + n * cs)), size }; }
+                // сжатые (KHR_mesh_quantization) и чередующиеся данные
+                const rd = { 5126: o => dv.getFloat32(o, true), 5125: o => dv.getUint32(o, true), 5123: o => dv.getUint16(o, true), 5122: o => dv.getInt16(o, true), 5121: o => dv.getUint8(o), 5120: o => dv.getInt8(o) }[ct], out = new Float32Array(n);
+                for (let k = 0; k < a.count; k++) for (let c = 0; c < size; c++) { let v = rd(off + k * stride + c * cs); if (a.normalized) v = Math.max(v / NZ[ct], -1); out[k * size + c] = v; }
+                return { arr: out, size }; };
             const texCache = {};
             const tex = (ti) => { if (texCache[ti]) return texCache[ti]; const im = j.images[j.textures[ti].source], bv = j.bufferViews[im.bufferView];
                 const url = URL.createObjectURL(new Blob([new Uint8Array(buf, bin + (bv.byteOffset || 0), bv.byteLength)], { type: im.mimeType || 'image/jpeg' }));
@@ -5183,12 +5188,17 @@
                 if (n.matrix) m.fromArray(n.matrix); else m.compose(new T.Vector3(...(n.translation || [0, 0, 0])), new T.Quaternion(...(n.rotation || [0, 0, 0, 1])), new T.Vector3(...(n.scale || [1, 1, 1])));
                 m.premultiply(pm);
                 if (n.mesh !== undefined) j.meshes[n.mesh].primitives.forEach(p => { const g = new T.BufferGeometry();
-                    const P = acc(p.attributes.POSITION); g.setAttribute('position', new T.BufferAttribute(P.arr, 3));
-                    if (p.attributes.NORMAL !== undefined) g.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL).arr, 3));
+                    const P = acc(p.attributes.POSITION);
+                    if (morphKey != null && p.targets?.length && j.animations?.length) { // поза: веса морфов из кадра анимации
+                        const nT = p.targets.length, W = acc(j.animations[0].samplers[0].output).arr, w0 = morphKey * nT, pos = new Float32Array(P.arr);
+                        p.targets.forEach((tg, k) => { const w = W[w0 + k] || 0; if (!w || tg.POSITION === undefined) return; const D = acc(tg.POSITION).arr; for (let q = 0; q < pos.length; q++) pos[q] += w * D[q]; });
+                        g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.userData.morphed = true;
+                    } else g.setAttribute('position', new T.BufferAttribute(P.arr, 3));
+                    if (p.attributes.NORMAL !== undefined && !g.userData.morphed) g.setAttribute('normal', new T.BufferAttribute(acc(p.attributes.NORMAL).arr, 3));
                     if (p.attributes.TEXCOORD_0 !== undefined) g.setAttribute('uv', new T.BufferAttribute(acc(p.attributes.TEXCOORD_0).arr, 2));
                     if (p.attributes.COLOR_0 !== undefined) { const C0 = acc(p.attributes.COLOR_0), n = C0.arr.length / C0.size, rgb = new Float32Array(n * 3); for (let k = 0; k < n; k++) for (let q = 0; q < 3; q++) rgb[k * 3 + q] = C0.arr[k * C0.size + q]; g.setAttribute('color', new T.BufferAttribute(rgb, 3)); }
                     if (p.indices !== undefined) g.setIndex(new T.BufferAttribute(acc(p.indices).arr, 1));
-                    g.applyMatrix4(m); const mt = j.materials[p.material] || {}, bt = mt.pbrMetallicRoughness?.baseColorTexture; out.push({ name: nm, mat: mt, geo: g, map: bt ? tex(bt.index) : null }); });
+                    g.applyMatrix4(m); if (g.userData.morphed) g.computeVertexNormals(); const mt = j.materials[p.material] || {}, bt = mt.pbrMetallicRoughness?.baseColorTexture; out.push({ name: nm, mat: mt, geo: g, map: bt ? tex(bt.index) : null }); });
                 (n.children || []).forEach(c => walk(c, m, nm)); };
             j.scenes[j.scene || 0].nodes.forEach(ni => walk(ni, new T.Matrix4()));
             return out;
@@ -6193,53 +6203,66 @@
             { id: 'quiysqan', kk: 'Құйысқан', ru: 'Подхвостник',     text: 'Ремень от задней луки под хвост — держит седло на спуске.' },
         ];
         function buildSaddle(T, scene, S) {
-            const parts = {};
-            // стилизованный конь (полупрозрачный, как в атласе)
-            const horseM = new T.MeshStandardMaterial({ color: 0x8a5a32, roughness: 0.8, transparent: true, opacity: 0.35, depthWrite: false });
-            const body = new T.Mesh(new T.CapsuleGeometry(1.15, 3.2, 8, 24), horseM); body.rotation.z = Math.PI / 2; scene.add(body);
-            const neck = new T.Mesh(new T.CapsuleGeometry(0.55, 1.8, 6, 16), horseM); neck.position.set(2.6, 1.3, 0); neck.rotation.z = -0.8; scene.add(neck);
-            const head = new T.Mesh(new T.CapsuleGeometry(0.4, 1.0, 6, 16), horseM); head.position.set(3.6, 2.0, 0); head.rotation.z = 1.2; scene.add(head);
-            [[1.7, 0.45], [1.7, -0.45], [-1.7, 0.45], [-1.7, -0.45]].forEach(([x, z]) => { const l = new T.Mesh(new T.CapsuleGeometry(0.22, 2.2, 4, 10), horseM); l.position.set(x, -2.0, z); scene.add(l); });
-            const tail = tube(T, [new T.Vector3(-2.7, 0.4, 0), new T.Vector3(-3.2, -0.3, 0), new T.Vector3(-3.3, -1.4, 0)], 0.12, horseM); scene.add(tail);
-
-            const leather = new T.MeshStandardMaterial({ color: 0x5a2e14, roughness: 0.6 });
-            const silver = new T.MeshStandardMaterial({ color: 0xd8d8e0, roughness: 0.25, metalness: 0.9 });
-            const wood = new T.MeshStandardMaterial({ color: 0xa8652a, roughness: 0.5 });
+            const look = studioLook(S, { shadow: [3, 10, 6], shadowSize: 7, exposure: 1.1 });
+            const parts = {}, GY = -3.55;
+            // ── настоящий конь: модель из «Бәйге Pro» (Horse Run, Amitesh Nandan, CC BY-ND 4.0), кадр галопа с ногами под корпусом ──
+            const horse = new T.Group(); scene.add(horse);
+            loadSimpleGLB(T, 'games/bayge/horse_run.glb', { morphKey: 3 }).then(list => {
+                const it = list.find(x => x.map) || list[list.length - 1]; const geo = it.geo; geo.computeBoundingBox(); const bb = geo.boundingBox, L = bb.max.x - bb.min.x, H = bb.max.y - bb.min.y, k = 11.04 / L;
+                // седло — над серединой спины, корпус — вокруг y = 0
+                geo.translate(-(bb.min.x + 0.4995 * L), -(bb.min.y + 0.586 * H), -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k);
+                const m = new T.Mesh(geo, new T.MeshStandardMaterial({ map: it.map, color: 0x9a6440, roughness: 0.5, metalness: 0.08, envMapIntensity: 0.7, side: T.DoubleSide }));
+                m.castShadow = m.receiveShadow = true; horse.add(m);
+                geo.computeBoundingBox(); const fy = geo.boundingBox.min.y; floor.position.y = fy; felt.position.y = fy - 0.005;
+            }).catch(e => console.warn('horse', e));
+            const leatherT = (() => { const [c, g] = _cv(512, 512); g.fillStyle = '#5a2e14'; g.fillRect(0, 0, 512, 512); const R = seeded(4); for (let i = 0; i < 5000; i++) { g.fillStyle = `rgba(${R() > .5 ? '0,0,0' : '255,210,160'},${R() * .07})`; g.fillRect(R() * 512, R() * 512, 2, 2); }
+                g.strokeStyle = 'rgba(232,198,106,.55)'; g.setLineDash([6, 6]); g.lineWidth = 3; g.strokeRect(14, 14, 484, 484); return _tex(T, c, [1, 1]); })();
+            const leather = new T.MeshStandardMaterial({ map: leatherT, roughness: 0.5, metalness: 0.05 });
+            const silver = new T.MeshStandardMaterial({ color: 0xdedfe6, roughness: 0.22, metalness: 1 });
+            const wood = new T.MeshStandardMaterial({ map: woodTexture(T, '#9a5a28'), roughness: 0.42 });
             const arcPts = (r, h, n = 20) => { const a = []; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI; a.push(new T.Vector3(0, Math.sin(t) * h, Math.cos(t) * r)); } return a; };
-            // тоқым
-            { const g = new T.Group(); const tex = ornamentTexture(T, 512, 256);
-              const geo = new T.CylinderGeometry(1.22, 1.22, 2.2, 32, 1, true, Math.PI * 0.08, Math.PI * 0.84);
-              const m = new T.Mesh(geo, new T.MeshStandardMaterial({ map: tex, roughness: 1, side: T.DoubleSide })); m.rotation.z = Math.PI / 2; m.rotation.y = 0; g.add(m);
-              registerPart(parts, 'toqym', g, new T.Vector3(0, 0.6, 0), () => new T.Vector3(-0.9, 1.0, 0.55)); }
-            // қаптал
-            { const g = new T.Group(); [0.42, -0.42].forEach(z => { const b = new T.Mesh(new T.BoxGeometry(1.9, 0.12, 0.42), wood); b.position.set(0, 1.28, z); b.rotation.x = z > 0 ? 0.35 : -0.35; g.add(b); });
-              registerPart(parts, 'qaptal', g, new T.Vector3(0, 1.3, 0), () => new T.Vector3(-0.6, 1.3, 0.55)); }
-            // қастар
-            { const g = new T.Group(); g.add(tube(T, arcPts(0.5, 0.75).map(p => p.add(new T.Vector3(0.85, 1.3, 0))), 0.09, wood));
-              const s = new T.Mesh(new T.SphereGeometry(0.13, 16, 12), silver); s.position.set(0.85, 2.08, 0); g.add(s);
-              registerPart(parts, 'aldqas', g, new T.Vector3(0.8, 2.0, 0), () => new T.Vector3(0.85, 2.08, 0)); }
-            { const g = new T.Group(); g.add(tube(T, arcPts(0.55, 0.5).map(p => p.add(new T.Vector3(-0.85, 1.3, 0))), 0.08, wood));
-              registerPart(parts, 'artqas', g, new T.Vector3(-0.8, 2.0, 0), () => new T.Vector3(-0.85, 1.8, 0)); }
-            // тебінгі
-            { const g = new T.Group(); [1, -1].forEach(s => { const m = new T.Mesh(new T.PlaneGeometry(1.3, 0.9), new T.MeshStandardMaterial({ color: 0x3a1c0c, roughness: 0.7, side: T.DoubleSide }));
-                m.position.set(0.1, 0.55, s * 1.2); m.rotation.x = s * 0.25; g.add(m); });
-              registerPart(parts, 'tebingi', g, new T.Vector3(0, 0, 1.4), () => new T.Vector3(0.6, 0.4, 1.22)); }
-            // үзеңгі
-            { const g = new T.Group(); [1, -1].forEach(s => {
-                g.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(0.2, 1.2, s * 0.6), new T.Vector3(0.2, -0.75, s * 1.3)]), new T.LineBasicMaterial({ color: 0x3a1c0c })));
-                const st = new T.Mesh(new T.TorusGeometry(0.22, 0.04, 8, 20), silver); st.position.set(0.2, -0.95, s * 1.32); g.add(st); });
-              registerPart(parts, 'uzengi', g, new T.Vector3(0, -0.8, 0.6), () => new T.Vector3(0.42, -0.95, 1.32)); }
-            // айыл
-            { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(1.2, 0.07, 8, 48), leather); m.rotation.y = Math.PI / 2; m.position.x = 0.35; m.scale.set(1, 1, 1.0); g.add(m);
-              registerPart(parts, 'aiyl', g, new T.Vector3(0, -1.0, 0), () => new T.Vector3(0.35, -1.2, 0)); }
-            // өмілдірік
-            { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(0.85, 0.06, 8, 40), leather); m.position.set(2.0, 0.7, 0); m.rotation.y = Math.PI / 2; m.rotation.x = 0.0; m.rotation.z = -0.5; g.add(m);
-              registerPart(parts, 'omildirik', g, new T.Vector3(1.4, 0, 0), () => new T.Vector3(2.4, 0.2, 0.6)); }
-            // құйысқан
-            { const g = new T.Group(); g.add(tube(T, [new T.Vector3(-0.85, 1.3, 0), new T.Vector3(-2.2, 1.1, 0), new T.Vector3(-2.75, 0.45, 0)], 0.05, leather));
-              const r = new T.Mesh(new T.TorusGeometry(0.2, 0.05, 8, 20), leather); r.position.set(-2.8, 0.35, 0); r.rotation.y = Math.PI / 2; g.add(r);
-              registerPart(parts, 'quiysqan', g, new T.Vector3(-1.2, 0.3, 0), () => new T.Vector3(-2.2, 1.1, 0)); }
-            S.st.phi = 1.3; S.st.theta = 0.3;
+            const strap = (pts, w = 0.08, th = 0.02, mat = leather) => { const cv = new T.CatmullRomCurve3(pts); const g = new T.TubeGeometry(cv, 32, w, 4, false); const m = new T.Mesh(g, mat); m.scale.set(1, 1, 1); return m; };
+            // тоқым — войлочный потник с орнаментом
+            { const g = new T.Group(); const tex = clothTexture(T, { base: '#7d1418', pat: '#2b4a7a', rep: [1, 1] });
+              const m = new T.Mesh(new T.CylinderGeometry(1.24, 1.24, 2.3, 48, 1, true, Math.PI * 0.1, Math.PI * 0.8), new T.MeshStandardMaterial({ map: tex, roughness: 0.95, side: T.DoubleSide })); m.rotation.z = Math.PI / 2; m.rotation.y = Math.PI; m.scale.set(1, 1, 1.02); g.add(m);
+              scene.add(g); registerPart(parts, 'toqym', g, new T.Vector3(0, 0.6, 0), () => new T.Vector3(-0.95, 0.95, 0.75)); }
+            // қаптал — две доски ленчика по бокам хребта
+            { const g = new T.Group(); [0.4, -0.4].forEach(z => { const b = new T.Mesh(new T.BoxGeometry(2.0, 0.1, 0.42), wood); b.position.set(0, 1.2, z); b.rotation.x = z > 0 ? 0.42 : -0.42; g.add(b); });
+              scene.add(g); registerPart(parts, 'qaptal', g, new T.Vector3(0, 1.3, 0), () => new T.Vector3(-0.6, 1.3, 0.6)); }
+            // алдыңғы қас — высокая передняя лука с серебром
+            { const g = new T.Group(); g.add(tube(T, arcPts(0.48, 0.78).map(p => p.add(new T.Vector3(0.88, 1.28, 0))), 0.09, wood));
+              const s2 = new T.Mesh(new T.SphereGeometry(0.13, 20, 14), silver); s2.position.set(0.88, 2.08, 0); g.add(s2);
+              [-1, 1].forEach(sd => { const pl = new T.Mesh(new T.CircleGeometry(0.12, 24), silver); pl.position.set(0.88, 1.72, sd * 0.36); pl.rotation.y = sd > 0 ? 0 : Math.PI; g.add(pl); });
+              scene.add(g); registerPart(parts, 'aldqas', g, new T.Vector3(0.8, 2.0, 0), () => new T.Vector3(0.88, 2.1, 0)); }
+            // артқы қас
+            { const g = new T.Group(); g.add(tube(T, arcPts(0.55, 0.5).map(p => p.add(new T.Vector3(-0.88, 1.28, 0))), 0.08, wood));
+              scene.add(g); registerPart(parts, 'artqas', g, new T.Vector3(-0.8, 2.0, 0), () => new T.Vector3(-0.88, 1.8, 0)); }
+            // тебінгі — кожаные крылья с тиснением
+            { const g = new T.Group(); [1, -1].forEach(sd => { const sh = new T.Shape(); sh.moveTo(-0.65, 0.45); sh.lineTo(0.65, 0.45); sh.quadraticCurveTo(0.72, -0.2, 0.4, -0.45); sh.lineTo(-0.45, -0.45); sh.quadraticCurveTo(-0.75, -0.2, -0.65, 0.45);
+                const m = new T.Mesh(new T.ShapeGeometry(sh, 16), new T.MeshStandardMaterial({ map: leatherT, color: 0x8a6040, roughness: 0.55, side: T.DoubleSide })); m.position.set(0.05, 0.55, sd * 1.25); m.rotation.x = sd * 0.22; g.add(m); });
+              scene.add(g); registerPart(parts, 'tebingi', g, new T.Vector3(0, 0, 1.4), () => new T.Vector3(0.6, 0.4, 1.27)); }
+            // үзеңгі — ремни и серебряные стремена
+            { const g = new T.Group(); [1, -1].forEach(sd => {
+                g.add(strap([new T.Vector3(0.2, 1.2, sd * 0.62), new T.Vector3(0.2, 0.1, sd * 1.32), new T.Vector3(0.2, -0.78, sd * 1.36)], 0.035));
+                const st = new T.Mesh(new T.TorusGeometry(0.22, 0.04, 10, 28, Math.PI * 1.3), silver); st.rotation.z = Math.PI * 1.15 + Math.PI / 2; st.position.set(0.2, -0.98, sd * 1.36); st.rotation.y = Math.PI / 2; g.add(st);
+                const tr = new T.Mesh(new T.BoxGeometry(0.12, 0.03, 0.34), silver); tr.position.set(0.2, -1.17, sd * 1.36); tr.rotation.y = Math.PI / 2; g.add(tr); });
+              scene.add(g); registerPart(parts, 'uzengi', g, new T.Vector3(0, -0.8, 0.6), () => new T.Vector3(0.42, -0.98, 1.36)); }
+            // айыл — подпруга за передними ногами
+            { const g = new T.Group(); const m = new T.Mesh(new T.TorusGeometry(1.24, 0.07, 8, 64), leather); m.rotation.y = Math.PI / 2; m.position.x = 0.85; m.scale.set(1, 1.02, 1.15); g.add(m);
+              const bk = new T.Mesh(new T.BoxGeometry(0.06, 0.16, 0.22), silver); bk.position.set(0.85, -0.6, 1.2); g.add(bk);
+              scene.add(g); registerPart(parts, 'aiyl', g, new T.Vector3(0, -1.0, 0), () => new T.Vector3(0.85, -1.25, 0)); }
+            // өмілдірік — нагрудник вокруг груди с серебряной бляхой
+            { const g = new T.Group(); [1, -1].forEach(sd => g.add(strap([new T.Vector3(0.95, 0.9, sd * 1.05), new T.Vector3(2.2, 0.25, sd * 0.95), new T.Vector3(3.0, -0.2, sd * 0.35), new T.Vector3(3.12, -0.3, 0)], 0.05)));
+              const med = new T.Mesh(new T.CylinderGeometry(0.17, 0.17, 0.04, 24), silver); med.rotation.z = Math.PI / 2; med.position.set(3.14, -0.3, 0); g.add(med);
+              scene.add(g); registerPart(parts, 'omildirik', g, new T.Vector3(1.0, 0, 0), () => new T.Vector3(2.7, 0.0, 0.7)); }
+            // құйысқан — от задней луки к корню хвоста
+            { const g = new T.Group(); g.add(strap([new T.Vector3(-0.9, 1.3, 0), new T.Vector3(-2.0, 1.32, 0), new T.Vector3(-2.75, 1.15, 0)], 0.045));
+              [1, -1].forEach(sd => g.add(strap([new T.Vector3(-2.0, 1.3, 0), new T.Vector3(-2.4, 0.6, sd * 0.85), new T.Vector3(-1.8, -0.2, sd * 1.05)], 0.035)));
+              const r = new T.Mesh(new T.TorusGeometry(0.18, 0.045, 8, 24), leather); r.position.set(-2.92, 1.08, 0); r.rotation.y = Math.PI / 2; g.add(r);
+              scene.add(g); registerPart(parts, 'quiysqan', g, new T.Vector3(-1.2, 0.3, 0), () => new T.Vector3(-2.3, 1.32, 0)); }
+            const floor = rugFloor(T, scene, GY, 9, 12); const felt = scene.children[scene.children.length - 2];
+            look.shadows();
+            S.st.phi = 1.3; S.st.theta = 0.35;
             return { parts };
         }
 
@@ -6636,7 +6659,7 @@
         }
 
         function SaddleAtlas() {
-            return <AnatomyViewer PARTS={SADDLE_PARTS} scene={buildSaddle} opts={{ distance: 12, target: [0, 0.6, 0], minDist: 5, maxDist: 25 }}
+            return <AnatomyViewer PARTS={SADDLE_PARTS} scene={buildSaddle} opts={{ distance: 15, target: [0.3, 0.2, 0], minDist: 5, maxDist: 30 }}
                 intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Ер-тұрман</b> — полное снаряжение коня. «Ат — ердің қанаты» (конь — крылья джигита). Разберите седло ползунком, чтобы увидеть каждую часть.</p>} />;
         }
 
