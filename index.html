@@ -4449,25 +4449,27 @@
 
             const el = renderer.domElement;
             const ptrs = new Map(); let pinch0 = 0, moved = 0, idle = 0;
-            const down = e => { el.setPointerCapture?.(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button, sh: e.shiftKey }); moved = 0; st.fly = null; idle = 0;
-                if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); } };
+            // жесты: 1 палец — вращение (с инерцией), 2 пальца — щипок = масштаб, сдвиг середины = перемещение
+            let mid0 = null, vel = { t: 0, p: 0 };
+            const two = () => { const [a, b] = [...ptrs.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+            const pan = (dx, dy) => { const k = st.dist * 0.0016 * (innerWidth < 640 ? 1.4 : 1);
+                st.target.addScaledVector(new T.Vector3().setFromMatrixColumn(camera.matrix, 0), -dx * k).addScaledVector(new T.Vector3().setFromMatrixColumn(camera.matrix, 1), dy * k); };
+            const down = e => { try { el.setPointerCapture?.(e.pointerId); } catch {} ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button, sh: e.shiftKey }); if (ptrs.size === 1) moved = 0; st.fly = null; idle = 0; vel = { t: 0, p: 0 };
+                if (ptrs.size === 2) { const m = two(); pinch0 = m.d; mid0 = m; } };
             const move = e => {
                 const p = ptrs.get(e.pointerId); if (!p) return;
                 const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy);
-                if (ptrs.size === 2) {
-                    p.x = e.clientX; p.y = e.clientY;
-                    const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-                    if (pinch0) st.dist *= pinch0 / d; pinch0 = d; apply(); return;
-                }
                 p.x = e.clientX; p.y = e.clientY;
-                if ((p.b === 2 || p.sh) !== panPrimary) { // панорама
-                    const k = st.dist * 0.0016;
-                    const right = new T.Vector3().setFromMatrixColumn(camera.matrix, 0);
-                    st.target.addScaledVector(right, -dx * k); st.target.y += dy * k;
-                } else { st.theta -= dx * 0.006; st.phi -= dy * 0.006; }
+                if (ptrs.size >= 2) {
+                    const m = two();
+                    if (pinch0 && m.d > 10) st.dist *= pinch0 / m.d; pinch0 = m.d;
+                    if (mid0) pan(m.x - mid0.x, m.y - mid0.y); mid0 = m; moved += 10; apply(); return;
+                }
+                if ((p.b === 2 || p.sh) !== panPrimary) pan(dx, dy);
+                else { const s = innerWidth < 640 ? 0.009 : 0.006; st.theta -= dx * s; st.phi -= dy * s; vel = { t: -dx * s, p: -dy * s }; }
                 apply();
             };
-            const up = e => { ptrs.delete(e.pointerId); pinch0 = 0; };
+            const up = e => { ptrs.delete(e.pointerId); pinch0 = 0; mid0 = null; if (ptrs.size === 1) vel = { t: 0, p: 0 }; };
             const wheel = e => { e.preventDefault(); st.fly = null; st.dist *= Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0012)); apply(); };
             el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
             el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
@@ -4488,6 +4490,7 @@
                     st.target.lerpVectors(f.from, f.to, k); st.dist = f.d0 + (f.d1 - f.d0) * k;
                     if (f.t >= 1) st.fly = null;
                 }
+                if (ptrs.size === 0 && (Math.abs(vel.t) + Math.abs(vel.p) > 0.0002)) { st.theta += vel.t; st.phi += vel.p; vel.t *= 0.92; vel.p *= 0.92; idle = 0; }
                 if (st.auto && ptrs.size === 0 && idle > 2.5) st.theta += dt * 0.12;
                 apply();
                 frameCbs.forEach(cb => cb(dt, now / 1000));
@@ -4517,6 +4520,7 @@
                 onFrame: cb => frameCbs.push(cb),
                 flyTo: (pos, d1 = st.dist, dur = 1.2) => { st.fly = { from: st.target.clone(), to: pos.clone(), d0: st.dist, d1, t: 0, dur }; idle = 0; },
                 setAuto: v => { st.auto = v; },
+                zoom: k => { st.fly = null; st.dist *= k; apply(); },
                 dispose: () => {
                     alive = false; cancelAnimationFrame(raf); ro.disconnect(); host?.removeEventListener('wheel', hostWheel); host?.removeEventListener('gesturestart', noGesture);
                     scene.traverse(o => { o.geometry?.dispose?.(); const m = o.material; (Array.isArray(m) ? m : m ? [m] : []).forEach(mm => { mm.map?.dispose?.(); mm.dispose?.(); }); });
@@ -4671,6 +4675,18 @@
             const [labels, setLabels] = useState(true);
             const [q, setQ] = useState('');
             const me = (() => { try { return localStorage.getItem('shejire_user'); } catch { return null; } })();
+            const [mob, setMob] = useState(() => innerWidth < 768);
+            useEffect(() => { const r = () => setMob(innerWidth < 768); addEventListener('resize', r); return () => removeEventListener('resize', r); }, []);
+            const [hint, setHint] = useState(1);
+            useEffect(() => { const a = setTimeout(() => setHint(2), 4500), b = setTimeout(() => setHint(0), 5300); return () => { clearTimeout(a); clearTimeout(b); }; }, []);
+            const toolbar = <>
+                {me && <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.byId?.(me)}>👤 Мен</button>}
+                <button className={btn3d} style={btnStyle(auto)} onClick={() => setAuto(a => !a)}>⟳ Айналу</button>
+                <button className={btn3d} style={btnStyle(labels)} onClick={() => setLabels(l => !l)}>Aa Атаулар</button>
+                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.expandAll?.()}>⊕ Барлығын ашу</button>
+                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.collapse?.()}>⊖ Жинау</button>
+                <button className={btn3d} style={btnStyle(false)} onClick={onClassic}>▤ 2D</button>
+            </>;
 
             const err = useThree(mountRef, {
                 opts: { distance: 46, target: [0, -6, 0], maxDist: 220, minDist: 3, autoRotate: false, fog: false },
@@ -4821,31 +4837,33 @@
                     <div ref={mountRef} className="absolute inset-0" />
                     {err && <div className="absolute inset-0 flex items-center justify-center text-[#C5A55A] text-sm p-8 text-center">{err}</div>}
 
-                    {/* верх */}
+                    {/* верх: заголовок и поиск */}
                     <div className="absolute top-0 inset-x-0 p-4 md:p-6 flex flex-wrap items-start justify-between gap-3 pointer-events-none">
                         <div className="pointer-events-auto">
-                            <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-3 block">← Назад</button>
+                            <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-2 md:mb-3 block">← Назад</button>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D · БӘЙТЕРЕК</p>
-                            <h2 className="text-3xl md:text-5xl font-serif text-white">Шежіре ағашы</h2>
-                            <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін — жоғарыдан төмен, бұтақтар спиральмен тарайды. Есімді басыңыз — ұрпақтары ашылады. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, Shift — жылжыту.</p>
+                            <h2 className="font-serif text-white" style={{ fontSize: mob ? 26 : 48, lineHeight: 1.1 }}>Шежіре ағашы</h2>
+                            {!mob && <p className="text-[#666] text-[11px] mt-1 max-w-xs">Алаштан бүгінге дейін — жоғарыдан төмен. Есімді басыңыз — ұрпақтары ашылады. Тартып айналдырыңыз, дөңгелекпен жақындатыңыз, Shift/оң батырма — жылжыту.</p>}
                         </div>
-                        <div className="pointer-events-auto flex flex-col items-end gap-2 mr-40">
-                            <form onSubmit={e => { e.preventDefault(); if (!api.current.find?.(q)) setHover({ name: 'Табылмады · Не найдено', x: 20, y: 120 }); }} className="flex gap-2">
+                        <div className="pointer-events-auto flex flex-col items-end gap-2" style={{ marginRight: mob ? 0 : 160, marginTop: mob ? 52 : 0, width: mob ? '100%' : 'auto' }}>
+                            <form onSubmit={e => { e.preventDefault(); if (!api.current.find?.(q)) setHover({ name: 'Табылмады · Не найдено', x: 20, y: 160 }); }} className="flex gap-2" style={{ width: mob ? '100%' : 'auto' }}>
                                 <input value={q} onChange={e => setQ(e.target.value)} placeholder="Атын іздеу · Поиск"
-                                    className="bg-[#0d0d0dcc] border border-[#2a2a2a] focus:border-[#C5A55A] rounded-full px-4 py-2 text-xs text-white outline-none w-44" />
+                                    className="bg-[#0d0d0dcc] border border-[#2a2a2a] focus:border-[#C5A55A] rounded-full px-4 py-2 text-xs text-white outline-none" style={{ flex: mob ? 1 : 'none', width: mob ? 'auto' : 176 }} />
                                 <button className={btn3d} style={btnStyle(false)}>⌕</button>
                             </form>
-                            <div className="flex flex-wrap justify-end gap-2">
-                                {me && <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.byId?.(me)}>👤 Мен</button>}
-                                <button className={btn3d} style={btnStyle(auto)} onClick={() => setAuto(a => !a)}>⟳ Айналу</button>
-                                <button className={btn3d} style={btnStyle(labels)} onClick={() => setLabels(l => !l)}>Aa Атаулар</button>
-                                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.expandAll?.()}>⊕ Барлығын ашу</button>
-                                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.collapse?.()}>⊖ Жинау</button>
-                                <button className={btn3d} style={btnStyle(false)} onClick={() => api.current.reset?.()}>⌂ Басы</button>
-                                <button className={btn3d} style={btnStyle(false)} onClick={onClassic}>▤ 2D</button>
-                            </div>
+                            {!mob && <div className="flex flex-wrap justify-end gap-2">{toolbar}</div>}
                         </div>
                     </div>
+
+                    {/* мобильный: панель инструментов снизу, кнопки масштаба справа */}
+                    {mob && <div className="absolute z-10 flex gap-2 overflow-x-auto" style={{ left: 84, right: 12, bottom: 'calc(14px + env(safe-area-inset-bottom))', paddingBottom: 2, scrollbarWidth: 'none' }}>{toolbar}</div>}
+                    <div className="absolute z-10 flex flex-col gap-2" style={{ right: 12, top: mob ? '42%' : '50%', transform: 'translateY(-50%)', display: mob && sel ? 'none' : 'flex' }}>
+                        {[['＋', () => stageRef.current?.zoom(0.75)], ['－', () => stageRef.current?.zoom(1.33)], ['⌂', () => api.current.reset?.()]].map(([l, f]) =>
+                            <button key={l} onClick={f} className="w-11 h-11 rounded-full text-lg flex items-center justify-center active:scale-90 transition" style={{ background: 'rgba(8,8,8,.75)', border: '1px solid rgba(197,165,90,.4)', color: '#E8C66A', backdropFilter: 'blur(6px)' }}>{l}</button>)}
+                    </div>
+                    {hint > 0 && <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none px-4 py-2 rounded-full text-[11px] text-[#E8D5A0] text-center transition-opacity duration-700"
+                        style={{ top: mob ? '58%' : 'auto', bottom: mob ? 'auto' : 28, background: 'rgba(8,8,8,.8)', border: '1px solid rgba(197,165,90,.3)', opacity: hint === 2 ? 0 : 1, whiteSpace: 'nowrap', transform: 'translateX(-50%)' }}>
+                        {mob ? '☝ айналдыру · ✌ жақындату және жылжыту' : '🖱 айналдыру · дөңгелек — масштаб · оң батырма — жылжыту'}</div>}
 
                     {hover && !sel && <div className="absolute pointer-events-none px-3 py-1 rounded-full text-[11px] text-black font-semibold"
                         style={{ left: hover.x + 14, top: hover.y + 14, background: '#C5A55A' }}>{hover.name}</div>}
