@@ -306,6 +306,115 @@
 </head>
 
 <body>
+    <!-- ══ Заставка: 3D-монета TAMĠA пока загружается сайт ══ -->
+    <style>
+        #splash { position: fixed; inset: 0; z-index: 9999; background: radial-gradient(ellipse at 50% 42%, #14110a 0%, #07070a 55%, #040406 100%); color: #f3ead2; overflow: hidden; transition: opacity .9s ease, visibility .9s; font-family: 'Cinzel', Georgia, serif; }
+        #splash.hide { opacity: 0; visibility: hidden; }
+        #splash::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px); pointer-events: none; }
+        #splash .cr { position: absolute; width: 38px; height: 38px; border: 0 solid rgba(197,165,90,.5); }
+        #splash .tl { top: 22px; left: 22px; border-top-width: 2px; border-left-width: 2px; } #splash .tr { top: 22px; right: 22px; border-top-width: 2px; border-right-width: 2px; }
+        #splash .bl { bottom: 22px; left: 22px; border-bottom-width: 2px; border-left-width: 2px; } #splash .br { bottom: 22px; right: 22px; border-bottom-width: 2px; border-right-width: 2px; }
+        #splash .ver { position: absolute; top: 40px; left: 44px; font: 500 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .45em; color: rgba(197,165,90,.6); }
+        #splash .ver2 { position: absolute; top: 40px; right: 44px; font: 500 9px/1 ui-monospace, Menlo, monospace; letter-spacing: .4em; color: rgba(94,234,212,.45); }
+        #splash .stage { position: absolute; left: 50%; top: 40%; width: min(78vw, 400px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+        #splash canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #splash .orb { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(197,165,90,.22); animation: spl-rot linear infinite; }
+        #splash .orb i { position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #E8C66A; box-shadow: 0 0 12px #E8C66A; }
+        #splash .orb.t { border-color: rgba(56,189,248,.18); } #splash .orb.t i { background: #22d3ee; box-shadow: 0 0 12px #22d3ee; }
+        #splash .o1 { inset: 0; animation-duration: 18s; } #splash .o2 { inset: 9%; animation-duration: 12s; animation-direction: reverse; } #splash .o3 { inset: 18%; animation-duration: 8s; }
+        #splash .o1 b { position: absolute; bottom: 14%; left: 8%; width: 5px; height: 5px; border-radius: 50%; background: rgba(197,165,90,.7); }
+        #splash .o2 b { position: absolute; bottom: 20%; right: 4%; width: 5px; height: 5px; border-radius: 50%; background: rgba(34,211,238,.6); }
+        @keyframes spl-rot { to { transform: rotate(360deg); } }
+        #splash .title { position: absolute; left: 0; right: 0; top: calc(40% + min(39vw, 200px) + 28px); text-align: center; }
+        #splash h1 { margin: 0; font: 700 clamp(34px, 9vw, 58px)/1 'Cinzel', Georgia, serif; letter-spacing: .55em; padding-left: .55em; color: #f6eedb; text-shadow: 0 0 30px rgba(197,165,90,.25); }
+        #splash .sub { margin-top: 18px; font: 500 clamp(9px, 2.6vw, 12px)/1 ui-monospace, Menlo, monospace; letter-spacing: .5em; padding-left: .5em; color: #C5A55A; }
+        #splash .bar { width: min(66vw, 340px); height: 2px; margin: 34px auto 0; background: rgba(197,165,90,.14); border-radius: 2px; overflow: hidden; }
+        #splash .bar div { height: 100%; width: 0; background: linear-gradient(90deg, #C5A55A, #22d3ee 55%, #E8C66A); box-shadow: 0 0 10px rgba(34,211,238,.5); transition: width .3s ease; }
+        #splash .st { margin-top: 18px; font: 500 clamp(8px, 2.3vw, 10px)/1 ui-monospace, Menlo, monospace; letter-spacing: .42em; padding-left: .42em; color: #6b6458; min-height: 12px; }
+        #splash .skip { position: absolute; bottom: 44px; left: 0; right: 0; text-align: center; font: 500 9px/1 ui-monospace, monospace; letter-spacing: .4em; color: rgba(197,165,90,.35); }
+    </style>
+    <div id="splash" aria-label="TAMĠA жүктелуде">
+        <span class="cr tl"></span><span class="cr tr"></span><span class="cr bl"></span><span class="cr br"></span>
+        <div class="ver">V 2 . 0</div><div class="ver2">ШЕЖІРЕ · AI</div>
+        <div class="stage">
+            <div class="orb o1"><i></i><b></b></div><div class="orb t o2"><i></i><b></b></div><div class="orb o3"><i></i></div>
+            <canvas id="splashCoin"></canvas>
+        </div>
+        <div class="title">
+            <h1>TAMĠA</h1>
+            <div class="sub">ШЕЖІРЕ · ТАМҒА · МҰРА</div>
+            <div class="bar"><div id="splashBar"></div></div>
+            <div class="st" id="splashSt">ТАМҒАЛАР ОЯНУДА ...</div>
+        </div>
+        <div class="skip" id="splashSkip"></div>
+    </div>
+    <script>
+    (function () {
+        var el = document.getElementById('splash'), bar = document.getElementById('splashBar'), stEl = document.getElementById('splashSt'), t0 = performance.now(), done = false, raf = 0;
+        var STEPS = ['ТАМҒАЛАР ОЯНУДА ...', 'АЛАШТАН БАСТАЛАДЫ ...', '28 644 ЕСІМ ЖҮКТЕЛУДЕ ...', 'ШЕЖІРЕ АҒАШЫ ӨСУДЕ ...', 'ЖЕТІ АТА ТЕКСЕРІЛУДЕ ...', 'ДАЙЫН'];
+        var TAMGAS = ['⩔', '⩚', '⋔', '⊓', '⧖', '⩝', '△', '⊼'];
+        function finish() { if (done) return; done = true; bar.style.width = '100%'; stEl.textContent = 'ДАЙЫН · ҚОШ КЕЛДІҢІЗ'; setTimeout(function () { el.classList.add('hide'); setTimeout(function () { cancelAnimationFrame(raf); el.remove(); }, 950); }, 450); }
+        el.addEventListener('click', function () { if (window.__appReady) finish(); });
+        var tick = setInterval(function () {
+            var k = (performance.now() - t0) / 1000, ready = !!window.__appReady, p = Math.min(ready ? 100 : 88, k / 3.2 * 100);
+            bar.style.width = p + '%'; stEl.textContent = STEPS[Math.min(STEPS.length - 2, Math.floor(k / 0.75))];
+            if (ready) document.getElementById('splashSkip').textContent = 'БАСЫҢЫЗ — ӨТКІЗІП ЖІБЕРУ';
+            if (ready && k > 3.2) { clearInterval(tick); finish(); }
+            if (k > 20) { clearInterval(tick); finish(); }
+        }, 120);
+        // ── 3D-монета ──
+        var T = window.THREE, cv = document.getElementById('splashCoin'); if (!T || !cv) return;
+        try {
+            var r = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); r.setPixelRatio(Math.min(2, devicePixelRatio || 1)); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.2;
+            var sc = new T.Scene(), cam = new T.PerspectiveCamera(32, 1, 0.1, 50); cam.position.set(0, 0, 8.4);
+            var pm = new T.PMREMGenerator(r), env = new T.Scene();
+            env.add(new T.Mesh(new T.SphereGeometry(50, 32, 16), new T.MeshBasicMaterial({ color: 0x0d0a06, side: T.BackSide })));
+            [[30, 8, 0, 22, 10, 0xfff3d6], [10, 30, -24, 0, 12, 0xffe1a8], [8, 24, 26, 4, -6, 0x9fe8ff], [40, 6, 0, -20, -10, 0x6b4a1e], [6, 6, 10, 10, 30, 0xffffff]].forEach(function (b) { var m = new T.Mesh(new T.PlaneGeometry(b[0], b[1]), new T.MeshBasicMaterial({ color: b[5], side: T.DoubleSide })); m.position.set(b[2], b[3], b[4]); m.lookAt(0, 0, 0); env.add(m); });
+            sc.environment = pm.fromScene(env, 0.04).texture;
+            sc.add(new T.AmbientLight(0xffffff, 0.25)); var key = new T.DirectionalLight(0xfff1d0, 0.7); key.position.set(4, 6, 8); sc.add(key);
+            function face(mode, glyph, back) {
+                var S = 1024, c = document.createElement('canvas'); c.width = c.height = S; var g = c.getContext('2d'), C = S / 2;
+                var hi = mode === 'h' ? '#fff' : mode === 'r' ? '#3a3a3a' : '#fff1c0', lo = mode === 'h' ? '#000' : mode === 'r' ? '#9a9a9a' : '#b98a2e';
+                g.fillStyle = lo; g.fillRect(0, 0, S, S);
+                if (mode === 'c') { var gr = g.createRadialGradient(C * .8, C * .7, 40, C, C, C); gr.addColorStop(0, '#e2bc63'); gr.addColorStop(1, '#a87a22'); g.fillStyle = gr; g.fillRect(0, 0, S, S); }
+                g.fillStyle = hi; g.strokeStyle = hi; g.lineWidth = 30; g.beginPath(); g.arc(C, C, 494, 0, 6.2832); g.stroke();
+                for (var k = 0; k < 96; k++) { var a = k / 96 * 6.2832; g.beginPath(); g.arc(C + Math.cos(a) * 458, C + Math.sin(a) * 458, 7, 0, 6.2832); g.fill(); }
+                g.lineWidth = 6; g.beginPath(); g.arc(C, C, 352, 0, 6.2832); g.stroke(); g.lineWidth = 3; g.beginPath(); g.arc(C, C, 340, 0, 6.2832); g.stroke();
+                function curved(txt, rad, size, bottom) { g.font = '700 ' + size + 'px Cinzel, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; var ch = Array.from(txt), w = ch.map(function (x) { return g.measureText(x).width + size * .12; }), tot = w.reduce(function (s, x) { return s + x; }, 0), dir = bottom ? -1 : 1, a = (bottom ? Math.PI / 2 : -Math.PI / 2) - dir * tot / rad / 2;
+                    ch.forEach(function (x, i) { a += dir * w[i] / rad / 2; g.save(); g.translate(C + Math.cos(a) * rad, C + Math.sin(a) * rad); g.rotate(a + (bottom ? -Math.PI / 2 : Math.PI / 2)); g.fillText(x, 0, 0); g.restore(); a += dir * w[i] / rad / 2; }); }
+                if (!back) { curved('TAMĠA', 402, 64); curved('ШЕЖІРЕ · ҚАЗАҚ ЕЛІ', 402, 40, true);
+                    g.lineWidth = 9; g.lineCap = 'round'; for (var q = 0; q < 4; q++) { g.save(); g.translate(C, C); g.rotate(q * Math.PI / 2 + Math.PI / 4); g.translate(0, -272); g.beginPath(); g.moveTo(0, 30); g.lineTo(0, 0); g.bezierCurveTo(0, -42, -46, -42, -40, -6); g.moveTo(0, 0); g.bezierCurveTo(0, -42, 46, -42, 40, -6); g.stroke(); g.restore(); }
+                    g.font = '400 330px Cinzel, "Segoe UI Symbol", "Noto Sans Symbols 2", serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, C, C - 10);
+                } else { curved('АЛАШ · ҮШ ЖҮЗ', 402, 50); curved('SOULBOUND · 2026', 402, 38, true);
+                    g.font = '400 40px Cinzel, "Segoe UI Symbol", serif'; TAMGAS.concat(TAMGAS).concat(TAMGAS).forEach(function (t, k, arr) { var a = k / arr.length * 6.2832 - Math.PI / 2; g.save(); g.translate(C + Math.cos(a) * 296, C + Math.sin(a) * 296); g.rotate(a + Math.PI / 2); g.fillText(t, 0, 0); g.restore(); });
+                    g.lineWidth = 16; g.beginPath(); g.arc(C, C, 110, 0, 6.2832); g.stroke(); g.lineWidth = 9;
+                    [-1, 1].forEach(function (sx) { [-38, 0, 38].forEach(function (o) { g.beginPath(); g.moveTo(C + o - 74 * sx, C - 80); g.quadraticCurveTo(C + o + sx * 8, C - 20 * sx, C + o + 74 * sx, C + 80); g.stroke(); }); });
+                    for (var j = 0; j < 20; j++) { var b2 = j / 20 * 6.2832; g.lineWidth = 6; g.beginPath(); g.moveTo(C + Math.cos(b2) * 120, C + Math.sin(b2) * 120); g.lineTo(C + Math.cos(b2) * 160, C + Math.sin(b2) * 160); g.stroke(); } }
+                var t = new T.CanvasTexture(c); t.center.set(.5, .5); t.rotation = Math.PI / 2; t.anisotropy = 8; if (mode === 'c') t.encoding = T.sRGBEncoding; return t;
+            }
+            function mat(glyph, back) { return new T.MeshStandardMaterial({ map: face('c', glyph, back), bumpMap: face('h', glyph, back), roughnessMap: face('r', glyph, back), bumpScale: .045, metalness: 1, roughness: 1, envMapIntensity: 1.3 }); }
+            var kn = document.createElement('canvas'); kn.width = 1024; kn.height = 16; var kg = kn.getContext('2d'); for (var x = 0; x < 1024; x += 8) { kg.fillStyle = '#fff'; kg.fillRect(x, 0, 4, 16); kg.fillStyle = '#000'; kg.fillRect(x + 4, 0, 4, 16); }
+            var kt = new T.CanvasTexture(kn); kt.wrapS = T.RepeatWrapping; kt.repeat.x = 3;
+            var rim = new T.MeshStandardMaterial({ color: 0xd9ad4f, metalness: 1, roughness: .32, bumpMap: kt, bumpScale: .02, envMapIntensity: 1.3 });
+            var ti = 0, front = mat(TAMGAS[0]), back = mat('', true);
+            var coin = new T.Group(), body = new T.Mesh(new T.CylinderGeometry(2, 2, .26, 160), [rim, front, back]); body.rotation.x = Math.PI / 2; coin.add(body); sc.add(coin);
+            [.13, -.13].forEach(function (z) { var b = new T.Mesh(new T.TorusGeometry(1.99, .035, 12, 160), rim); b.position.z = z; coin.add(b); });
+            var shine = new T.PointLight(0xfff2c8, 0, 9); sc.add(shine);
+            var lastSide = 1;
+            function size() { var w = cv.clientWidth || 300; r.setSize(w, w, false); }
+            size(); addEventListener('resize', size);
+            document.fonts && document.fonts.ready.then(function () { front.map = face('c', TAMGAS[ti]); front.bumpMap = face('h', TAMGAS[ti]); front.roughnessMap = face('r', TAMGAS[ti]); front.needsUpdate = true; back.map = face('c', '', true); back.bumpMap = face('h', '', true); back.roughnessMap = face('r', '', true); back.needsUpdate = true; });
+            (function loop(now) {
+                var t = now / 1000, e = Math.min(1, t / 1.4), s = 1 - Math.pow(1 - e, 3);
+                coin.scale.setScalar(.2 + .8 * s); coin.rotation.y = t * 0.9 + (1 - s) * 6; coin.rotation.x = Math.sin(t * .7) * .12; coin.position.y = Math.sin(t * 1.3) * .08;
+                // на каждом обороте меняем тамғу на лицевой стороне, пока она отвёрнута
+                var side = Math.cos(coin.rotation.y) > 0 ? 1 : -1; if (side !== lastSide) { lastSide = side; if (side < 0) { ti = (ti + 1) % TAMGAS.length; front.map.dispose(); front.bumpMap.dispose(); front.roughnessMap.dispose(); front.map = face('c', TAMGAS[ti]); front.bumpMap = face('h', TAMGAS[ti]); front.roughnessMap = face('r', TAMGAS[ti]); front.needsUpdate = true; } }
+                var sw = (t * .35) % 1; shine.position.set(-4 + sw * 8, 2 - sw * 4, 3.2); shine.intensity = Math.sin(sw * Math.PI) * 2.4;
+                r.render(sc, cam); if (!done || el.isConnected) raf = requestAnimationFrame(loop);
+            })(performance.now());
+        } catch (e) { console.warn('splash 3D', e); }
+    })();
+    </script>
     <div id="root"></div>
 
     <script type="text/babel">
@@ -8856,6 +8965,7 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+        requestAnimationFrame(() => requestAnimationFrame(() => { window.__appReady = true; }));
     </script>
 </body>
 
