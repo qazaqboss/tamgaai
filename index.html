@@ -6119,6 +6119,7 @@
         }
 
         function DombraKuiScreen({ onBack }) {
+            useEffect(() => SoundBus.hush(), []);
             const [si, setSi] = useState(0); const song = KUI_SONGS[si];
             const data = useMemo(() => kuiParse(song), [si]);
             const [playing, setPlaying] = useState(false); const [speed, setSpeed] = useState(1); const [active, setActive] = useState(-1);
@@ -6244,6 +6245,7 @@
 
         function DombraAtlas() {
             const [fret, setFret] = useState(0); const [real, setReal] = useState(true); const [kui, setKui] = useState(false);
+            useEffect(() => SoundBus.hush(), []);
             if (kui) return <DombraKuiScreen onBack={() => setKui(false)} />;
             return <AnatomyViewer key={real ? 'real' : 'sx'} PARTS={DOMBRA_PARTS} scene={real ? buildDombraGLB : buildDombra} opts={real ? { distance: innerWidth < 640 ? 21 : 12.5, target: innerWidth < 640 ? [0.6, 1.6, 0] : [0, 2.7, 0], minDist: 3, maxDist: 25, autoRotate: false } : { distance: 15, target: [0, 3.3, 0], minDist: 4, maxDist: 25, autoRotate: false }}
                 intro={<p className="text-[#999] text-xs">Домбыра — две струны, строй «кварта» (ре–соль). Нажмите на струну в 3D, выберите перне (лад) или включите наигрыш. Нажмите на подпись, чтобы узнать о части.</p>}
@@ -8679,18 +8681,20 @@
         const SoundBus = (() => {
             const music = new Audio(AUDIO_BASE + 'music/dala.mp3'); music.loop = true; music.preload = 'none'; music.volume = 0;
             const voice = new Audio(); voice.preload = 'auto';
-            let ctx = null, analyser = null, data = null, target = 0.32, fadeRaf = 0, wanted = false;
+            let ctx = null, analyser = null, data = null, target = 0.32, fadeRaf = 0, wanted = false, hushN = 0;
             const listeners = new Set(); const emit = () => listeners.forEach(f => f());
             const ensureCtx = () => { if (ctx) return; try { ctx = new (window.AudioContext || window.webkitAudioContext)(); const src = ctx.createMediaElementSource(voice);
                 analyser = ctx.createAnalyser(); analyser.fftSize = 512; data = new Uint8Array(analyser.fftSize); src.connect(analyser); analyser.connect(ctx.destination); } catch (e) { ctx = null; } };
-            const fadeTo = (v) => { cancelAnimationFrame(fadeRaf); const step = () => { const d = v - music.volume; if (Math.abs(d) < 0.01) { music.volume = v; if (v === 0 && !wanted) music.pause(); return; } music.volume = Math.max(0, Math.min(1, music.volume + Math.sign(d) * 0.012)); fadeRaf = requestAnimationFrame(step); }; step(); };
-            const duck = () => fadeTo(wanted ? (!voice.paused ? 0.08 : target) : 0);
+            const fadeTo = (v) => { cancelAnimationFrame(fadeRaf); const step = () => { const d = v - music.volume; if (Math.abs(d) < 0.01) { music.volume = v; if (v === 0 && (!wanted || hushN)) music.pause(); return; } music.volume = Math.max(0, Math.min(1, music.volume + Math.sign(d) * 0.012)); fadeRaf = requestAnimationFrame(step); }; step(); };
+            const duck = () => fadeTo(wanted && !hushN ? (!voice.paused ? 0.08 : target) : 0);
             voice.addEventListener('play', () => { duck(); emit(); }); voice.addEventListener('pause', () => { duck(); emit(); }); voice.addEventListener('ended', () => { duck(); emit(); });
             return {
                 music, voice, listeners,
                 get musicOn() { return wanted; },
                 setMusic(on) { wanted = on; try { localStorage.setItem('shejire_music', on ? 'on' : 'off'); } catch {}
                     if (on) { music.play().then(duck).catch(() => { wanted = false; emit(); }); } else fadeTo(0); emit(); },
+                // на экранах, где звучит своя музыка (домбыра), фон полностью затихает и возвращается после выхода
+                hush() { hushN++; duck(); return () => { hushN = Math.max(0, hushN - 1); if (wanted && !hushN && music.paused) music.play().catch(() => {}); duck(); }; },
                 playVoice(src) { ensureCtx(); ctx?.resume?.(); voice.src = src; voice.currentTime = 0; return voice.play(); },
                 level() { if (!analyser || voice.paused) return 0; analyser.getByteTimeDomainData(data); let s = 0; for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; s += v * v; } return Math.min(1, Math.sqrt(s / data.length) * 4); },
             };
