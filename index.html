@@ -8685,7 +8685,11 @@
             const listeners = new Set(); const emit = () => listeners.forEach(f => f());
             const ensureCtx = () => { if (ctx) return; try { ctx = new (window.AudioContext || window.webkitAudioContext)(); const src = ctx.createMediaElementSource(voice);
                 analyser = ctx.createAnalyser(); analyser.fftSize = 512; data = new Uint8Array(analyser.fftSize); src.connect(analyser); analyser.connect(ctx.destination); } catch (e) { ctx = null; } };
-            const fadeTo = (v) => { cancelAnimationFrame(fadeRaf); const step = () => { const d = v - music.volume; if (Math.abs(d) < 0.01) { music.volume = v; if (v === 0 && (!wanted || hushN)) music.pause(); return; } music.volume = Math.max(0, Math.min(1, music.volume + Math.sign(d) * 0.012)); fadeRaf = requestAnimationFrame(step); }; step(); };
+            // iPhone/iPad: громкость <audio> менять нельзя (Safari игнорирует .volume) — там только пауза/воспроизведение
+            const canVol = (() => { try { const a = new Audio(); a.volume = 0.5; return Math.abs(a.volume - 0.5) < 0.01 && !/iP(hone|ad|od)/.test(navigator.userAgent) && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); } catch { return false; } })();
+            const fadeTo = (v) => { cancelAnimationFrame(fadeRaf);
+                if (!canVol) { if (v < 0.1) music.pause(); else if (wanted && music.paused) music.play().catch(() => {}); return; }
+                const step = () => { const d = v - music.volume; if (Math.abs(d) < 0.01) { music.volume = v; if (v === 0 && (!wanted || hushN)) music.pause(); return; } music.volume = Math.max(0, Math.min(1, music.volume + Math.sign(d) * 0.012)); fadeRaf = requestAnimationFrame(step); }; step(); };
             const duck = () => fadeTo(wanted && !hushN ? (!voice.paused ? 0.08 : target) : 0);
             voice.addEventListener('play', () => { duck(); emit(); }); voice.addEventListener('pause', () => { duck(); emit(); }); voice.addEventListener('ended', () => { duck(); emit(); });
             return {
@@ -8694,7 +8698,7 @@
                 setMusic(on) { wanted = on; try { localStorage.setItem('shejire_music', on ? 'on' : 'off'); } catch {}
                     if (on) { music.play().then(duck).catch(() => { wanted = false; emit(); }); } else fadeTo(0); emit(); },
                 // на экранах, где звучит своя музыка (домбыра), фон полностью затихает и возвращается после выхода
-                hush() { hushN++; duck(); return () => { hushN = Math.max(0, hushN - 1); if (wanted && !hushN && music.paused) music.play().catch(() => {}); duck(); }; },
+                hush() { hushN++; cancelAnimationFrame(fadeRaf); music.pause(); duck(); return () => { hushN = Math.max(0, hushN - 1); if (wanted && !hushN && music.paused) music.play().catch(() => {}); duck(); }; },
                 playVoice(src) { ensureCtx(); ctx?.resume?.(); voice.src = src; voice.currentTime = 0; return voice.play(); },
                 level() { if (!analyser || voice.paused) return 0; analyser.getByteTimeDomainData(data); let s = 0; for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; s += v * v; } return Math.min(1, Math.sqrt(s / data.length) * 4); },
             };
