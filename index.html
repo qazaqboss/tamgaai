@@ -3019,11 +3019,13 @@
             dna: false,
             createdAt: new Date().toISOString(),
         };
+        // пароли не хранятся в коде — только SHA-256 хэш «tamga:логин:пароль»
+        const sha256hex = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); };
         const CABINET_USERS = {
-            aset:  { login: 'aset',  pass: 'aset2026',  profile: ASET_PROFILE  },
-            arsen: { login: 'arsen', pass: 'arsen2026', profile: ARSEN_PROFILE },
-            ermek: { login: 'ermek', pass: 'ermek2026', profile: ERMEK_PROFILE },
-            erken: { login: 'erken', pass: 'erken2026', profile: ERKEN_PROFILE },
+            aset:  { login: 'aset',  passHash: '050189f726e60f8336efc66e08dc9e9b24ead684f6b954746f168368cf0348ff',  profile: ASET_PROFILE  },
+            arsen: { login: 'arsen', passHash: '7bf4f6704ec7e63d7d980e0736b0e6593db655ac84ecbe487691b6fc6edecfc2', profile: ARSEN_PROFILE },
+            ermek: { login: 'ermek', passHash: '51cb312ce4eafbe1cb59a96e4afd2f0728b6d8ff7982b87861f70b33ee246bd8', profile: ERMEK_PROFILE },
+            erken: { login: 'erken', passHash: 'dbc85f508e50a7521b5706ca335572edef1a38a1ce39c1779d8bf37301475177', profile: ERKEN_PROFILE },
         };
 
         const MOCK_TOKENS = [
@@ -3163,6 +3165,86 @@
             );
         }
 
+        // ═══════════ МЕНІҢ ОТБАСЫМ: данные семьи вводятся прямо на сайте и хранятся только на этом устройстве ═══════════
+        function findParentOf(n, id, p = null) { if (n.id === id) return p; for (const c of n.children || []) { const r = findParentOf(c, id, n); if (r) return r; } return null; }
+        // вшиваем семью из профиля в общее древо: я и братья — дети отца, у каждого свои дети
+        function applyFamily() {
+            let login = null, prof = null; try { login = localStorage.getItem('shejire_user'); prof = login && JSON.parse(localStorage.getItem('shejire_profile_' + login) || 'null'); } catch {}
+            if (!login || !prof?.family?.length) return;
+            const meNode = findNodeById(TREE_DATA, login), father = meNode && findParentOf(TREE_DATA, login); if (!meNode || !father) return;
+            const old = new Map((father.children || []).map(c => [c.name, c])), gen = meNode.gen || ((father.gen || 0) + 1);
+            father.children = prof.family.filter(f => f.name?.trim()).map((f, i) => {
+                const node = f.me ? meNode : (old.get(f.name) || { id: `${login}_b${i}`, isMainLine: false });
+                Object.assign(node, { name: f.me ? (prof.name || meNode.name) : f.name.trim(), gen, label: f.me ? 'Мен' : (f.label || ''), highlight: true, year: f.year || undefined, note: f.note || undefined });
+                const kids = new Map((node.children || []).map(c => [c.name, c]));
+                node.children = (f.children || []).filter(c => c.name?.trim()).map((c, j) => Object.assign(kids.get(c.name) || { id: `${node.id}_c${j}` }, { name: c.name.trim(), gen: gen + 1, label: c.label || '', highlight: true, year: c.year || undefined, note: c.note || undefined }));
+                return node; });
+        }
+        function familyFromTree(login, name) {
+            const meNode = findNodeById(TREE_DATA, login), father = meNode && findParentOf(TREE_DATA, login);
+            const kids = n => (n.children || []).map(c => ({ name: c.name, label: c.label || '', year: c.year || '', note: c.note || '' }));
+            if (!meNode || !father) return [{ me: true, name, label: 'Мен', children: [] }];
+            return [meNode, ...(father.children || []).filter(c => c !== meNode)].map(c => ({ me: c === meNode, name: c === meNode ? (name || c.name) : c.name, label: c === meNode ? 'Мен' : (c.label || ''), year: c.year || '', note: c.note || '', children: kids(c) }));
+        }
+        const KIN = ['Ағам', 'Інім', 'Әпкем', 'Сіңлім', 'Қарындасым'], KID = ['Ұлым', 'Қызым', 'Тұңғыш ұлым', 'Кенже ұлым', 'Ұлы', 'Қызы'];
+        function FamilyEditor({ login, profile, onSaved }) {
+            const [fam, setFam] = useState(() => profile.family?.length ? profile.family : familyFromTree(login, profile.name));
+            const [msg, setMsg] = useState(''); const [dirty, setDirty] = useState(false); const fileRef = useRef(null);
+            const upd = (fn) => { setFam(f => { const c = JSON.parse(JSON.stringify(f)); fn(c); return c; }); setDirty(true); };
+            const save = () => { const clean = fam.map(f => ({ ...f, name: (f.name || '').trim(), children: (f.children || []).filter(c => c.name?.trim()) })).filter(f => f.me || f.name);
+                const p = { ...profile, family: clean, updatedAt: new Date().toISOString() };
+                try { localStorage.setItem('shejire_profile_' + login, JSON.stringify(p)); } catch (e) { setMsg('Сақталмады: жад толы · Не сохранено'); return; }
+                applyFamily(); setFam(clean); setDirty(false); onSaved?.(p); setMsg('✓ Сақталды · Сохранено на этом устройстве'); setTimeout(() => setMsg(''), 3500); };
+            const exportJson = () => { const b = new Blob([JSON.stringify({ app: 'tamgaai', v: 1, login, profile: { ...profile, family: fam } }, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `shejire_${login}_${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500); };
+            const importJson = (file) => { const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); const f = d.profile?.family || d.family; if (!Array.isArray(f)) throw 0;
+                    setFam(f.some(x => x.me) ? f : [{ me: true, name: profile.name, label: 'Мен', children: [] }, ...f]); setDirty(true); setMsg('Файл жүктелді — «Сақтау» басыңыз'); } catch { setMsg('Файл дұрыс емес · Неверный файл'); } }; r.readAsText(file); };
+            const inp = 'bg-[#0d0d0d] border border-[#222] focus:border-[#C5A55A] rounded-lg px-3 py-2 text-sm text-white outline-none min-w-0';
+            return (
+                <div className="space-y-5">
+                    <div className="rounded-2xl p-4 border border-[#4ade8030] text-xs text-[#9fd9b0] leading-relaxed" style={{ background: 'rgba(74,222,128,.05)' }}>
+                        🔒 Деректер тек осы құрылғыда сақталады — серверге, GitHub-қа немесе басқа адамдарға жіберілмейді.<br />
+                        <span className="text-[#6b8a74]">Данные хранятся только в этом браузере. Чтобы перенести на другой телефон или не потерять — скачайте резервную копию (JSON).</span>
+                    </div>
+                    {fam.map((m, i) => (
+                        <div key={i} className="glass-card rounded-2xl p-4 md:p-5" style={{ borderColor: m.me ? 'rgba(197,165,90,.6)' : undefined, transform: 'none' }}>
+                            <div className="flex flex-wrap gap-2 items-center mb-3">
+                                <span className="text-xl">{m.me ? '👤' : '🧑'}</span>
+                                {m.me ? <b className="font-serif text-xl text-[#F0D882] mr-2">{m.name} <span className="text-[10px] text-[#C5A55A] tracking-widest uppercase align-middle">· Мен</span></b>
+                                    : <>
+                                        <input className={inp} style={{ flex: '1 1 170px' }} placeholder="Аты · Имя" value={m.name} onChange={e => upd(f => { f[i].name = e.target.value; })} />
+                                        <input className={inp} style={{ width: 108 }} list="kinlist" placeholder="Кім? Інім" value={m.label || ''} onChange={e => upd(f => { f[i].label = e.target.value; })} />
+                                        <button onClick={() => { if (confirm(`«${m.name || '—'}» өшіру?`)) upd(f => { f.splice(i, 1); }); }} className="w-9 h-9 rounded-full border border-[#3a1a1a] text-[#c66]">✕</button>
+                                    </>}
+                                <input className={inp} style={{ width: 96 }} placeholder="Туған жылы" inputMode="numeric" value={m.year || ''} onChange={e => upd(f => { f[i].year = e.target.value.replace(/[^\d]/g, '').slice(0, 4); })} />
+                            </div>
+                            <input className={inp + ' w-full mb-3'} placeholder="Ескертпе · заметка (мамандығы, қайда тұрады...)" value={m.note || ''} onChange={e => upd(f => { f[i].note = e.target.value; })} />
+                            <p className="text-[#666] text-[10px] tracking-widest uppercase mb-2">Балалары · Дети</p>
+                            <div className="space-y-2">
+                                {(m.children || []).map((c, j) => (
+                                    <div key={j} className="flex flex-wrap gap-2 items-center pl-3 border-l border-[#C5A55A40]">
+                                        <input className={inp} style={{ flex: '1 1 170px' }} placeholder="Баланың аты" value={c.name} onChange={e => upd(f => { f[i].children[j].name = e.target.value; })} />
+                                        <input className={inp} style={{ width: 108 }} list="kidlist" placeholder="Ұлы / Қызы" value={c.label || ''} onChange={e => upd(f => { f[i].children[j].label = e.target.value; })} />
+                                        <input className={inp} style={{ width: 76 }} placeholder="Жылы" inputMode="numeric" value={c.year || ''} onChange={e => upd(f => { f[i].children[j].year = e.target.value.replace(/[^\d]/g, '').slice(0, 4); })} />
+                                        <button onClick={() => upd(f => { f[i].children.splice(j, 1); })} className="w-8 h-8 rounded-full border border-[#3a1a1a] text-[#c66] text-xs">✕</button>
+                                    </div>))}
+                            </div>
+                            <button onClick={() => upd(f => { (f[i].children = f[i].children || []).push({ name: '', label: '' }); })} className="mt-3 text-xs px-4 py-2 rounded-full border border-[#C5A55A60] text-[#C5A55A]">＋ Бала қосу · Добавить ребёнка</button>
+                        </div>))}
+                    <datalist id="kinlist">{KIN.map(k => <option key={k} value={k} />)}</datalist><datalist id="kidlist">{KID.map(k => <option key={k} value={k} />)}</datalist>
+                    <button onClick={() => upd(f => { f.push({ name: '', label: 'Інім', children: [] }); })} className="w-full py-3 rounded-2xl border border-dashed border-[#C5A55A60] text-[#C5A55A] text-sm">＋ Аға-іні / апа-сіңлі қосу · Добавить брата или сестру</button>
+                    <div className="sticky bottom-3 z-10 flex flex-wrap gap-2 items-center p-3 rounded-2xl border border-[#222]" style={{ background: 'rgba(8,8,8,.92)', backdropFilter: 'blur(8px)' }}>
+                        <button onClick={save} disabled={!dirty} className="px-6 py-3 rounded-full text-xs font-bold tracking-widest uppercase disabled:opacity-40" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>💾 Сақтау</button>
+                        <button onClick={exportJson} className="px-4 py-2.5 rounded-full text-xs border border-[#333] text-[#aaa]">⬇ Резерв көшірме</button>
+                        <button onClick={() => fileRef.current?.click()} className="px-4 py-2.5 rounded-full text-xs border border-[#333] text-[#aaa]">⬆ Файлдан жүктеу</button>
+                        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={e => e.target.files[0] && importJson(e.target.files[0])} />
+                        {msg && <span className="text-xs text-[#9fd9b0]">{msg}</span>}
+                        {dirty && !msg && <span className="text-xs text-[#d9a441]">Сақталмаған өзгерістер бар</span>}
+                    </div>
+                </div>
+            );
+        }
+
         function ProfileScreen({ onBack }) {
             // ── Login state ──
             const [loggedUser, setLoggedUser] = useState(() => localStorage.getItem('shejire_user') || null);
@@ -3201,8 +3283,10 @@
                 setProfile(p);
                 setLoggedUser(u.login);
             };
-            const doLogin = () => {
-                const u = Object.values(CABINET_USERS).find(u => u.login === loginForm.login.trim() && u.pass === loginForm.pass.trim());
+            const doLogin = async () => {
+                const l = loginForm.login.trim().toLowerCase(), cand = CABINET_USERS[l];
+                let ok = false; try { ok = !!cand && (await sha256hex(`tamga:${l}:${loginForm.pass.trim()}`)) === cand.passHash; } catch {}
+                const u = ok ? cand : null;
                 if (!u) { setLoginErr('Логин немесе пароль қате · Неверный логин или пароль'); return; }
                 enterCabinet(u);
                 setLoginErr('');
@@ -3270,22 +3354,7 @@
                             </div>
                         </div>
 
-                        <div className="text-center space-y-3">
-                            <p className="text-[#2a2a2a] text-[9px] tracking-widest uppercase">Немесе тікелей кіріңіз</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {Object.values(CABINET_USERS).map(u => (
-                                    <button key={u.login} onClick={() => enterCabinet(u)}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-xl border transition-all hover:border-[#C5A55A] hover:bg-[#C5A55A0A] text-left"
-                                        style={{borderColor:'#1a1a1a'}}>
-                                        <span className="text-xl">{TRIBES_DB[u.profile?.tribe]?.tamga || '⩔'}</span>
-                                        <div>
-                                            <p className="text-white text-sm font-semibold">{u.profile?.name}</p>
-                                            <p className="text-[#444] text-[9px] tracking-wide">{u.login} · {u.pass}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <p className="text-center text-[#555] text-[10px] leading-relaxed">🔒 Кабинет деректері тек осы құрылғыда сақталады.<br />Данные кабинета хранятся только на этом устройстве.</p>
                     </div>
                 </div>
             );
@@ -3476,6 +3545,7 @@
                     <div className="flex gap-2 mb-8 overflow-x-auto pb-1">
                         {[
                             { key: 'tree',   icon: '🌳', label: 'Шежіре ағашы' },
+                            { key: 'family', icon: '👨‍👩‍👦', label: 'Отбасым · ввести данные' },
                             { key: 'tokens', icon: '🪙', label: 'Токендер & NFT' },
                             { key: 'cert',   icon: '📜', label: 'Сертификат' },
                             { key: 'tribe',  icon: '⊕', label: 'Өз руым' },
@@ -3491,6 +3561,8 @@
                             </button>
                         ))}
                     </div>
+
+                    {tab === 'family' && <FamilyEditor login={loggedUser} profile={profile} onSaved={setProfile} />}
 
                     {/* ── Tab: Шежіре ── */}
                     {tab === 'tree' && (() => {
@@ -9278,6 +9350,7 @@
             );
         }
 
+        try { applyFamily(); } catch (e) { console.warn('family', e); }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
         requestAnimationFrame(() => requestAnimationFrame(() => { window.__appReady = true; }));
