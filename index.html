@@ -4893,7 +4893,7 @@
                         layout(); select(rec); };
                     const openPath = (rec) => { rec.path.slice(0, -1).forEach(n => expanded.add(n.id)); layout(); select(rec); };
                     S.onClick(e => { const h = S.pick(e, pickables); if (h) toggle(h.object.userData.rec); else select(null, false); });
-                    S.el.addEventListener('pointermove', e => { if (e.buttons) return;
+                    S.el.addEventListener('pointermove', e => { if (e.buttons || e.pointerType !== 'mouse') return;
                         const h = S.pick(e, pickables); S.el.style.cursor = h ? 'pointer' : 'grab';
                         setHover(h ? { name: h.object.userData.rec.n.name + (h.object.userData.rec.kids.length ? (expanded.has(h.object.userData.rec.n.id) ? '  ⊖' : `  ⊕ ${countDesc(h.object.userData.rec)}`) : ''), x: e.offsetX, y: e.offsetY } : null); });
                     api.current.find = (txt) => { const s = txt.trim().toLowerCase(); if (!s) return false;
@@ -4912,7 +4912,7 @@
             useEffect(() => { api.current.labels = labels; }, [labels]);
 
             return (
-                <div className="fixed inset-0 z-40 keep-dark" style={{ background: 'radial-gradient(ellipse at 50% 80%, #17130a 0%, #080808 60%)' }}>
+                <div className="fixed inset-0 z-40 keep-dark" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTapHighlightColor: 'transparent', background: 'radial-gradient(ellipse at 50% 80%, #17130a 0%, #080808 60%)' }}>
                     <div ref={mountRef} className="absolute inset-0" />
                     {err && <div className="absolute inset-0 flex items-center justify-center text-[#C5A55A] text-sm p-8 text-center">{err}</div>}
 
@@ -4940,11 +4940,11 @@
                         {[['＋', () => stageRef.current?.zoom(0.75)], ['－', () => stageRef.current?.zoom(1.33)], ['⌂', () => api.current.reset?.()]].map(([l, f]) =>
                             <button key={l} onClick={f} className="w-11 h-11 rounded-full text-lg flex items-center justify-center active:scale-90 transition" style={{ background: 'rgba(8,8,8,.75)', border: '1px solid rgba(197,165,90,.4)', color: '#E8C66A', backdropFilter: 'blur(6px)' }}>{l}</button>)}
                     </div>
-                    {hint > 0 && <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none px-4 py-2 rounded-full text-[11px] text-[#E8D5A0] text-center transition-opacity duration-700"
+                    {hint > 0 && !mob && <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none px-4 py-2 rounded-full text-[11px] text-[#E8D5A0] text-center transition-opacity duration-700"
                         style={{ top: mob ? '58%' : 'auto', bottom: mob ? 'auto' : 28, background: 'rgba(8,8,8,.8)', border: '1px solid rgba(197,165,90,.3)', opacity: hint === 2 ? 0 : 1, whiteSpace: 'nowrap', transform: 'translateX(-50%)' }}>
                         {mob ? '☝ айналдыру · ✌ жақындату және жылжыту' : '🖱 айналдыру · дөңгелек — масштаб · оң батырма — жылжыту'}</div>}
 
-                    {hover && !sel && <div className="absolute pointer-events-none px-3 py-1 rounded-full text-[11px] text-black font-semibold"
+                    {hover && !sel && !mob && <div className="absolute pointer-events-none px-3 py-1 rounded-full text-[11px] text-black font-semibold"
                         style={{ left: hover.x + 14, top: hover.y + 14, background: '#C5A55A' }}>{hover.name}</div>}
 
                     {/* легенда */}
@@ -4957,7 +4957,7 @@
                     </div>
 
                     {/* карточка выбранного */}
-                    {sel && (
+                    {sel && !mob && (
                         <div className="absolute right-4 bottom-24 w-[min(360px,calc(100vw-32px))] rounded-2xl p-px" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,0.5),rgba(139,105,20,0.1))' }}>
                             <div className="rounded-2xl p-5 max-h-[55vh] overflow-y-auto" style={{ background: 'rgba(10,10,10,0.94)', backdropFilter: 'blur(10px)' }}>
                                 <div className="flex justify-between items-start">
@@ -8838,7 +8838,7 @@
                         <AtaAvatar size={46} />
                         <span className="text-left hidden sm:block"><span className="block text-[#F0D882] text-sm font-serif leading-tight">Ата · гид</span><span className="block text-[#bfae80] text-[9px] tracking-widest uppercase">{playing ? 'әңгімелеп тұр…' : 'тыңдау'}</span></span>
                     </button>
-                    {hello && !open && <div className="fixed bottom-24 left-6 z-50 max-w-[240px] rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-[#2a1f0e]" style={{ background: '#F0D882', boxShadow: '0 10px 30px rgba(0,0,0,.4)', animation: 'nodeReveal .5s ease both' }}>
+                    {hello && !open && screen !== 'tree' && <div className="fixed bottom-24 left-6 z-50 max-w-[240px] rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-[#2a1f0e]" style={{ background: '#F0D882', boxShadow: '0 10px 30px rgba(0,0,0,.4)', animation: 'nodeReveal .5s ease both' }}>
                         Сәлем, балам! Мен — Ата. Казахские роды, тамги, обычаи — хочешь, расскажу? <button onClick={() => { setOpen(true); play('intro'); }} className="underline font-semibold ml-1">Тыңдау ▶</button></div>}
 
                     {/* панель */}
