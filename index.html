@@ -6179,21 +6179,54 @@
         // ═══════════ КҮЙ ОЙНАУ: ноты + табулатура Ү/А + 3D-домбыра с подсветкой перне ═══════════
         // Строй: астыңғы ішек (А) — ре (D3), үстіңгі ішек (Ү) — соль (G3). Номер в кружке — перне (полутон от открытой струны).
         const KUI_OPEN = { A: 50, U: 55 };
+        // Казахские пьесы в духе домбры (авторские, TAMĠA): ячейки — Q «қағыс» ↓↓↑, G «шабыс» (галоп) ↓↑↓, L — долгий удар, N — отдельная нота.
+        // [ячейка, перне А (астыңғы, ре), перне Ү (үстіңгі, соль)]; null — струна не звучит.
         const KUI_SONGS = [
+            { id: 'saryarqa', kk: 'Сарыарқа желі', by: 'Төкпе күй · TAMĠA', bpm: 120, meter: 4, cells: [
+                ['Q', 0, 0], ['Q', 0, 0], ['Q', 0, 2], ['Q', 0, 3], ['Q', 0, 5], ['Q', 0, 5], ['Q', 0, 3], ['Q', 0, 2],
+                ['Q', 0, 0], ['Q', 0, 0], ['Q', 2, 2], ['Q', 3, 3], ['Q', 5, 5], ['Q', 5, 5], ['Q', 3, 3], ['Q', 2, 2],
+                ['Q', 0, 7], ['Q', 0, 7], ['Q', 0, 8], ['Q', 0, 7], ['Q', 0, 5], ['Q', 0, 3], ['Q', 0, 2], ['Q', 0, 3],
+                ['Q', 0, 5], ['Q', 0, 3], ['Q', 0, 2], ['Q', 0, 0], ['Q', 2, 2], ['Q', 0, 0], ['L', 0, 0, 2]],
+              note: 'Батыс төкпе мәнері: ширақ қағыс ↓ ↓↑, оң қол үзіліссіз соғады, бурдон ішекте тұрақты дыбыс.' },
+            { id: 'dalatany', kk: 'Дала таңы', by: 'Шертпе күй · TAMĠA', bpm: 72, meter: 4, cells: [
+                ['N', 1, 0, 7, 'd'], ['N', .5, null, 8, 'u'], ['N', .5, null, 7, 'd'], ['N', 1, null, 5, 'd'], ['N', 1, 0, 3, 'd'],
+                ['N', 1.5, null, 5, 'd'], ['N', .5, null, 3, 'u'], ['N', 1, null, 2, 'd'], ['N', 1, 0, 0, 'd'],
+                ['N', 1, 0, 3, 'd'], ['N', .5, null, 5, 'u'], ['N', .5, null, 7, 'd'], ['N', 1, null, 10, 'd'], ['N', 1, 0, 7, 'd'],
+                ['N', 1, null, 8, 'd'], ['N', .5, null, 7, 'u'], ['N', .5, null, 5, 'd'], ['L', 0, 7, 2],
+                ['N', 1, 0, 5, 'd'], ['N', .5, null, 3, 'u'], ['N', .5, null, 2, 'd'], ['N', 1, null, 0, 'd'], ['N', 1, 2, 2, 'd'], ['L', 0, 0, 4]],
+              note: 'Шығыс шертпе мәнері: саусақпен жеке шертіледі, әуен баяу, ойлы — таң атып келе жатқан дала.' },
+            { id: 'baige', kk: 'Бәйге', by: 'Шабыс ырғағы · TAMĠA', bpm: 112, meter: 4, cells: [
+                ['G', 0, 0], ['G', 0, 0], ['G', 0, 5], ['G', 0, 5], ['G', 0, 7], ['G', 0, 7], ['G', 0, 5], ['G', 0, 3],
+                ['G', 2, 2], ['G', 3, 3], ['G', 5, 5], ['G', 7, 7], ['G', 5, 5], ['G', 3, 3], ['G', 2, 2], ['G', 0, 0],
+                ['G', 0, 10], ['G', 0, 8], ['G', 0, 7], ['G', 0, 5], ['G', 0, 7], ['G', 0, 5], ['G', 0, 3], ['G', 0, 2],
+                ['Q', 0, 0], ['Q', 0, 0], ['L', 0, 0, 2]],
+              note: 'Ат шабысы: ↓↑ ↓ — тұяқ дүбірі. Күйшілер жарыс атты осылай «суреттейді».' },
+            { id: 'aldi', kk: 'Әлди · бесік жыры', by: 'Бесік жыры әуенінде · TAMĠA', bpm: 84, meter: 3, cells: [
+                ['N', 1, 0, 5, 'd'], ['N', 1, null, 3, 'd'], ['N', 1, null, 5, 'd'], ['N', 1, 0, 7, 'd'], ['N', 2, null, 5, 'd'],
+                ['N', 1, 0, 3, 'd'], ['N', 1, null, 2, 'd'], ['N', 1, null, 3, 'd'], ['L', 0, 0, 3],
+                ['N', 1, 0, 5, 'd'], ['N', 1, null, 7, 'd'], ['N', 1, null, 8, 'd'], ['N', 1, 0, 7, 'd'], ['N', 2, null, 5, 'd'],
+                ['N', 1, 0, 3, 'd'], ['N', 1, null, 5, 'd'], ['N', 1, null, 2, 'd'], ['L', 0, 0, 3]],
+              note: '«Әлди-әлди, ақ бөпем» — тербеткендей үш өлшемді баяу ырғақ.' },
+            { id: 'qagys', kk: 'Қағыс · жаттығу', by: 'TAMĠA · жаттығу', bpm: 92, meter: 4, tr: 0, gen: 'qagys',
+              note: 'Күйшілердің негізгі тәсілі — «тақ-та-тұр» қағысы: ↓ ↓↑. Екі ішек бірге соғылады, әуен үстіңгі ішекте жүреді.' },
             { id: 'nokia', kk: 'Nokia (Gran Vals)', by: 'Франсиско Таррега', bpm: 132, meter: 3, tr: 1,
               src: 'E4:.5 D4:.5 F#3 G#3 | C#4:.5 B3:.5 D3 E3 | B3:.5 A3:.5 C#3 E3 | A3:3',
               note: 'Әлемдегі ең танымал телефон қоңырауы — испан гитарашысы Тарреганың «Gran Vals» вальсінен (1902).' },
-            { id: 'ode', kk: 'Қуаныш әні · Ode to Joy', by: 'Людвиг ван Бетховен', bpm: 104, meter: 4, tr: 0,
+            { id: 'ode', kk: 'Ode to Joy', by: 'Людвиг ван Бетховен', bpm: 104, meter: 4, tr: 0,
               src: 'F#3 F#3 G3 A3 | A3 G3 F#3 E3 | D3 D3 E3 F#3 | F#3:1.5 E3:.5 E3:2 | F#3 F#3 G3 A3 | A3 G3 F#3 E3 | D3 D3 E3 F#3 | E3:1.5 D3:.5 D3:2',
               note: '9-симфониядан. Бір ішекте ғана — бастауыштарға арналған алғашқы әуен.' },
-            { id: 'qagys', kk: 'Қағыс · домбыра этюды', by: 'TAMĠA · жаттығу', bpm: 92, meter: 4, tr: 0, gen: 'qagys',
-              note: 'Күйшілердің негізгі тәсілі — «тақ-та-тұр» қағысы: ↓ ↓↑. Екі ішек бірге соғылады, әуен үстіңгі ішекте жүреді.' },
         ];
         const KUI_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         function kuiParse(song) {
             const out = []; let t = 0;
             const midiOf = s => { const m = s.match(/^([A-G])([#b]?)(-?\d)$/); if (!m) return null; return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
             const place = (midi) => { while (midi < KUI_OPEN.A) midi += 12; return midi >= KUI_OPEN.U ? { s: 'U', f: midi - KUI_OPEN.U, midi } : { s: 'A', f: midi - KUI_OPEN.A, midi }; };
+            if (song.cells) { const ns = (a, u) => [...(a == null ? [] : [{ s: 'A', f: a, midi: KUI_OPEN.A + a }]), ...(u == null ? [] : [{ s: 'U', f: u, midi: KUI_OPEN.U + u }])];
+                const CELL = { Q: [[0.5, 'd'], [0.25, 'd'], [0.25, 'u']], G: [[0.25, 'd'], [0.25, 'u'], [0.5, 'd']] };
+                song.cells.forEach(c => { const [k] = c; let evs;
+                    if (CELL[k]) evs = CELL[k].map(([d, dir]) => [d, dir, c[1], c[2]]); else if (k === 'L') evs = [[c[3], 'd', c[1], c[2]]]; else evs = [[c[1], c[4] || 'd', c[2], c[3]]];
+                    evs.forEach(([d, dir, a, u]) => { const n = ns(a, u); out.push({ t, d, dir, ns: n, chord: n.length > 1 }); t += d; }); });
+                return { notes: out, len: t }; }
             if (song.gen === 'qagys') { // этюд: дрон на А, мелодия на Ү, затем параллельные кварты
                 const mel = [0, 2, 3, 5, 7, 5, 3, 2, 0, 2, 3, 2, 0, 0];
                 mel.forEach((f, i) => { const par = i >= 8 && i < 12; [[0.5, 'd'], [0.25, 'd'], [0.25, 'u']].forEach(([d, dir], k) => {
@@ -6254,7 +6287,7 @@
                 let raf, prev = performance.now();
                 const loop = (now) => { raf = requestAnimationFrame(loop); const dt = Math.min(0.05, (now - prev) / 1000); prev = now; const S = st.current;
                     if (S.playing) { const nb = S.b + dt * song.bpm / 60 * S.speed;
-                        data.notes.forEach((n, i) => { if (n.t > S.b && n.t <= nb) { n.ns.forEach(x => pluck(440 * Math.pow(2, (x.midi - 69) / 12), { gain: n.chord ? 0.22 : 0.34, dur: Math.min(2.4, 0.6 + n.d * 1.2), bright: n.dir === 'u' ? 0.35 : 0.6 })); S.last = i; setActive(i); } });
+                        data.notes.forEach((n, i) => { if (n.t > S.b && n.t <= nb) { (n.dir === 'u' ? [...n.ns].reverse() : n.ns).forEach((x, q) => { const go = () => pluck(440 * Math.pow(2, (x.midi - 69) / 12), { gain: (n.chord ? 0.24 : 0.34) * (n.dir === 'u' ? 0.8 : 1), dur: Math.min(2.6, 0.7 + n.d * 1.3), bright: n.dir === 'u' ? 0.4 : 0.65 }); q ? setTimeout(go, 14) : go(); }); S.last = i; setActive(i); } });
                         S.b = nb; if (S.b > data.len + 1) { S.b = -1; S.last = -1; setActive(-1); } }
                     if (trackRef.current) trackRef.current.setAttribute('transform', `translate(${PX - S.b * PPB},0)`);
                     // кружки на грифе
@@ -6272,7 +6305,7 @@
             }, [data, PPB, PX]);
             // ── нотный стан и табулатура (одна SVG-лента, сдвигается) ──
             const GAP = 12, STAFF_B = 112, LANE_U = 176, LANE_A = 220;
-            const stepOf = m => { const o = Math.floor(m / 12) - 1, pc = m % 12, L = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6][pc]; return { step: o * 7 + L, acc: KUI_NAMES[pc].length > 1 }; };
+            const stepOf = m => { const o = Math.floor(m / 12) - 1, pc = m % 12, L = [0, 0, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6][pc]; return { step: o * 7 + L, acc: KUI_NAMES[pc].length > 1 ? (pc === 3 || pc === 10 ? '♭' : '♯') : '' }; };
             const yOf = step => STAFF_B - (step - 30) * GAP / 2;
             const COL = { U: '#E8A33D', A: '#5ec8d8' };
             const bars = []; for (let b = 0; b <= data.len; b += song.meter) bars.push(b);
@@ -6303,7 +6336,7 @@
                                             for (let s2 = 28; s2 >= step; s2 -= 2) ledg.push(s2); for (let s2 = 40; s2 <= step; s2 += 2) ledg.push(s2);
                                             return <g key={'n' + j}>
                                                 {ledg.map(s2 => <line key={s2} x1={x - 10} x2={x + 10} y1={yOf(s2)} y2={yOf(s2)} stroke="rgba(238,244,242,.5)" />)}
-                                                {acc && <text x={x - 20} y={y + 5} fontSize="15" fill="#eef4f2">♯</text>}
+                                                {acc && <text x={x - 20} y={y + 5} fontSize="15" fill="#eef4f2">{acc}</text>}
                                                 <ellipse cx={x} cy={y} rx="7" ry="5" transform={`rotate(-20 ${x} ${y})`} fill={hollow ? 'none' : on ? COL[nt.s] : '#eef4f2'} stroke={on ? COL[nt.s] : '#eef4f2'} strokeWidth={hollow ? 2 : 1} style={on ? { filter: `drop-shadow(0 0 6px ${COL[nt.s]})` } : null} />
                                                 {j === n.ns.length - 1 && n.d < 3 && <line x1={up ? x + 6.5 : x - 6.5} x2={up ? x + 6.5 : x - 6.5} y1={y} y2={up ? y - 34 : y + 34} stroke="#eef4f2" strokeWidth="1.4" />}
                                                 {j === n.ns.length - 1 && n.d <= 0.5 && <path d={up ? `M${x + 6.5},${y - 34} q 10,8 8,20` : `M${x - 6.5},${y + 34} q 10,-8 8,-20`} stroke="#eef4f2" fill="none" strokeWidth="2" />}
