@@ -2329,6 +2329,7 @@
             ];
             const filtered = tab === 'all' ? KAZAKH_FOOD : KAZAKH_FOOD.filter(f => f.category === tab);
             const dish = selected !== null ? KAZAKH_FOOD[selected] : null;
+            const [food3d, setFood3d] = useState('besbarmaq'); const f3Ref = useRef(null);
             return (
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-24 min-h-screen">
                     <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] transition-colors mb-12 flex items-center gap-2 text-[10px] tracking-widest">
@@ -2347,6 +2348,10 @@
                                 <span>{c.icon}</span>{c.label}
                             </button>
                         ))}
+                    </div>
+                    <div ref={f3Ref} className="scroll-mt-6">
+                        <p className="text-center text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-3">◈ 3D АСХАНА · ДАЙЫНДАУ</p>
+                        <Food3D initial={food3d} />
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {filtered.map((f, idx) => (
@@ -2372,6 +2377,7 @@
                                 style={{border:'1px solid rgba(197,165,90,0.3)', maxHeight:'85vh', overflowY:'auto'}}>
                                 <button onClick={() => setSelected(null)} className="absolute top-4 right-4 text-[#555] hover:text-[#C5A55A] text-xl">✕</button>
                                 <div className="text-5xl mb-4">{dish.icon}</div>
+                                {FOOD3D.some(x => x.id === dish.id) && <button onClick={() => { setFood3d(dish.id); setSelected(null); setTimeout(() => f3Ref.current?.scrollIntoView({ behavior: 'smooth' }), 50); }} className="mb-4 px-5 py-2 rounded-full text-xs font-bold tracking-widest" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)', color: '#000' }}>◈ 3D-да дайындау</button>}
                                 <h3 className="text-2xl font-serif text-[#C5A55A] mb-1">{dish.name}</h3>
                                 <p className="text-[10px] text-[#555] tracking-widest uppercase mb-4">{dish.subtitle}</p>
                                 <p className="text-sm text-[#ccc] leading-relaxed mb-5">{dish.desc}</p>
@@ -5376,14 +5382,20 @@
                     {mode === 'dombra' && <DombraAtlas key="d" />}
                     {mode === 'asyq' && <AsyqAtlas key="a" />}
                     {mode === 'saddle' && <SaddleAtlas key="s" />}
+                    {mode === 'qobyz' && <QobyzAtlas key="qb" />}
+                    {mode === 'sybyzgy' && <SybyzgyAtlas key="sy" />}
+                    {mode === 'shanqobyz' && <ShanqobyzAtlas key="sq" />}
+                    {mode === 'qamshy' && <AnatomyViewer key="qm" PARTS={QAMSHY_PARTS} scene={buildQamshy} opts={{ distance: 8.5, target: [0.5, 0, 0], minDist: 3, maxDist: 20 }} intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Қамшы</b> — плеть всадника и символ мужской чести. «Қамшы салу» — вызов, а «қамшының сабындай» — «коротко, как рукоять камчи».</p>} />}
+                    {mode === 'torsyq' && <AnatomyViewer key="ts" PARTS={TORSYQ_PARTS} scene={buildTorsyq} opts={{ distance: 8, target: [0, 1.5, 0], minDist: 3, maxDist: 18 }} intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Торсық</b> — кожаная фляга кочевника для кумыса и воды.</p>} />}
+                    {mode === 'sandyq' && <AnatomyViewer key="sd" PARTS={SANDYQ_PARTS} scene={buildSandyq} opts={{ distance: 9, target: [0, 1.2, 0], minDist: 3, maxDist: 20 }} intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Сандық</b> — расписной сундук: в нём хранили приданое и ценности, а на нём — жүк.</p>} />}
                     <div className="absolute top-0 inset-x-0 p-4 md:p-6 pointer-events-none flex flex-wrap justify-between gap-3">
                         <div className="pointer-events-auto">
                             <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-3 block">← Назад</button>
                             <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">3D АТЛАС · ОҚУ ҚҰРАЛЫ</p>
-                            <h2 className="text-3xl md:text-5xl font-serif text-white">{({ yurt: 'Киіз үй анатомиясы', tamga: 'Тамға мөрі', zhuz: 'Үш жүз', dombra: 'Домбыра', asyq: 'Асық', saddle: 'Ер-тұрман' })[mode]}</h2>
+                            <h2 className="text-3xl md:text-5xl font-serif text-white">{({ yurt: 'Киіз үй анатомиясы', tamga: 'Тамға мөрі', zhuz: 'Үш жүз', dombra: 'Домбыра', asyq: 'Асық', saddle: 'Ер-тұрман', qobyz: 'Қобыз', sybyzgy: 'Сыбызғы', shanqobyz: 'Шаңқобыз', qamshy: 'Қамшы', torsyq: 'Торсық', sandyq: 'Сандық' })[mode]}</h2>
                         </div>
                         <div className="pointer-events-auto flex gap-2 h-fit overflow-x-auto max-w-full pb-1 md:flex-wrap md:justify-end md:mr-40 md:max-w-[560px]">
-                            {[['yurt', '⌂ Киіз үй'], ['dombra', '♪ Домбыра'], ['asyq', '🦴 Асық'], ['saddle', '🐎 Ер-тұрман'], ['tamga', '⩔ Тамға'], ['zhuz', '◎ Үш жүз']].map(([k, l]) =>
+                            {[['yurt', '⌂ Киіз үй'], ['dombra', '♪ Домбыра'], ['qobyz', '🎻 Қобыз'], ['sybyzgy', '🎶 Сыбызғы'], ['shanqobyz', '〰 Шаңқобыз'], ['asyq', '🦴 Асық'], ['saddle', '🐎 Ер-тұрман'], ['qamshy', '➰ Қамшы'], ['torsyq', '🫗 Торсық'], ['sandyq', '🧰 Сандық'], ['tamga', '⩔ Тамға'], ['zhuz', '◎ Үш жүз']].map(([k, l]) =>
                                 <button key={k} className={btn3d} style={btnStyle(mode === k)} onClick={() => setMode(k)}>{l}</button>)}
                         </div>
                     </div>
@@ -5917,12 +5929,12 @@
             parts[id] = p; return p;
         }
 
-        function AnatomyViewer({ PARTS, scene: buildScene, opts, controls, intro, explodable = true, stepLabel = 'бөлік' }) {
+        function AnatomyViewer({ PARTS, scene: buildScene, opts, controls, intro, explodable = true, stepLabel = 'бөлік', startExplode = 0 }) {
             const mountRef = useRef(null);
             const { svgRef, boxRef, update } = useLeaders();
             const labelEls = useRef({});
             const [active, setActive] = useState(null);
-            const [explode, setExplode] = useState(0);
+            const [explode, setExplode] = useState(startExplode);
             const [, force] = useState(0);
             const st = useRef({}); st.current.explode = explode; st.current.active = active;
             const apiRef = useRef({});
@@ -5936,13 +5948,20 @@
                     const res = buildScene(T, scene, S) || {};
                     const parts = res.parts || {};
                     Object.values(parts).forEach(p => { if (!p.grp.parent) scene.add(p.grp); });
-                    apiRef.current = { ...(res.api || {}), S, parts, setActive }; force(n => n + 1);
+                    // «Дайындау»: части по очереди (в порядке PARTS) собираются из разлёта на место
+                    const cook = () => { st.current.cook = { dur: Math.max(3.2, PARTS.length * 0.85), done: () => setExplode(0) }; };
+                    apiRef.current = { ...(res.api || {}), S, parts, setActive, cook, setExplode }; force(n => n + 1);
                     const meshList = () => { const m = []; new Set(Object.values(parts).map(p => p.grp)).forEach(g => g.traverse(o => { if (o.isMesh || o.isLine) m.push(o); })); return m; };
-                    let cur = 0;
+                    let cur = startExplode; const order = PARTS.map(d => d.id);
                     S.onFrame((dt, t) => {
                         cur += (st.current.explode - cur) * Math.min(1, dt * 6);
+                        const ck = st.current.cook; let cookK = null;
+                        if (ck) { if (ck.t0 == null) ck.t0 = t; const pr = (t - ck.t0) / ck.dur; if (pr >= 1) { st.current.cook = null; cur = 0; ck.done(); } else cookK = pr; }
                         Object.entries(parts).forEach(([id, p]) => {
-                            if (!p.locked) p.grp.position.copy(p.base).addScaledVector(p.explode, cur);
+                            let k = cur;
+                            if (cookK !== null) { const i = Math.max(0, order.indexOf(id)), v = Math.min(1, Math.max(0, cookK * (order.length + 0.4) - i)); k = 1 - v * v * (3 - 2 * v);
+                                if (v > 0.05 && v < 0.95 && st.current.cookActive !== id) { st.current.cookActive = id; setActive(id); } }
+                            if (!p.locked) p.grp.position.copy(p.base).addScaledVector(p.explode, k);
                             const on = st.current.active === id;
                             p.mats.forEach(m => { if (m.emissive && !m.userData.keepEmissive) m.emissive.setHex(on ? 0x6b4a10 : (m.userData.em0 ?? 0)); });
                         });
@@ -5981,7 +6000,7 @@
                         <div className="flex flex-wrap items-center gap-2 rounded-2xl px-3 py-2 border border-[#222]" style={{ background: 'rgba(8,8,8,0.85)' }}>
                             {explodable && <>
                                 <span className="text-[#777] text-[9px] uppercase tracking-widest">Жинау</span>
-                                <input type="range" min="0" max="1" step="0.01" value={explode} onChange={e => setExplode(+e.target.value)} className="flex-1 min-w-[90px] accent-[#C5A55A]" />
+                                <input type="range" min="0" max="1" step="0.01" value={explode} onChange={e => { st.current.cook = null; setExplode(+e.target.value); }} className="flex-1 min-w-[90px] accent-[#C5A55A]" />
                                 <span className="text-[#777] text-[9px] uppercase tracking-widest">Бөлшектеу</span>
                             </>}
                             {controls && controls(apiRef.current)}
@@ -6504,6 +6523,456 @@
             look.shadows();
             S.st.phi = 1.3; S.st.theta = 0.35;
             return { parts };
+        }
+
+        // ═════════════════════  АСПАПТАР МЕН БҰЙЫМДАР: қобыз, сыбызғы, шаңқобыз, қамшы, торсық, сандық  ═════════════════════
+        // ── синтез звука: смычок (қобыз), флейта (сыбызғы), варган (шаңқобыз) ──
+        const _ac = () => { _actx = _actx || new (window.AudioContext || window.webkitAudioContext)(); if (_actx.state === 'suspended') _actx.resume(); return _actx; };
+        const _noise = (c, dur) => { const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * dur)), c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = c.createBufferSource(); s.buffer = b; return s; };
+        function bowNote(freq, dur = 1.2, gain = 0.2, delay = 0) {
+            try { const c = _ac(), t = c.currentTime + delay;
+                const o = c.createOscillator(), o2 = c.createOscillator(); o.type = o2.type = 'sawtooth'; o.frequency.value = freq; o2.frequency.value = freq * 1.005;
+                const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 5.3; vg.gain.value = freq * 0.007; vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+                const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = Math.min(7000, freq * 7); f.Q.value = 1.4;
+                const pk = c.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 1100; pk.gain.value = 7; pk.Q.value = 1.5;
+                const ns = _noise(c, dur + 0.4), nf = c.createBiquadFilter(), ng = c.createGain(); nf.type = 'bandpass'; nf.frequency.value = freq * 3; nf.Q.value = 3; ng.gain.value = 0.35;
+                const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.14); g.gain.setValueAtTime(gain, t + Math.max(0.15, dur - 0.12)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
+                o.connect(f); o2.connect(f); ns.connect(nf).connect(ng).connect(f); f.connect(pk).connect(g).connect(c.destination);
+                [o, o2, vib, ns].forEach(x => { x.start(t); x.stop(t + dur + 0.35); }); } catch (e) { console.warn(e); }
+        }
+        function fluteNote(freq, dur = 0.8, gain = 0.18, delay = 0) {
+            try { const c = _ac(), t = c.currentTime + delay;
+                const o = c.createOscillator(), o2 = c.createOscillator(); o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = freq; o2.frequency.value = freq * 2; const g2 = c.createGain(); g2.gain.value = 0.18;
+                const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 4.8; vg.gain.value = freq * 0.009; vib.connect(vg); vg.connect(o.frequency);
+                const ns = _noise(c, dur + 0.3), nf = c.createBiquadFilter(), ng = c.createGain(); nf.type = 'bandpass'; nf.frequency.value = freq * 2.2; nf.Q.value = 1.5; ng.gain.value = 0.22;
+                const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.09); g.gain.setValueAtTime(gain * 0.9, t + Math.max(0.1, dur - 0.08)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.18);
+                o.connect(g); o2.connect(g2).connect(g); ns.connect(nf).connect(ng).connect(g); g.connect(c.destination);
+                [o, o2, vib, ns].forEach(x => { x.start(t); x.stop(t + dur + 0.25); }); } catch (e) { console.warn(e); }
+        }
+        // сыбызғышы одновременно тянет горлом бурдон — «қос дауыс»
+        function throatDrone(freq, dur, gain = 0.07) { try { const c = _ac(), t = c.currentTime; const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq;
+            const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600; const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.4); g.gain.setValueAtTime(gain, t + dur - 0.4); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+            o.connect(f).connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.1); } catch (e) {} }
+        // шаңқобыз: тілше бурдон + «рот» меняет форманту (гласные), ритм — щипки
+        function jawHarp(dur = 4, base = 98) {
+            try { const c = _ac(), t = c.currentTime;
+                const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = base;
+                const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 9; const bp2 = c.createBiquadFilter(); bp2.type = 'lowpass'; bp2.frequency.value = 4200;
+                const g = c.createGain(); g.gain.value = 0.0001; o.connect(bp).connect(bp2).connect(g).connect(c.destination);
+                const VOW = [700, 1400, 900, 1900, 600, 1600, 1100, 2100], beat = 0.21;
+                for (let k = 0, tt = t; tt < t + dur; k++, tt += beat) {
+                    bp.frequency.setValueAtTime(VOW[k % VOW.length], tt); bp.frequency.linearRampToValueAtTime(VOW[(k + 1) % VOW.length], tt + beat * 0.95);
+                    const a = k % 4 === 0 ? 0.42 : k % 2 ? 0.2 : 0.3; g.gain.setValueAtTime(a, tt); g.gain.exponentialRampToValueAtTime(0.03, tt + beat * 0.95);
+                }
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1); o.start(t); o.stop(t + dur + 0.2); } catch (e) { console.warn(e); }
+        }
+        const hz = n => 440 * Math.pow(2, (n - 69) / 12);
+        const leatherTex = (T, base = '#6b3a1c', seam = true) => { const [c, g] = _cv(512, 512); g.fillStyle = base; g.fillRect(0, 0, 512, 512); const R = seeded(8);
+            for (let i = 0; i < 7000; i++) { g.fillStyle = `rgba(${R() > .5 ? '0,0,0' : '255,220,170'},${R() * .07})`; g.fillRect(R() * 512, R() * 512, 2, 2); }
+            if (seam) { g.strokeStyle = 'rgba(40,18,6,.55)'; g.lineWidth = 6; g.lineCap = 'round';
+                for (let k = 0; k < 4; k++) { const cx = 128 + (k % 2) * 256, cy = 128 + Math.floor(k / 2) * 256; g.beginPath(); g.moveTo(cx, cy + 50); g.lineTo(cx, cy); g.bezierCurveTo(cx, cy - 60, cx - 60, cy - 60, cx - 52, cy - 8); g.moveTo(cx, cy); g.bezierCurveTo(cx, cy - 60, cx + 60, cy - 60, cx + 52, cy - 8); g.stroke(); } }
+            return _tex(T, c, [1, 1]); };
+
+        // ══════ ҚОБЫЗ ══════
+        const QOBYZ_PARTS = [
+            { id: 'shanaq', kk: 'Шанақ', ru: 'Корпус-ковш', text: 'Выдолбленный из цельного куска дерева (арша, тал) корпус в форме ковша. Верхняя половина открыта — звук выходит наружу, как из чаши.' },
+            { id: 'teri', kk: 'Тері', ru: 'Кожаная дека', text: 'Нижняя половина затянута верблюжьей или козьей кожей. Она резонирует и даёт қобызу глухой, «шаманский» тембр.' },
+            { id: 'tiek', kk: 'Тиек', ru: 'Подставка', text: 'Стоит на коже, поднимает струны и передаёт их дрожь деке.' },
+            { id: 'qyl', kk: 'Қыл ішек', ru: 'Струны из конского волоса', text: 'Две струны — пучки по 60–80 конских волос. Не прижимаются к грифу: играют, касаясь их ногтями сбоку — отсюда флажолеты и «плачущий» звук.' },
+            { id: 'moiyn', kk: 'Мойын', ru: 'Гриф', text: 'Короткая шейка без ладов. Струны висят над ней свободно.' },
+            { id: 'bas', kk: 'Бас', ru: 'Головка', text: 'Изогнутая головка, часто резная — в виде головы коня или лебедя.' },
+            { id: 'qulaq', kk: 'Құлақ', ru: 'Колки', text: 'Два колка, которыми натягивают пучки волоса. Строй — кварта или квинта.' },
+            { id: 'sadaq', kk: 'Ысқыш (садақ)', ru: 'Смычок', text: 'Дугообразный смычок из тальника с волосом из конского хвоста. Его натирают смолой (шайыр).' },
+            { id: 'aina', kk: 'Айна мен шолпы', ru: 'Зеркальце и подвески', text: 'У баксы (шаманов) на қобыз вешали зеркальце, бубенцы, перья филина — для «связи с духами». Легендарный Қорқыт ата — первый қобызшы.' },
+        ];
+        function buildQobyz(T, scene, S) {
+            const look = studioLook(S, { shadow: [3, 9, 6], shadowSize: 5, exposure: 1.1 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const wood = new T.MeshStandardMaterial({ map: woodTexture(T, '#7a4420'), roughness: 0.4 }), woodD = new T.MeshStandardMaterial({ map: woodTexture(T, '#45230e'), roughness: 0.45 });
+            const prof = [[0, 0], [0.42, 0.04], [0.66, 0.28], [0.73, 0.68], [0.65, 1.08], [0.42, 1.36], [0.3, 1.5], [0.4, 1.72], [0.52, 2.08], [0.5, 2.44], [0.36, 2.66], [0.16, 2.76]];
+            const shapeOf = (k = 1, y0 = 0, y1 = 9) => { const pts = prof.filter(p => p[1] >= y0 && p[1] <= y1).map(([x, y]) => new T.Vector2(x * k, y)); const sh = new T.Shape(); sh.moveTo(0, pts[0].y); sh.splineThru(pts); for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i].x, pts[i].y); sh.closePath(); return sh; };
+            { const g = new T.Group(); const body = new T.Mesh(new T.ExtrudeGeometry(shapeOf(), { depth: 0.5, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 3, curveSegments: 40 }), wood); body.position.z = -0.25; g.add(body);
+              const hole = new T.Mesh(new T.ShapeGeometry(shapeOf(0.78, 1.55, 2.66), 32), new T.MeshStandardMaterial({ color: 0x170b04, roughness: 0.9 })); hole.position.set(0, 0.02, 0.315); g.add(hole);
+              const rim = []; for (let i = 0; i <= 24; i++) { const a = i / 24; rim.push(V(-0.42 + 0.84 * a, 2.6 - Math.sin(a * Math.PI) * 0.06, 0.33)); } const inl = new T.MeshStandardMaterial({ color: 0xe9dcc0, roughness: 0.3 }); for (let i = 0; i < 9; i++) { const d = new T.Mesh(new T.SphereGeometry(0.035, 10, 8), inl); d.position.set(Math.sin(i / 8 * Math.PI * 2) * 0.0 + (-0.36 + i * 0.09), 2.55, 0.33); g.add(d); }
+              registerPart(parts, 'shanaq', g, V(0, 0, -1.3), () => V(0.5, 2.2, 0.25)); }
+            { const g = new T.Group(); const m = new T.Mesh(new T.ShapeGeometry(shapeOf(0.9, 0, 1.4), 32), new T.MeshStandardMaterial({ map: feltTexture(T, '#dcc49a'), roughness: 0.75 })); m.position.z = 0.32; g.add(m);
+              registerPart(parts, 'teri', g, V(0, 0, 1.0), () => V(0.35, 0.45, 0.32)); }
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(0.42, 0.16, 0.08), woodD); m.position.set(0, 0.62, 0.4); g.add(m); registerPart(parts, 'tiek', g, V(0, 0, 2.1), () => V(0.2, 0.7, 0.42)); }
+            { const g = new T.Group(); const neck = new T.Mesh(new T.BoxGeometry(0.3, 1.4, 0.3), wood); neck.position.set(0, 3.4, -0.02); neck.rotation.x = -0.1; g.add(neck);
+              registerPart(parts, 'moiyn', g, V(0, 0.9, 0), () => V(0.15, 3.3, 0.12)); }
+            { const g = new T.Group(); const sc = new T.Mesh(new T.TorusGeometry(0.26, 0.11, 14, 32, Math.PI * 1.3), woodD); sc.rotation.y = Math.PI / 2; sc.rotation.x = Math.PI * 0.55; sc.position.set(0, 4.3, -0.2); g.add(sc);
+              const fin = new T.Mesh(new T.SphereGeometry(0.12, 16, 12), new T.MeshStandardMaterial({ color: 0xd8d8de, metalness: 1, roughness: 0.25 })); fin.position.set(0, 4.55, -0.42); g.add(fin);
+              registerPart(parts, 'bas', g, V(0, 1.5, 0), () => V(0, 4.6, -0.2)); }
+            { const g = new T.Group(); [[4.05, 1], [3.82, -1]].forEach(([y, sd]) => { const p = new T.Mesh(new T.CylinderGeometry(0.05, 0.06, 0.62, 12), woodD); p.rotation.z = Math.PI / 2; p.position.set(0, y, 0); g.add(p);
+                const k = new T.Mesh(new T.SphereGeometry(0.1, 14, 10), woodD); k.scale.set(0.6, 1, 1); k.position.set(sd * 0.34, y, 0); g.add(k); });
+              registerPart(parts, 'qulaq', g, V(0, 1.4, 0.6), () => V(0.36, 4.05, 0)); }
+            const hair = new T.MeshStandardMaterial({ color: 0xece2cc, roughness: 0.6 }); const strings = new T.Group();
+            [-0.07, 0.07].forEach(x => strings.add(tube(T, [V(x * 0.6, 3.95, 0.16), V(x, 2.7, 0.3), V(x * 1.4, 0.72, 0.46), V(x * 1.2, 0.08, 0.36)], 0.02, hair, 40)));
+            registerPart(parts, 'qyl', strings, V(0, 0, 1.6), () => V(0.08, 2.2, 0.36));
+            const bow = new T.Group(); { const arc = []; for (let i = 0; i <= 24; i++) { const a = i / 24; arc.push(V(-1.25 + 2.7 * a, 1.42 + Math.sin(a * Math.PI) * 0.42, 0.56)); } bow.add(tube(T, arc, 0.035, new T.MeshStandardMaterial({ map: woodTexture(T, '#a9773c'), roughness: 0.4 }), 40));
+              bow.add(tube(T, [arc[0], arc[24]], 0.012, hair, 4)); }
+            registerPart(parts, 'sadaq', bow, V(1.8, 0, 1.0), () => V(0.9, 1.78, 0.56));
+            { const g = new T.Group(); const silver = new T.MeshStandardMaterial({ color: 0xe0e0e8, metalness: 1, roughness: 0.18 });
+              const mir = new T.Mesh(new T.CylinderGeometry(0.18, 0.18, 0.03, 32), silver); mir.rotation.x = Math.PI / 2; mir.position.set(-0.55, 3.55, 0.05); g.add(mir);
+              g.add(tube(T, [V(-0.12, 4.2, 0), V(-0.4, 3.95, 0.04), V(-0.55, 3.73, 0.05)], 0.008, new T.MeshStandardMaterial({ color: 0xa3271d }), 8));
+              for (let i = 0; i < 4; i++) { const b = new T.Mesh(new T.SphereGeometry(0.05, 10, 8), new T.MeshStandardMaterial({ color: 0xd9b45a, metalness: 0.9, roughness: 0.3 })); b.position.set(-0.4 - i * 0.07, 3.3 - i * 0.07, 0.05); g.add(b); }
+              const owl = new T.Mesh(new T.ConeGeometry(0.04, 0.3, 6), new T.MeshStandardMaterial({ color: 0xf2efe6 })); owl.position.set(-0.7, 3.4, 0.05); owl.rotation.z = 0.5; g.add(owl);
+              registerPart(parts, 'aina', g, V(-1.1, 0.4, 0), () => V(-0.6, 3.6, 0.07)); }
+            rugFloor(T, scene, -0.1, 5, 8); look.shadows();
+            let play = 0; const tick = (dt, t) => { if (play > 0) { play -= dt; bow.position.x += Math.sin(t * 2.4) * 0.55; strings.children.forEach((s, i) => s.position.x = Math.sin(t * 90 + i) * 0.006); } };
+            const demo = () => { const mel = [57, 55, 57, 60, 62, 60, 57, 55, 53, 55, 57, 57], d = 0.62; bowNote(hz(50), mel.length * d + 0.4, 0.09); mel.forEach((n, i) => bowNote(hz(n), d * (i === mel.length - 1 ? 2 : 1), 0.17, i * d)); play = mel.length * d + 1; };
+            S.st.phi = 1.4; S.st.theta = 0.45; return { parts, tick, api: { demo, note: (n) => { bowNote(hz(n), 1.2, 0.2); play = 1.3; } } };
+        }
+        function QobyzAtlas() {
+            return <AnatomyViewer PARTS={QOBYZ_PARTS} scene={buildQobyz} opts={{ distance: 9.5, target: [0, 2.1, 0], minDist: 3, maxDist: 20 }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Қыл-қобыз</b> — древнейший смычковый инструмент казахов, голос Қорқыт ата. Нажмите «Ойнау» — прозвучит протяжный наигрыш на фоне бурдона.</p>}
+                controls={(api) => <>
+                    <button className={btn3d} style={btnStyle(true)} onClick={() => api.demo?.()}>▶ Ойнау</button>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => api.note?.(50)}>♪ Төменгі</button>
+                    <button className={btn3d} style={btnStyle(false)} onClick={() => api.note?.(57)}>♪ Жоғарғы</button>
+                </>} />;
+        }
+
+        // ══════ СЫБЫЗҒЫ ══════
+        const SYBYZGY_PARTS = [
+            { id: 'auyz', kk: 'Ауыз', ru: 'Край-«свисток»', text: 'Верхний край трубки срезан наискось. Музыкант дует сбоку, прижимая край к губам и зубам — свистка нет, звук рождается на кромке.' },
+            { id: 'dene', kk: 'Денесі', ru: 'Ствол', text: 'Трубка длиной 60–80 см из стебля курая, тальника или абрикосовой ветки — внутри выжигали сердцевину.' },
+            { id: 'oram', kk: 'Ішек орам', ru: 'Обмотка из кишки', text: 'Ствол обматывали сырой бараньей кишкой: высохнув, она стягивает трещины и не даёт дереву расколоться.' },
+            { id: 'oiyq', kk: 'Ойықтар', ru: 'Игровые отверстия', text: 'Обычно 3–4 отверстия у нижнего конца. Мастер играет одновременно мелодию и низкий горловой бурдон — «қос дауыс» (двухголосие).' },
+        ];
+        function buildSybyzgy(T, scene, S) {
+            const look = studioLook(S, { shadow: [2, 9, 5], shadowSize: 4, exposure: 1.1 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const rig = new T.Group(); rig.rotation.z = 0.32; rig.position.y = 1.2; scene.add(rig);
+            const reed = new T.MeshStandardMaterial({ map: woodTexture(T, '#c9a25a', [1, 4]), roughness: 0.42 });
+            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.11, 0.14, 4.4, 40, 1, true), [reed][0]); m.material.side = T.DoubleSide; m.rotation.z = Math.PI / 2; g.add(m);
+              const end = new T.Mesh(new T.TorusGeometry(0.125, 0.018, 8, 32), reed); end.rotation.y = Math.PI / 2; end.position.x = -2.2; g.add(end);
+              rig.add(g); registerPart(parts, 'dene', g, V(0, -0.8, 0), () => V(-0.6, 0.14, 0.05)); }
+            { const g = new T.Group(); const lip = new T.Mesh(new T.TorusGeometry(0.11, 0.022, 10, 32), new T.MeshStandardMaterial({ map: woodTexture(T, '#a8803c'), roughness: 0.35 })); lip.rotation.y = Math.PI / 2; lip.rotation.z = 0.4; lip.position.x = 2.2; g.add(lip);
+              rig.add(g); registerPart(parts, 'auyz', g, V(1.0, 0.4, 0), () => V(2.22, 0.12, 0)); }
+            { const g = new T.Group(); const gut = new T.MeshStandardMaterial({ color: 0x8a6436, roughness: 0.5, transparent: true, opacity: 0.92 });
+              [1.6, 0.9, 0.2, -0.5].forEach(x => { const b = new T.Mesh(new T.CylinderGeometry(0.135, 0.135, 0.22, 32, 1, true), gut); b.rotation.z = Math.PI / 2; b.position.x = x; g.add(b); });
+              rig.add(g); registerPart(parts, 'oram', g, V(0, 0.8, 0), () => V(0.9, 0.14, 0)); }
+            const holes = new T.Group(); { const dark = new T.MeshStandardMaterial({ color: 0x120800, roughness: 1 });
+              [-1.0, -1.4, -1.8].forEach(x => { const h = new T.Mesh(new T.CircleGeometry(0.045, 20), dark); h.rotation.x = -Math.PI / 2; h.position.set(x, 0.132, 0); holes.add(h); });
+              rig.add(holes); registerPart(parts, 'oiyq', holes, V(0, 0.55, 0), () => V(-1.4, 0.14, 0)); }
+            rugFloor(T, scene, -0.6, 6, 8); look.shadows();
+            const glow = holes.children.map(h => h.material); let hl = 0; const tick = (dt) => { if (hl > 0) hl -= dt; };
+            const demo = () => { const mel = [69, 72, 74, 76, 74, 72, 74, 69, 67, 69], d = [0.5, 0.5, 0.5, 1, 0.5, 0.5, 1, 0.5, 0.5, 1.5]; let t = 0; throatDrone(hz(45), d.reduce((a, b) => a + b, 0) + 0.6); mel.forEach((n, i) => { fluteNote(hz(n), d[i] * 0.9, 0.16, t); t += d[i]; }); };
+            S.st.phi = 1.2; S.st.theta = 0.3; return { parts, tick, api: { demo, note: n => fluteNote(hz(n), 1, 0.18) } };
+        }
+        function SybyzgyAtlas() {
+            return <AnatomyViewer PARTS={SYBYZGY_PARTS} scene={buildSybyzgy} opts={{ distance: 8, target: [0, 1.0, 0], minDist: 3, maxDist: 18 }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Сыбызғы</b> — продольная флейта пастухов. Секрет мастеров — «қос дауыс»: мелодия и горловой бурдон одновременно.</p>}
+                controls={(api) => <>
+                    <button className={btn3d} style={btnStyle(true)} onClick={() => api.demo?.()}>▶ Ойнау</button>
+                    {[69, 72, 74, 76].map(n => <button key={n} className={btn3d} style={btnStyle(false)} onClick={() => api.note?.(n)}>♪ {['ля', 'до', 'ре', 'ми'][[69, 72, 74, 76].indexOf(n)]}</button>)}
+                </>} />;
+        }
+
+        // ══════ ШАҢҚОБЫЗ ══════
+        const SHANQOBYZ_PARTS = [
+            { id: 'qamyt', kk: 'Сақина', ru: 'Кольцо-рамка', text: 'Кованая рамка из стали или латуни. Её держат левой рукой, прижимая к зубам.' },
+            { id: 'murt', kk: 'Мұрт', ru: 'Щёчки', text: 'Две параллельные «щёчки», между которыми проходит язычок. Их прикладывают к приоткрытым зубам.' },
+            { id: 'til', kk: 'Тілше', ru: 'Язычок', text: 'Тонкая стальная пластинка. Её дёргают пальцем — рождается бурдон, а форму звука меняют губами, языком и дыханием.' },
+            { id: 'ushy', kk: 'Ұшы', ru: 'Загнутый кончик', text: 'Загнутый конец язычка, по которому бьют пальцем. Шаңқобыз — инструмент девушек: на нём «говорили» о любви без слов.' },
+        ];
+        function buildShanqobyz(T, scene, S) {
+            const look = studioLook(S, { shadow: [2, 8, 4], shadowSize: 3, exposure: 1.15 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const steel = new T.MeshStandardMaterial({ color: 0xbfc4cc, metalness: 1, roughness: 0.28 }), brass = new T.MeshStandardMaterial({ color: 0xd2a650, metalness: 1, roughness: 0.3 });
+            const rig = new T.Group(); rig.scale.setScalar(1.8); rig.position.y = 0.6; rig.rotation.x = -0.5; scene.add(rig);
+            { const g = new T.Group(); const r = new T.Mesh(new T.TorusGeometry(0.34, 0.05, 14, 48, Math.PI * 1.72), brass); r.rotation.z = Math.PI * 0.14 + Math.PI / 2 * 0; r.rotation.z = Math.PI * 0.14; g.add(r);
+              rig.add(g); registerPart(parts, 'qamyt', g, V(-0.8, 0, 0), () => V(-0.34, 0, 0.05)); }
+            { const g = new T.Group(); [1, -1].forEach(sd => g.add(tube(T, [V(0.31, sd * 0.15, 0), V(0.6, sd * 0.09, 0), V(1.45, sd * 0.07, 0)], 0.04, brass, 16))); rig.add(g);
+              registerPart(parts, 'murt', g, V(0.4, 0, 0.5), () => V(1.0, 0.09, 0.03)); }
+            const tongue = new T.Group(); tongue.position.x = -0.33; { const m = new T.Mesh(new T.BoxGeometry(1.85, 0.03, 0.012), steel); m.position.x = 0.92; tongue.add(m); }
+            rig.add(tongue); registerPart(parts, 'til', tongue, V(0, 0, 0.6), () => V(0.9, 0, 0));
+            const tip = new T.Group(); { const m = new T.Mesh(new T.BoxGeometry(0.03, 0.22, 0.03), steel); m.position.set(1.85, 0, 0.1); m.rotation.x = 0.7; tip.add(m); } tongue.add(tip);
+            parts.ushy = { grp: tip, base: tip.position.clone(), explode: V(0, 0, 0), anchor: () => V(1.85, 0, 0.18), mats: [steel], locked: true };
+            rugFloor(T, scene, -0.4, 4, 7); look.shadows();
+            let vib = 0; const tick = (dt, t) => { if (vib > 0) { vib -= dt; tongue.rotation.y = Math.sin(t * 70) * 0.05 * Math.min(1, vib); } else tongue.rotation.y *= 0.9; };
+            S.st.phi = 1.0; S.st.theta = 0.4; return { parts, tick, api: { demo: () => { jawHarp(4.2); vib = 4.2; } } };
+        }
+        function ShanqobyzAtlas() {
+            return <AnatomyViewer PARTS={SHANQOBYZ_PARTS} scene={buildShanqobyz} opts={{ distance: 7, target: [0.6, 0.6, 0], minDist: 2.5, maxDist: 16 }}
+                intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">Шаңқобыз</b> — казахский варган. Мелодию «поют» губами и языком поверх гудящего язычка.</p>}
+                controls={(api) => <button className={btn3d + ' flex-1'} style={btnStyle(true)} onClick={() => api.demo?.()}>▶ Шерту · Сыграть</button>} />;
+        }
+
+        // ══════ ҚАМШЫ ══════
+        const QAMSHY_PARTS = [
+            { id: 'sap', kk: 'Сабы', ru: 'Рукоять', text: 'Рукоять из таволги или тальника. У богатых — обложена серебром и костью.' },
+            { id: 'kumis', kk: 'Күміс сақиналар', ru: 'Серебряные кольца', text: 'Кольца с чернёным орнаментом укрепляют рукоять и показывают статус хозяина.' },
+            { id: 'orim', kk: 'Өрім', ru: 'Плетёная плеть', text: 'Плеть плетут из 4, 8, 12 и даже 24 сыромятных ремешков. Чем больше прядей — тем искуснее мастер (өрімші).' },
+            { id: 'shashaq', kk: 'Шашақ', ru: 'Кисточка', text: 'Мягкий кожаный кончик. Қамшы — не только для коня: брошенная в круг қамшы означала вызов, а повешенная у двери — что хозяин дома.' },
+            { id: 'bau', kk: 'Бүлдірге', ru: 'Петля', text: 'Петля на запястье, чтобы не уронить қамшы на скаку.' },
+        ];
+        function buildQamshy(T, scene, S) {
+            const look = studioLook(S, { shadow: [2, 9, 5], shadowSize: 4.5, exposure: 1.1 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const rig = new T.Group(); rig.position.y = 0.1; rig.rotation.y = -0.3; scene.add(rig);
+            const lth = new T.MeshStandardMaterial({ map: leatherTex(T, '#7a4a24', false), roughness: 0.55 }), lthD = new T.MeshStandardMaterial({ map: leatherTex(T, '#4a2810', false), roughness: 0.55 });
+            const silver = new T.MeshStandardMaterial({ color: 0xe2e2ea, metalness: 1, roughness: 0.2 });
+            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.085, 0.1, 1.7, 24), new T.MeshStandardMaterial({ map: woodTexture(T, '#8a4e22', [1, 3]), roughness: 0.4 })); m.rotation.z = Math.PI / 2; m.position.x = -1.15; g.add(m);
+              rig.add(g); registerPart(parts, 'sap', g, V(-0.6, 0.4, 0), () => V(-1.5, 0.1, 0.05)); }
+            { const g = new T.Group(); [-1.95, -1.6, -0.75, -0.32].forEach(x => { const r = new T.Mesh(new T.CylinderGeometry(0.11, 0.11, 0.12, 24), silver); r.rotation.z = Math.PI / 2; r.position.x = x; g.add(r); });
+              rig.add(g); registerPart(parts, 'kumis', g, V(0, 0.8, 0.4), () => V(-0.75, 0.11, 0)); }
+            { const g = new T.Group(); const path = new T.CatmullRomCurve3([V(-0.28, 0, 0), V(0.6, -0.02, 0.15), V(1.5, -0.04, 0.05), V(2.4, -0.06, -0.25), V(3.1, -0.07, -0.55)]);
+              for (let k = 0; k < 4; k++) { const pts = []; for (let i = 0; i <= 200; i++) { const u = i / 200, p = path.getPoint(u), r = 0.07 * (1 - u * 0.55), a = u * 60 + k * Math.PI / 2; pts.push(p.clone().add(V(0, Math.cos(a) * r, Math.sin(a) * r))); }
+                g.add(tube(T, pts, 0.034 * 1, k % 2 ? lth : lthD, 300)); }
+              rig.add(g); registerPart(parts, 'orim', g, V(0.5, 0, 0.9), () => V(1.5, 0.04, 0.05)); }
+            { const g = new T.Group(); for (let k = 0; k < 7; k++) { const m = new T.Mesh(new T.ConeGeometry(0.015, 0.4, 5), lth); m.rotation.z = -Math.PI / 2 + (k - 3) * 0.08; m.position.set(3.3, -0.07 + (k - 3) * 0.012, -0.6); g.add(m); }
+              rig.add(g); registerPart(parts, 'shashaq', g, V(0.8, 0, 0), () => V(3.4, -0.07, -0.6)); }
+            { const g = new T.Group(); const t = new T.Mesh(new T.TorusGeometry(0.3, 0.025, 8, 32), lthD); t.rotation.y = Math.PI / 2; t.position.set(-2.25, -0.18, 0); t.rotation.z = 0.3; g.add(t);
+              rig.add(g); registerPart(parts, 'bau', g, V(-0.8, 0, 0), () => V(-2.3, -0.45, 0)); }
+            rugFloor(T, scene, -0.25, 7, 9); look.shadows();
+            S.st.phi = 0.95; S.st.theta = 0.2; return { parts };
+        }
+
+        // ══════ ТОРСЫҚ ══════
+        const TORSYQ_PARTS = [
+            { id: 'dene', kk: 'Денесі', ru: 'Кожаный корпус', text: 'Сшит из двух кусков толстой бычьей или верблюжьей кожи, вымоченной и отформованной на песке. Тиснёный узор — «қошқар мүйіз».' },
+            { id: 'tigis', kk: 'Тігіс', ru: 'Шов', text: 'Кожу сшивали жилами и пропитывали жиром — торсық не протекает десятилетиями.' },
+            { id: 'auyz', kk: 'Мойны', ru: 'Горлышко', text: 'Узкое горлышко — кумыс не расплескается в седле.' },
+            { id: 'tygyn', kk: 'Тығын', ru: 'Пробка', text: 'Деревянная пробка на ремешке, чтобы не потерять в степи.' },
+            { id: 'bau', kk: 'Бау', ru: 'Ремень', text: 'Торсық подвешивали к седлу: в дорогу брали кумыс, шұбат или воду.' },
+        ];
+        function buildTorsyq(T, scene, S) {
+            const look = studioLook(S, { shadow: [3, 9, 5], shadowSize: 4, exposure: 1.1 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const lth = new T.MeshStandardMaterial({ map: leatherTex(T, '#7a3e18'), roughness: 0.5, metalness: 0.05 });
+            { const g = new T.Group(); const pr = []; for (let i = 0; i <= 30; i++) { const a = i / 30 * Math.PI; pr.push(new T.Vector2(Math.max(0.01, Math.sin(a) * 1.0 * (1 - 0.15 * Math.cos(a))), 1.1 - Math.cos(a) * 1.05)); }
+              const m = new T.Mesh(new T.LatheGeometry(pr, 48), lth); m.scale.z = 0.5; g.add(m); registerPart(parts, 'dene', g, V(0, 0, 0), () => V(0.6, 1.4, 0.45)); }
+            { const g = new T.Group(); const pts = []; for (let i = 0; i <= 60; i++) { const a = i / 60 * Math.PI * 2; pts.push(V(Math.sin(a) * 1.03 * (1 - 0.15 * Math.cos(a)), 1.1 - Math.cos(a) * 1.07, 0)); }
+              g.add(tube(T, pts, 0.035, new T.MeshStandardMaterial({ color: 0x3a1a08, roughness: 0.6 }), 80)); registerPart(parts, 'tigis', g, V(0, 0, 0.9), () => V(-0.95, 1.1, 0)); }
+            { const g = new T.Group(); const m = new T.Mesh(new T.CylinderGeometry(0.16, 0.22, 0.45, 24), lth); m.position.y = 2.32; g.add(m); registerPart(parts, 'auyz', g, V(0, 0.5, 0), () => V(0.2, 2.35, 0.1)); }
+            { const g = new T.Group(); const w = new T.MeshStandardMaterial({ map: woodTexture(T, '#a26a32'), roughness: 0.4 }); const m = new T.Mesh(new T.CylinderGeometry(0.13, 0.15, 0.25, 20), w); m.position.y = 2.66; g.add(m);
+              const k = new T.Mesh(new T.SphereGeometry(0.1, 14, 10), w); k.position.y = 2.82; g.add(k); registerPart(parts, 'tygyn', g, V(0, 1.1, 0), () => V(0, 2.9, 0)); }
+            { const g = new T.Group(); g.add(tube(T, [V(-0.62, 1.95, 0), V(-0.9, 2.9, 0.1), V(0, 3.4, 0.1), V(0.9, 2.9, 0.1), V(0.62, 1.95, 0)], 0.045, new T.MeshStandardMaterial({ color: 0x4a2810, roughness: 0.6 }), 40));
+              registerPart(parts, 'bau', g, V(0, 1.2, -0.5), () => V(0, 3.4, 0.1)); }
+            rugFloor(T, scene, 0.03, 5, 8); look.shadows(); S.st.phi = 1.3; S.st.theta = 0.4; return { parts };
+        }
+
+        // ══════ САНДЫҚ ══════
+        const SANDYQ_PARTS = [
+            { id: 'dene', kk: 'Денесі', ru: 'Короб', text: 'Сундук из досок, обитый расписной жестью или кожей. Стоял на почётном месте — у төр, за очагом.' },
+            { id: 'qaqpaq', kk: 'Қақпағы', ru: 'Крышка', text: 'Тяжёлая крышка с орнаментом. В сандық хранили лучшие вещи семьи и приданое невесты (жасау).' },
+            { id: 'temir', kk: 'Темір құрсау', ru: 'Оковка', text: 'Металлические уголки и полосы с чеканкой — прочность и красота.' },
+            { id: 'qulyp', kk: 'Құлып', ru: 'Замок', text: 'Внутренний замок со звонком: при повороте ключа звучала мелодия — по ней узнавали, что сундук открывают.' },
+            { id: 'zhuk', kk: 'Жүк', ru: 'Стопка постели', text: 'На сундуке складывали «жүк» — одеяла (көрпе), подушки и кошмы. Высокий жүк — знак достатка и гостеприимства.' },
+        ];
+        function buildSandyq(T, scene, S) {
+            const look = studioLook(S, { shadow: [3, 10, 6], shadowSize: 5, exposure: 1.1 }); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const W = 2.6, D = 1.2, H = 1.1;
+            const [pc, pg] = _cv(1024, 512); pg.fillStyle = '#9b1f1a'; pg.fillRect(0, 0, 1024, 512); pg.strokeStyle = '#e8c66a'; pg.lineWidth = 10; pg.strokeRect(30, 30, 964, 452);
+            [[256, 256], [768, 256]].forEach(([cx, cy]) => { pg.fillStyle = '#1d3557'; pg.beginPath(); pg.ellipse(cx, cy, 190, 170, 0, 0, Math.PI * 2); pg.fill(); pg.strokeStyle = '#e8c66a'; pg.lineWidth = 9; pg.lineCap = 'round';
+                for (let k = 0; k < 4; k++) { pg.save(); pg.translate(cx, cy); pg.rotate(k * Math.PI / 2); pg.beginPath(); pg.moveTo(0, 0); pg.lineTo(0, -70); pg.bezierCurveTo(0, -140, -80, -140, -70, -70); pg.moveTo(0, -70); pg.bezierCurveTo(0, -140, 80, -140, 70, -70); pg.stroke(); pg.restore(); } });
+            const paint = new T.MeshStandardMaterial({ map: _tex(T, pc), roughness: 0.45, metalness: 0.15 }), side = new T.MeshStandardMaterial({ color: 0x8a1c17, roughness: 0.5 });
+            const metal = new T.MeshStandardMaterial({ color: 0xd8c08a, metalness: 1, roughness: 0.32 });
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(W, H, D), [side, side, side, side, paint, paint]); m.position.y = H / 2 + 0.12; g.add(m);
+              [-1, 1].forEach(sx => [-1, 1].forEach(sz => { const f = new T.Mesh(new T.CylinderGeometry(0.1, 0.12, 0.14, 12), new T.MeshStandardMaterial({ map: woodTexture(T, '#4a2610') })); f.position.set(sx * (W / 2 - 0.15), 0.06, sz * (D / 2 - 0.15)); g.add(f); }));
+              registerPart(parts, 'dene', g, V(0, 0, 0), () => V(-0.8, 0.7, D / 2)); }
+            const lid = new T.Group(); { const m = new T.Mesh(new T.BoxGeometry(W + 0.06, 0.22, D + 0.06), [side, side, paint, side, side, side]); m.position.y = H + 0.23; lid.add(m); }
+            registerPart(parts, 'qaqpaq', lid, V(0, 1.4, -0.4), () => V(0.5, H + 0.35, 0.2));
+            { const g = new T.Group(); [-1, 1].forEach(sx => [-1, 1].forEach(sz => { const c = new T.Mesh(new T.BoxGeometry(0.26, H + 0.04, 0.26), metal); c.scale.set(1, 1, 1); c.position.set(sx * (W / 2 - 0.1), H / 2 + 0.12, sz * (D / 2 - 0.1)); c.scale.set(1.02, 1, 1.02); g.add(c); }));
+              [-0.75, 0.75].forEach(x => { const b = new T.Mesh(new T.BoxGeometry(0.12, H, 0.03), metal); b.position.set(x, H / 2 + 0.12, D / 2 + 0.02); g.add(b); });
+              registerPart(parts, 'temir', g, V(0, 0, 0.9), () => V(W / 2 - 0.1, H, D / 2)); }
+            { const g = new T.Group(); const p = new T.Mesh(new T.CylinderGeometry(0.17, 0.17, 0.04, 28), metal); p.rotation.x = Math.PI / 2; p.position.set(0, H * 0.72, D / 2 + 0.03); g.add(p);
+              const k = new T.Mesh(new T.BoxGeometry(0.04, 0.12, 0.03), new T.MeshStandardMaterial({ color: 0x222222 })); k.position.set(0, H * 0.72, D / 2 + 0.06); g.add(k);
+              registerPart(parts, 'qulyp', g, V(0, 0, 1.4), () => V(0, H * 0.72, D / 2 + 0.05)); }
+            { const g = new T.Group(); const cols = [['#a3271d', '#e8c66a'], ['#1d3557', '#c9a14a'], ['#2a6f4e', '#f0d882'], ['#7a2a8a', '#e8c66a'], ['#c46a1a', '#1d3557']];
+              cols.forEach(([b, p], i) => { const m = new T.Mesh(new T.BoxGeometry(W - 0.2 - i * 0.06, 0.2, D - 0.1), new T.MeshStandardMaterial({ map: clothTexture(T, { base: b, pat: p, border: p, w: 512, h: 256 }), roughness: 0.9 })); m.position.y = H + 0.45 + i * 0.21; g.add(m); });
+              const pil = new T.Mesh(new T.CapsuleGeometry(0.2, 1.4, 8, 20), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#f3ead8', pat: '#a3271d', w: 512, h: 256 }), roughness: 0.9 })); pil.rotation.z = Math.PI / 2; pil.position.y = H + 1.68; g.add(pil);
+              registerPart(parts, 'zhuk', g, V(0, 2.2, 0), () => V(-0.9, H + 1.2, 0.3)); }
+            rugFloor(T, scene, 0, 6, 9); look.shadows(); S.st.phi = 1.25; S.st.theta = 0.5; return { parts };
+        }
+
+        // ═════════════════════  3D АСХАНА: ингредиенты летают — «Дайындау» собирает блюдо  ═════════════════════
+        const foodMat = (c, r = 0.6, extra = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...extra });
+        const lumpy = (T, geo, amt = 0.12, seed = 1) => { const p = geo.attributes.position, R = seeded(seed * 97 + 3); for (let i = 0; i < p.count; i++) { const k = 1 + (Math.sin(p.getX(i) * 9 + seed) * Math.cos(p.getY(i) * 7 + seed * 2) * 0.5 + (R() - 0.5) * 0.5) * amt; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); } geo.computeVertexNormals(); return geo; };
+        const woodBowl = (T, r, h, mat) => { const pts = []; for (let i = 0; i <= 16; i++) { const a = i / 16 * Math.PI / 2; pts.push(new T.Vector2(r * Math.sin(a) * 0.95 + 0.02, h * (1 - Math.cos(a)))); } pts.push(new T.Vector2(r * 0.97, h + 0.02), new T.Vector2(r * 0.86, h)); return new T.Mesh(new T.LatheGeometry(pts, 48), mat); };
+        function foodStage(S, T, scene) { const look = studioLook(S, { shadow: [3, 10, 6], shadowSize: 5, exposure: 1.1 });
+            const d = new T.Mesh(new T.CircleGeometry(2.9, 72), new T.MeshStandardMaterial({ map: clothTexture(T, { base: '#f3e7cc', border: '#a3271d', pat: '#2b4a7a', rep: [3, 1] }), roughness: 0.95 })); d.rotation.x = -Math.PI / 2; d.position.y = 0.004; scene.add(d);
+            rugFloor(T, scene, 0, 8, 11); return look; }
+        // срез қазы: кишка, белый жир по кругу, мясо с мраморностью
+        function qazySliceTex(T) { const [c, g] = _cv(256, 256); g.fillStyle = '#3a1a10'; g.beginPath(); g.arc(128, 128, 126, 0, 7); g.fill(); g.fillStyle = '#f6efe0'; g.beginPath(); g.arc(128, 128, 112, 0, 7); g.fill();
+            g.fillStyle = '#8a2a20'; g.beginPath(); g.ellipse(150, 128, 70, 82, 0, 0, 7); g.fill(); const R = seeded(4); for (let i = 0; i < 40; i++) { g.fillStyle = 'rgba(250,240,225,.7)'; g.beginPath(); g.ellipse(110 + R() * 90, 70 + R() * 120, 3 + R() * 7, 2 + R() * 3, R() * 3, 0, 7); g.fill(); }
+            return _tex(T, c); }
+
+        // ══════ БЕСБАРМАҚ ══════
+        const BESBARMAQ_PARTS = [
+            { id: 'tabaq', kk: 'Табақ', ru: 'Большое блюдо', text: 'Бесбармақ подают на широком деревянном или фаянсовом табақ — одно блюдо на всех, гости садятся вокруг дастархана.' },
+            { id: 'kespe', kk: 'Жайма (кеспе)', ru: 'Тонкие пласты теста', text: 'Тесто из муки, яйца и воды раскатывают тонко, режут ромбами и варят в мясном бульоне. Ложится первым слоем.' },
+            { id: 'et', kk: 'Ет', ru: 'Отварное мясо', text: 'Конина, баранина или говядина варятся 2–3 часа. Мясо режут крупно; самые почётные куски — бас (голова), жамбас (тазовая кость) — гостю.' },
+            { id: 'qazy', kk: 'Қазы', ru: 'Конская колбаса', text: 'Рёберное мясо с жиром в кишке — главное украшение праздничного бесбармака.' },
+            { id: 'qarta', kk: 'Қарта', ru: 'Конская толстая кишка', text: 'Вывернутая жирная кишка, нарезанная кольцами. Деликатес, его кладут сверху.' },
+            { id: 'tuzdyq', kk: 'Тұздық', ru: 'Луковый соус', text: 'Кольца лука, томлённые в горячем бульоне с перцем. Поливают мясо сверху — придаёт сочность.' },
+            { id: 'sorpa', kk: 'Сорпа', ru: 'Бульон в кесе', text: 'Наваристый бульон подают в пиалах после мяса — «сорпа» восстанавливает силы.' },
+        ];
+        function buildBesbarmaq(T, scene, S) {
+            const look = foodStage(S, T, scene); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z), R = seeded(11);
+            const woodM = new T.MeshStandardMaterial({ map: woodTexture(T, '#8a5328'), roughness: 0.4 });
+            { const g = new T.Group(); const t = woodBowl(T, 1.75, 0.22, woodM); t.scale.z = 0.8; g.add(t); registerPart(parts, 'tabaq', g, V(0, -0.5, 2.6), () => V(1.65, 0.2, 0)); }
+            { const g = new T.Group(); const dm = foodMat(0xefe1bc, 0.55); for (let i = 0; i < 26; i++) { const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 1.25; const geo = new T.PlaneGeometry(0.62, 0.62, 6, 6), p = geo.attributes.position;
+                    for (let k = 0; k < p.count; k++) p.setZ(k, Math.sin(p.getX(k) * 6 + i) * 0.04); geo.computeVertexNormals(); const m = new T.Mesh(geo, dm); m.material.side = T.DoubleSide; m.rotation.set(-Math.PI / 2 + (R() - .5) * .2, 0, R() * 3); m.position.set(Math.cos(a) * r, 0.2 + i * 0.005, Math.sin(a) * r * 0.8); g.add(m); }
+              registerPart(parts, 'kespe', g, V(-2.4, 1.5, -0.4), () => V(-1.0, 0.27, 0.3)); }
+            { const g = new T.Group(); const mm = [foodMat(0x7a3a26, 0.55), foodMat(0x6a2e1e, 0.5), foodMat(0x8f4a32, 0.55)];
+              for (let i = 0; i < 9; i++) { const m = new T.Mesh(lumpy(T, new T.DodecahedronGeometry(0.24, 1), 0.2, i), mm[i % 3]); m.scale.set(1.3, 0.8, 1); m.position.set((R() - .5) * 0.9, 0.42 + R() * 0.2, (R() - .5) * 0.7); m.rotation.set(R() * 3, R() * 3, 0); g.add(m); }
+              const bone = new T.Mesh(new T.CapsuleGeometry(0.07, 0.7, 6, 12), foodMat(0xf2e8d2, 0.35)); bone.rotation.z = Math.PI / 2 + 0.3; bone.position.set(0.1, 0.72, 0); g.add(bone);
+              registerPart(parts, 'et', g, V(0, 1.9, -0.4), () => V(0.2, 0.75, 0)); }
+            { const g = new T.Group(); const tex = qazySliceTex(T), sm = new T.MeshStandardMaterial({ map: tex, roughness: 0.45 }), skin = foodMat(0x3a1a10, 0.45);
+              for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; const m = new T.Mesh(new T.CylinderGeometry(0.16, 0.16, 0.07, 28), [skin, sm, sm]); m.position.set(Math.cos(a) * 0.95, 0.4, Math.sin(a) * 0.72); m.rotation.set(0.35 * Math.sin(a), 0, 0.35 * Math.cos(a)); g.add(m); }
+              registerPart(parts, 'qazy', g, V(2.3, 1.4, 0.6), () => V(0.95, 0.45, 0)); }
+            { const g = new T.Group(); const qm = foodMat(0xf2e3c4, 0.4); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + 0.3; const m = new T.Mesh(new T.TorusGeometry(0.12, 0.06, 10, 22), qm); m.position.set(Math.cos(a) * 0.55, 0.58, Math.sin(a) * 0.45); m.rotation.x = Math.PI / 2 - 0.4; g.add(m); }
+              registerPart(parts, 'qarta', g, V(2.4, 1.4, -1.8), () => V(0.55, 0.62, 0)); }
+            { const g = new T.Group(); const om = foodMat(0xf5ecc8, 0.25, { transparent: true, opacity: 0.85 }); for (let i = 0; i < 16; i++) { const m = new T.Mesh(new T.TorusGeometry(0.09 + R() * 0.06, 0.012, 6, 24), om); m.position.set((R() - .5) * 1.0, 0.86 + R() * 0.1, (R() - .5) * 0.8); m.rotation.set(Math.PI / 2 + (R() - .5) * .5, 0, R()); g.add(m); }
+              for (let i = 0; i < 40; i++) { const m = new T.Mesh(new T.SphereGeometry(0.012, 5, 4), foodMat(0x1a1410)); m.position.set((R() - .5) * 1.2, 0.85 + R() * 0.1, (R() - .5) * 1.0); g.add(m); }
+              registerPart(parts, 'tuzdyq', g, V(-1.9, 1.7, -1.4), () => V(-0.3, 0.92, 0.2)); }
+            { const g = new T.Group(); const k = woodBowl(T, 0.42, 0.34, foodMat(0xffffff, 0.15)); k.position.set(2.45, 0, 1.25); g.add(k); const band = new T.Mesh(new T.TorusGeometry(0.4, 0.012, 6, 40), foodMat(0x1d4fa0, 0.3)); band.rotation.x = Math.PI / 2; band.position.set(2.45, 0.3, 1.25); g.add(band);
+              const br = new T.Mesh(new T.CircleGeometry(0.37, 40), foodMat(0xd9a548, 0.1, { transparent: true, opacity: 0.9, metalness: 0.1 })); br.rotation.x = -Math.PI / 2; br.position.set(2.45, 0.29, 1.25); g.add(br);
+              registerPart(parts, 'sorpa', g, V(0.8, 1.6, 0.6), () => V(2.45, 0.35, 1.25)); }
+            const SN = 40, sp = new Float32Array(SN * 3); for (let i = 0; i < SN; i++) { sp[i * 3] = (R() - .5) * 1.2; sp[i * 3 + 1] = R() * 2; sp[i * 3 + 2] = (R() - .5) * 1.0; }
+            const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3)); const steam = new T.Points(sg, new T.PointsMaterial({ map: glowTexture(T), color: 0xffffff, size: 0.6, transparent: true, opacity: 0.1, depthWrite: false })); steam.position.y = 0.8; scene.add(steam);
+            look.shadows(); const tick = (dt) => { const p = sg.attributes.position; for (let i = 0; i < SN; i++) { let y = p.getY(i) + dt * 0.5; if (y > 2.4) y = 0; p.setY(i, y); } p.needsUpdate = true; };
+            S.st.phi = 0.95; S.st.theta = 0.35; return { parts, tick };
+        }
+
+        // ══════ БАУЫРСАҚ ══════
+        const BAURSAQ_PARTS = [
+            { id: 'qazan', kk: 'Қазан', ru: 'Казан', text: 'Бауырсақ жарят во фритюре в чугунном казане — «майға пісіру».' },
+            { id: 'mai', kk: 'Май', ru: 'Масло', text: 'Много раскалённого масла: бауырсақ должен плавать, чтобы равномерно вздуться.' },
+            { id: 'qamyr', kk: 'Қамыр', ru: 'Тесто', text: 'Дрожжевое тесто на молоке или айране с сахаром. Раскатывают пласт и режут ромбиками или квадратами.' },
+            { id: 'baursaq', kk: 'Бауырсақ', ru: 'Пышки', text: 'Золотистые пышные шарики — символ солнца и достатка. Их бросают на тое («шашу») и подают к чаю.' },
+            { id: 'tabaq', kk: 'Табақ', ru: 'Блюдо', text: 'Горка бауырсақ на блюде — обязательная часть дастархана. Говорят: «Бауырсақсыз той болмайды» — без бауырсақ нет тоя.' },
+        ];
+        function buildBaursaq(T, scene, S) {
+            const look = foodStage(S, T, scene); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z), R = seeded(21);
+            const iron = new T.MeshStandardMaterial({ color: 0x2c2a28, metalness: 0.7, roughness: 0.5, side: T.DoubleSide });
+            { const g = new T.Group(); const pr = []; for (let i = 0; i <= 20; i++) { const a = i / 20 * Math.PI / 2; pr.push(new T.Vector2(Math.max(0.02, Math.sin(a) * 1.0), -Math.cos(a) * 0.7 + 0.7)); } pr.push(new T.Vector2(1.08, 0.78), new T.Vector2(1.0, 0.76));
+              const m = new T.Mesh(new T.LatheGeometry(pr, 56), iron); g.add(m); [1, -1].forEach(s => { const h = new T.Mesh(new T.TorusGeometry(0.12, 0.035, 8, 20, Math.PI), iron); h.position.set(s * 1.1, 0.68, 0); h.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2; g.add(h); });
+              g.position.set(-1.0, 0.02, -0.3); registerPart(parts, 'qazan', g, V(0, -0.4, -2.2), () => V(1.08, 0.78, 0)); }
+            const fry = []; { const g = new T.Group(); const oil = new T.Mesh(new T.CircleGeometry(0.92, 48), foodMat(0xd99a2a, 0.08, { transparent: true, opacity: 0.88, metalness: 0.25 })); oil.rotation.x = -Math.PI / 2; oil.position.y = 0.55; g.add(oil);
+              for (let i = 0; i < 6; i++) { const b = new T.Mesh(lumpy(T, new T.SphereGeometry(0.15, 18, 14), 0.12, i), foodMat(0xc98a3a, 0.5)); b.position.set((R() - .5) * 1.0, 0.6, (R() - .5) * 1.0); b.userData.ph = R() * 6; g.add(b); fry.push(b); }
+              g.position.set(-1.0, 0.02, -0.3); registerPart(parts, 'mai', g, V(0, 2.2, -0.6), () => V(0.4, 0.6, 0.3)); }
+            { const g = new T.Group(); const board = new T.Mesh(new T.BoxGeometry(1.4, 0.06, 1.0), new T.MeshStandardMaterial({ map: woodTexture(T, '#b8834e'), roughness: 0.5 })); board.position.y = 0.03; g.add(board);
+              for (let i = 0; i < 12; i++) { const m = new T.Mesh(new T.BoxGeometry(0.22, 0.06, 0.22), foodMat(0xf1e4c4, 0.8)); m.position.set(-0.5 + (i % 4) * 0.33, 0.09, -0.3 + Math.floor(i / 4) * 0.3); m.rotation.y = Math.PI / 4; g.add(m); }
+              const pin = new T.Mesh(new T.CylinderGeometry(0.05, 0.05, 1.2, 14), new T.MeshStandardMaterial({ map: woodTexture(T, '#9a6a3a') })); pin.rotation.z = Math.PI / 2; pin.position.set(0, 0.11, 0.58); g.add(pin);
+              g.position.set(1.4, 0, -1.1); registerPart(parts, 'qamyr', g, V(-1.0, 1.8, 0.4), () => V(0, 0.12, 0)); }
+            { const g = new T.Group(); const gm = [foodMat(0xc98a3a, 0.45), foodMat(0xb8742a, 0.45), foodMat(0xd99c4a, 0.45)];
+              for (let i = 0; i < 26; i++) { const lvl = i < 14 ? 0 : i < 22 ? 1 : 2, a = R() * Math.PI * 2, r = [0.55, 0.35, 0.1][lvl] * Math.sqrt(R()) + 0.05; const b = new T.Mesh(lumpy(T, new T.SphereGeometry(0.16, 16, 12), 0.15, i + 5), gm[i % 3]); b.scale.set(1, 0.85, 1); b.position.set(Math.cos(a) * r, 0.2 + lvl * 0.2, Math.sin(a) * r); g.add(b); }
+              g.position.set(1.3, 0, 0.9); registerPart(parts, 'baursaq', g, V(0.2, 2.6, 0.2), () => V(0, 0.75, 0)); }
+            { const g = new T.Group(); const pl = woodBowl(T, 0.95, 0.14, foodMat(0xffffff, 0.15)); g.add(pl); const band = new T.Mesh(new T.TorusGeometry(0.9, 0.014, 6, 48), foodMat(0x1d4fa0, 0.3)); band.rotation.x = Math.PI / 2; band.position.y = 0.13; g.add(band);
+              g.position.set(1.3, 0, 0.9); registerPart(parts, 'tabaq', g, V(1.4, 1.0, 1.4), () => V(0.95, 0.15, 0)); }
+            look.shadows(); const tick = (dt, t) => fry.forEach(b => { b.position.y = 0.6 + Math.sin(t * 5 + b.userData.ph) * 0.03; b.rotation.x += dt * 0.6; });
+            S.st.phi = 1.0; S.st.theta = 0.3; return { parts, tick };
+        }
+
+        // ══════ ҚЫМЫЗ ══════
+        const QYMYZ_PARTS = [
+            { id: 'sore', kk: 'Сабаяқ', ru: 'Подставка', text: 'Резная подставка под сабу — чтобы кумыс не касался земли.' },
+            { id: 'saba', kk: 'Саба', ru: 'Кожаный мешок', text: 'Большой сосуд из копчёной конской кожи на 100–150 литров. Копчение даёт кумысу особый аромат и не даёт ему портиться.' },
+            { id: 'pispek', kk: 'Піспек', ru: 'Мутовка', text: 'Деревянный пест с крестовиной. Кумыс взбивают тысячи раз — чем дольше «піспек», тем вкуснее и игристее кумыс.' },
+            { id: 'ozhau', kk: 'Ожау', ru: 'Черпак', text: 'Резной деревянный черпак с длинной ручкой — им разливают кумыс.' },
+            { id: 'tostagan', kk: 'Тостаған', ru: 'Чаши', text: 'Деревянные чаши. Гостю наливают кумыс, держа ожау обеими руками — знак уважения.' },
+            { id: 'qymyz', kk: 'Қымыз', ru: 'Кумыс', text: 'Кислое кобылье молоко — лечебный напиток степи. Первый кумыс весны празднуют на «қымызмұрындық».' },
+        ];
+        function buildQymyz(T, scene, S) {
+            const look = foodStage(S, T, scene); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z);
+            const wood = new T.MeshStandardMaterial({ map: woodTexture(T, '#7a4a22'), roughness: 0.45 }), lth = new T.MeshStandardMaterial({ map: leatherTex(T, '#3a2010'), roughness: 0.55 });
+            const SX = -1.1;
+            { const g = new T.Group(); [-1, 1].forEach(s => { const l = new T.Mesh(new T.BoxGeometry(0.1, 1.5, 0.1), wood); l.position.set(SX + s * 0.5, 0.55, 0); l.rotation.z = s * 0.35; g.add(l); const l2 = l.clone(); l2.position.z = 0.0; l2.rotation.set(s * 0.35, 0, 0); l2.position.set(SX, 0.55, s * 0.5); g.add(l2); });
+              const ring = new T.Mesh(new T.TorusGeometry(0.62, 0.05, 8, 40), wood); ring.rotation.x = Math.PI / 2; ring.position.set(SX, 1.15, 0); g.add(ring); registerPart(parts, 'sore', g, V(0, -0.3, 1.8), () => V(SX + 0.62, 1.15, 0)); }
+            { const g = new T.Group(); const pr = []; for (let i = 0; i <= 30; i++) { const u = i / 30; pr.push(new T.Vector2(Math.max(0.02, Math.sin(Math.min(1, u * 1.15) * Math.PI) * 0.85 * (u > 0.8 ? 1 - (u - 0.8) * 3.2 : 1) + (u > 0.85 ? 0.2 : 0)), u * 2.4)); }
+              const m = new T.Mesh(new T.LatheGeometry(pr, 40), lth); m.position.set(SX, 0.9, 0); g.add(m); registerPart(parts, 'saba', g, V(0, 0.2, -1.6), () => V(SX + 0.85, 2.0, 0)); }
+            const pis = new T.Group(); { pis.add(new T.Mesh(new T.CylinderGeometry(0.04, 0.04, 2.6, 10), wood)); const cr = new T.Mesh(new T.BoxGeometry(0.5, 0.04, 0.08), wood); cr.position.y = -1.2; pis.add(cr); const cr2 = cr.clone(); cr2.rotation.y = Math.PI / 2; pis.add(cr2); pis.position.set(SX, 3.2, 0); }
+            registerPart(parts, 'pispek', pis, V(0, 1.6, 0), () => V(0, 1.3, 0));
+            { const g = new T.Group(); const bowl = woodBowl(T, 0.24, 0.16, wood); bowl.rotation.z = 0.0; g.add(bowl); g.add(tube(T, [V(0.2, 0.15, 0), V(0.6, 0.28, 0), V(1.1, 0.34, 0)], 0.03, wood, 12));
+              g.position.set(0.3, 0.02, 1.2); g.rotation.y = -0.6; registerPart(parts, 'ozhau', g, V(0.6, 1.2, 0.8), () => V(1.1, 0.35, 0)); }
+            const milk = []; { const g = new T.Group(); [[0.9, -0.5], [1.7, 0.1], [1.2, 0.8]].forEach(([x, z]) => { const b = woodBowl(T, 0.36, 0.26, wood); b.position.set(x, 0, z); g.add(b); });
+              registerPart(parts, 'tostagan', g, V(1.4, 0.8, 0.8), () => V(1.7, 0.3, 0.1)); }
+            { const g = new T.Group(); [[0.9, -0.5], [1.7, 0.1], [1.2, 0.8]].forEach(([x, z]) => { const m = new T.Mesh(new T.CircleGeometry(0.31, 32), foodMat(0xfbf8ee, 0.2)); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.23, z); g.add(m); milk.push(m); });
+              registerPart(parts, 'qymyz', g, V(0, 1.8, 0), () => V(1.2, 0.25, 0.8)); }
+            look.shadows(); let churn = 0;
+            const tick = (dt, t) => { if (churn > 0) { churn -= dt; pis.position.y += Math.sin(t * 9) * 0.35; pis.rotation.y = Math.sin(t * 9) * 0.3; } };
+            S.st.phi = 1.1; S.st.theta = 0.4; return { parts, tick, api: { churn: () => { churn = 5; } } };
+        }
+
+        // ══════ ҚАЗЫ-ҚАРТА ══════
+        const QAZY_PARTS = [
+            { id: 'taqtai', kk: 'Тақтай', ru: 'Доска', text: 'Нарезают на деревянной доске толстыми кругами — «қазы тілім».' },
+            { id: 'qazy', kk: 'Қазы', ru: 'Колбаса из конины', text: 'Рёберное мясо коня с жиром, посоленное с чесноком и перцем, набивают в кишку. Вялят или коптят, затем варят. Главный деликатес зимнего соғым.' },
+            { id: 'tilim', kk: 'Тілім', ru: 'Срезы', text: 'На срезе — красное мясо и белый ободок жира. Чем шире жир, тем ценнее қазы.' },
+            { id: 'qarta', kk: 'Қарта', ru: 'Карта', text: 'Толстая кишка, вывернутая жиром наружу. Варят и режут кольцами.' },
+            { id: 'shuzhyq', kk: 'Шұжық', ru: 'Колбаса из мяса', text: 'Колбаса из рубленого конского мяса с жиром, тоньше қазы.' },
+            { id: 'pyshaq', kk: 'Пышақ', ru: 'Нож', text: 'Мясо режет хозяин дома или старший — это почётная обязанность.' },
+        ];
+        function buildQazy(T, scene, S) {
+            const look = foodStage(S, T, scene); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z), R = seeded(31);
+            const skin = new T.MeshStandardMaterial({ color: 0x4a1e12, roughness: 0.35, metalness: 0.05 }), slice = new T.MeshStandardMaterial({ map: qazySliceTex(T), roughness: 0.45 });
+            { const g = new T.Group(); const m = new T.Mesh(new T.BoxGeometry(3.2, 0.12, 1.6), new T.MeshStandardMaterial({ map: woodTexture(T, '#a8743e'), roughness: 0.45 })); m.position.y = 0.06; g.add(m); registerPart(parts, 'taqtai', g, V(0, -0.5, 2.0), () => V(1.6, 0.12, 0.8)); }
+            { const g = new T.Group(); const path = new T.CatmullRomCurve3([V(-1.4, 0.3, -0.3), V(-0.6, 0.3, -0.45), V(0.2, 0.3, -0.35)]); const m = new T.Mesh(new T.TubeGeometry(path, 40, 0.19, 24, false), skin); g.add(m);
+              const cap = new T.Mesh(new T.CircleGeometry(0.19, 28), slice); cap.position.set(0.2, 0.3, -0.35); cap.rotation.y = Math.PI / 2 + 0.12; g.add(cap); const knot = new T.Mesh(new T.SphereGeometry(0.12, 12, 10), skin); knot.position.set(-1.45, 0.3, -0.3); g.add(knot);
+              registerPart(parts, 'qazy', g, V(-0.5, 1.8, -0.8), () => V(-0.6, 0.5, -0.45)); }
+            { const g = new T.Group(); for (let i = 0; i < 7; i++) { const m = new T.Mesh(new T.CylinderGeometry(0.19, 0.19, 0.08, 32), [skin, slice, slice]); m.position.set(0.55 + i * 0.22, 0.17 + (i % 2) * 0.03, -0.1 + i * 0.03); m.rotation.set(0.25, 0, -1.2 + i * 0.06); g.add(m); }
+              registerPart(parts, 'tilim', g, V(0.6, 2.2, 0.4), () => V(1.1, 0.3, 0)); }
+            { const g = new T.Group(); const qm = foodMat(0xf2e3c4, 0.38); for (let i = 0; i < 6; i++) { const m = new T.Mesh(new T.TorusGeometry(0.13, 0.065, 12, 24), qm); m.position.set(-1.1 + i * 0.3, 0.2, 0.45); m.rotation.x = Math.PI / 2 - 0.3; g.add(m); }
+              registerPart(parts, 'qarta', g, V(-1.2, 1.6, 1.2), () => V(-0.5, 0.25, 0.45)); }
+            { const g = new T.Group(); const path = new T.CatmullRomCurve3([V(-1.5, 0.22, 0.95), V(-0.5, 0.22, 1.05), V(0.6, 0.22, 0.98)]); g.add(new T.Mesh(new T.TubeGeometry(path, 30, 0.1, 16, false), foodMat(0x6a2a1a, 0.4)));
+              registerPart(parts, 'shuzhyq', g, V(1.5, 1.4, 1.4), () => V(0.6, 0.3, 0.98)); }
+            { const g = new T.Group(); const bl = new T.Shape(); bl.moveTo(0, 0); bl.lineTo(1.0, 0.03); bl.quadraticCurveTo(1.15, 0.07, 1.05, 0.14); bl.lineTo(0, 0.14); bl.closePath(); const m = new T.Mesh(new T.ExtrudeGeometry(bl, { depth: 0.02, bevelEnabled: false }), new T.MeshStandardMaterial({ color: 0xd6dbe2, metalness: 1, roughness: 0.2 }));
+              m.rotation.x = -Math.PI / 2; m.position.set(0.5, 0.14, 0.75); g.add(m); const h = new T.Mesh(new T.BoxGeometry(0.6, 0.08, 0.12), new T.MeshStandardMaterial({ map: woodTexture(T, '#3a1e0c') })); h.position.set(0.2, 0.16, 0.68); g.add(h);
+              registerPart(parts, 'pyshaq', g, V(1.8, 1.0, 0.6), () => V(1.0, 0.16, 0.7)); }
+            look.shadows(); S.st.phi = 0.9; S.st.theta = 0.25; return { parts };
+        }
+
+        // ══════ ҚҰРТ ══════
+        const QURT_PARTS = [
+            { id: 'syryq', kk: 'Сырық', ru: 'Тренога', text: 'Над очагом ставят треногу из жердей, чтобы подвесить мешок.' },
+            { id: 'qap', kk: 'Қап', ru: 'Мешок с айраном', text: 'Кипячёный айран (или сюзбе) сливают в холщовый мешок и подвешивают — сыворотка (сары су) стекает несколько суток.' },
+            { id: 'sarysu', kk: 'Сары су', ru: 'Сыворотка', text: 'Стекающая сыворотка. Её не выливают: пьют или используют для теста.' },
+            { id: 'shi', kk: 'Ши', ru: 'Циновка', text: 'Отжатую массу солят, скатывают в шарики и сушат на циновке из чия под солнцем и ветром.' },
+            { id: 'qurt', kk: 'Құрт', ru: 'Шарики курта', text: 'Высушенный курт хранится годами. Его брали в дальнюю дорогу и на войну — сытный, лёгкий и не портится.' },
+        ];
+        function buildQurt(T, scene, S) {
+            const look = foodStage(S, T, scene); const parts = {}, V = (x, y, z) => new T.Vector3(x, y, z), R = seeded(41);
+            const wood = new T.MeshStandardMaterial({ map: woodTexture(T, '#6a4020', [1, 3]), roughness: 0.5 }); const TX = -1.2;
+            { const g = new T.Group(); [0, 2.1, 4.2].forEach(a => { const l = new T.Mesh(new T.CylinderGeometry(0.04, 0.05, 3.2, 8), wood); l.position.set(TX + Math.cos(a) * 0.6, 1.5, Math.sin(a) * 0.6); l.lookAt(TX, 3.1, 0); l.rotateX(Math.PI / 2); g.add(l); });
+              registerPart(parts, 'syryq', g, V(0, 0, -1.6), () => V(TX, 3.0, 0)); }
+            { const g = new T.Group(); g.add(tube(T, [V(TX, 3.05, 0), V(TX, 2.55, 0)], 0.012, foodMat(0x6a5a40), 4)); const bag = new T.Mesh(lumpy(T, new T.SphereGeometry(0.45, 24, 18), 0.08, 3), new T.MeshStandardMaterial({ map: feltTexture(T, '#e8dcc0'), roughness: 0.95 })); bag.scale.set(1, 1.3, 1); bag.position.set(TX, 2.05, 0); g.add(bag);
+              registerPart(parts, 'qap', g, V(0, 1.2, 0), () => V(TX + 0.45, 2.1, 0)); }
+            const drips = []; { const g = new T.Group(); const bowl = woodBowl(T, 0.5, 0.3, new T.MeshStandardMaterial({ map: woodTexture(T, '#8a5a2a') })); bowl.position.set(TX, 0, 0); g.add(bowl);
+              const w = new T.Mesh(new T.CircleGeometry(0.43, 32), foodMat(0xe8dca0, 0.1, { transparent: true, opacity: 0.85 })); w.rotation.x = -Math.PI / 2; w.position.set(TX, 0.24, 0); g.add(w);
+              for (let i = 0; i < 4; i++) { const d = new T.Mesh(new T.SphereGeometry(0.03, 8, 6), foodMat(0xf0e6b0, 0.1)); d.scale.y = 1.6; d.userData.ph = i / 4; g.add(d); drips.push(d); }
+              registerPart(parts, 'sarysu', g, V(-0.6, -0.2, 1.4), () => V(TX + 0.5, 0.3, 0)); }
+            { const g = new T.Group(); const m = new T.Mesh(new T.PlaneGeometry(2.4, 1.8), new T.MeshStandardMaterial({ map: shiTexture(T), roughness: 0.9, side: T.DoubleSide })); m.rotation.x = -Math.PI / 2; m.position.set(1.3, 0.02, 0.2); g.add(m);
+              registerPart(parts, 'shi', g, V(1.0, -0.2, 1.8), () => V(2.4, 0.03, 0.9)); }
+            const balls = []; { const g = new T.Group(); for (let i = 0; i < 30; i++) { const m = new T.Mesh(lumpy(T, new T.SphereGeometry(0.11, 14, 10), 0.18, i), foodMat(0xf8f4ea, 0.85)); m.position.set(0.35 + (i % 6) * 0.38 + (R() - .5) * 0.08, 0.11, -0.45 + Math.floor(i / 6) * 0.33 + (R() - .5) * 0.08); g.add(m); balls.push(m); }
+              registerPart(parts, 'qurt', g, V(0, 1.8, 0), () => V(1.3, 0.22, 0.2)); }
+            look.shadows(); const dry = new T.Color(0xe9dcbc), wet = new T.Color(0xf8f4ea);
+            const tick = (dt, t) => { const k = 0.5 + 0.5 * Math.sin(t * 0.3); balls.forEach(b => b.material.color.copy(wet).lerp(dry, k));
+                drips.forEach(d => { const ph = (t * 0.7 + d.userData.ph) % 1; d.position.set(TX + (d.userData.ph - 0.5) * 0.2, 1.45 - ph * 1.15, 0); d.visible = ph < 0.95; }); };
+            S.st.phi = 1.15; S.st.theta = 0.35; return { parts, tick };
+        }
+
+        const FOOD3D = [
+            { id: 'besbarmaq', icon: '🍖', kk: 'Бесбармақ', parts: BESBARMAQ_PARTS, build: buildBesbarmaq, d: 8.4, tg: [0.2, -0.2, 0.2], intro: 'Ингредиенты парят над дастарханом. «Дайындау» — и они по очереди ложатся на табақ: жайма, ет, қазы, қарта, тұздық.' },
+            { id: 'baursaq', icon: '🟤', kk: 'Бауырсақ', parts: BAURSAQ_PARTS, build: buildBaursaq, d: 8.0, tg: [0.2, -0.3, 0.0], intro: 'Тесто, кипящее масло и золотая горка бауырсақ.' },
+            { id: 'qymyz', icon: '🥛', kk: 'Қымыз', parts: QYMYZ_PARTS, build: buildQymyz, d: 8.8, tg: [0.0, 0.4, 0.0], intro: 'Саба, піспек и тостаған. Нажмите «Піспек» — кумыс начнут взбивать.', extra: [['🥢 Піспек', 'churn']] },
+            { id: 'qazy', icon: '🥩', kk: 'Қазы-қарта', parts: QAZY_PARTS, build: buildQazy, d: 6.8, tg: [0.0, -0.5, 0.2], intro: 'Праздничная нарезка: қазы, қарта, шұжық.' },
+            { id: 'qurt', icon: '⚪', kk: 'Құрт', parts: QURT_PARTS, build: buildQurt, d: 8.4, tg: [0.2, 0.2, 0.0], intro: 'Как делают курт: айран стекает в мешке, шарики сохнут на ши.' },
+        ];
+        function Food3D({ initial }) {
+            const [m, setM] = useState(() => Math.max(0, FOOD3D.findIndex(f => f.id === initial))); const f = FOOD3D[m];
+            useEffect(() => { const i = FOOD3D.findIndex(x => x.id === initial); if (i >= 0) setM(i); }, [initial]);
+            return (
+                <div className="mb-12">
+                    <div className="flex gap-2 overflow-x-auto pb-3 mb-3">{FOOD3D.map((x, i) => <button key={x.id} className={btn3d + ' shrink-0'} style={btnStyle(m === i)} onClick={() => setM(i)}>{x.icon} {x.kk}</button>)}</div>
+                    <div className="keep-dark relative rounded-3xl overflow-hidden border border-[#1a1a1a]" style={{ height: 'min(78vh, 720px)', minHeight: 520, background: 'radial-gradient(ellipse at 50% 70%, #14110a 0%, #070707 70%)' }}>
+                        <AnatomyViewer key={f.id} PARTS={f.parts} scene={f.build} explodable startExplode={1} stepLabel="құрамы" opts={{ distance: f.d, target: f.tg, minDist: 3, maxDist: 24 }}
+                            intro={<p className="text-[#999] text-xs"><b className="text-[#C5A55A]">{f.kk}</b> — {f.intro}</p>}
+                            controls={(api) => <>
+                                <button className={btn3d + ' flex-1'} style={btnStyle(true)} onClick={() => api.cook?.()}>🍳 Дайындау</button>
+                                {(f.extra || []).map(([l, k]) => <button key={k} className={btn3d} style={btnStyle(false)} onClick={() => api[k]?.()}>{l}</button>)}
+                            </>} />
+                    </div>
+                </div>
+            );
         }
 
         // ═════════════════════  ДӘСТҮР 3D: Бесік, Тұсаукесер, Наурыз көже  ═════════════════════
