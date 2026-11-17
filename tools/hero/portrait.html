@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:transparent">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+// портрет для страницы «Өмірбаян»: рендер 3D-модели в позе привязки, тёплый студийный свет, прозрачный фон
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const g = await new GLTFLoader().loadAsync('../../models/heroes/bogenbay.glb');
+const r = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setPixelRatio(2); r.setSize(700, 1000); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.0; r.setClearColor(0, 0); document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.add(new T.HemisphereLight(0xfff2dc, 0x2a1c0c, 0.55));
+const key = new T.DirectionalLight(0xffe0b0, 1.5); key.position.set(-1.2, 1.6, 1.6); sc.add(key);
+const rim = new T.DirectionalLight(0xC5A55A, 1.1); rim.position.set(1.4, 1.2, -1.2); sc.add(rim);
+const fill = new T.DirectionalLight(0x9fb4d8, 0.25); fill.position.set(1.5, 0.4, 1.0); sc.add(fill);
+sc.add(g.scene); g.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+const cam = new T.PerspectiveCamera(24, 0.7, 0.01, 20); cam.position.set(0.42, 0.66, 2.35); cam.lookAt(0.0, 0.6, 0); r.render(sc, cam);
+window.PNG = r.domElement.toDataURL('image/png'); window.READY = true;
+</script>
