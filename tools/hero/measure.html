@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><body>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const g = await new GLTFLoader().loadAsync('bogenbay_src.glb'); let mesh; g.scene.traverse(o => { if (o.isMesh) mesh = o; });
+const geo = mesh.geometry, p = geo.attributes.position, O = { verts: p.count, index: geo.index?.count, attrs: Object.keys(geo.attributes), idxType: geo.index?.array.constructor.name };
+// профиль: по высоте — макс. радиус, ширина по x среди точек |z|<0.05 и число точек
+const prof = []; for (let k = 0; k < 40; k++) { const y0 = k * 0.005, y1 = y0 + 0.005; let rmax = 0, n = 0, xmin = 9, xmax = -9, zmin = 9, zmax = -9;
+  for (let i = 0; i < p.count; i += 7) { const y = p.getY(i); if (y < y0 || y >= y1) continue; const x = p.getX(i), z = p.getZ(i); n++; rmax = Math.max(rmax, Math.hypot(x, z)); if (Math.hypot(x, z) < 0.17) { xmin = Math.min(xmin, x); xmax = Math.max(xmax, x); zmin = Math.min(zmin, z); zmax = Math.max(zmax, z); } }
+  prof.push([y0.toFixed(3), n, rmax.toFixed(3), xmin.toFixed(2) + '..' + xmax.toFixed(2), zmin.toFixed(2) + '..' + zmax.toFixed(2)]); }
+O.prof = prof; window.OUT = O; window.READY = true;
+</script>

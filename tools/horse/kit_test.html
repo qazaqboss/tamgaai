@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { loadHorseKit } from '../../models/horse/horse-kit.js';
+const T = THREE;
+const kit = await loadHorseKit({ THREE, GLTFLoader, SkeletonUtils, mergeBufferGeometries, base: '../../models/horse/' });
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1500, 700); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0xcfd8e0); sc.add(new T.HemisphereLight(0xffffff, 0x775533, 0.8)); const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(6, 10, 4); dl.castShadow = true; dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); sc.add(dl);
+const g = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshStandardMaterial({ color: 0xb8a77a })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; sc.add(g);
+const speeds = [0, 5, 14], tints = [null, null, 0x1a120c], H = speeds.map((s, i) => { const h = kit.create({ tint: tints[i] }); h.root.position.set((i - 1) * 2.4, 0, 0); h.root.rotation.y = Math.PI / 2; sc.add(h.root);
+  const rider = new T.Mesh(new T.CapsuleGeometry(0.17, 0.5, 4, 12), new T.MeshStandardMaterial({ color: 0x1d4fa0 })); rider.position.y = 0.42; rider.castShadow = true; h.seat.add(rider); return h; });
+for (let k = 0; k < 40; k++) H.forEach((h, i) => h.update(1 / 30, speeds[i]));
+const cam = new T.PerspectiveCamera(30, 1500 / 700, 0.1, 100); cam.position.set(0.5, 2.3, 9.5); cam.lookAt(0, 1.0, 0); r.render(sc, cam);
+window.OUT = { withers: kit.withers, seatY: kit.seatY, seatZ: kit.seatZ, seatH: H.map(h => +h.seatHeight().toFixed(3)) }; window.READY = true;
+</script>

@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const g = await new GLTFLoader().loadAsync('bogenbay_static.glb'); const m = g.scene;
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1400, 1000); r.outputEncoding = T.sRGBEncoding; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0x1a1a1a); sc.add(new T.HemisphereLight(0xffffff, 0x888888, 1.3)); sc.add(m);
+const lines = new T.Group(); const L = (a, b, c) => lines.add(new T.Line(new T.BufferGeometry().setFromPoints([a, b]), new T.LineBasicMaterial({ color: c, transparent: true, opacity: 0.55, depthTest: false })));
+for (let y = 0; y <= 1.0001; y += 0.05) { const c = Math.round(y * 100) % 10 ? 0x00c0ff : 0xff3060; L(new T.Vector3(-0.5, y, 0.6), new T.Vector3(0.5, y, 0.6), c); L(new T.Vector3(0.6, y, -0.5), new T.Vector3(0.6, y, 0.5), c); }
+for (let x = -0.4; x <= 0.4001; x += 0.05) { const c = Math.abs(Math.round(x * 100)) % 10 ? 0x00c0ff : 0xff3060; L(new T.Vector3(x, 0, 0.6), new T.Vector3(x, 1, 0.6), c); L(new T.Vector3(0.6, 0, x), new T.Vector3(0.6, 1, x), c); }
+sc.add(lines); lines.renderOrder = 9;
+r.autoClear = false; r.setScissorTest(true);
+const view = (x, pos) => { r.setScissor(x, 0, 700, 1000); r.setViewport(x, 0, 700, 1000); r.clear(); const c = new T.OrthographicCamera(-0.35, 0.35, 1.0, 0.0, -5, 5); c.position.copy(pos); c.lookAt(0, pos.y, 0); r.render(sc, c); };
+view(0, new T.Vector3(0, 0, 2)); view(700, new T.Vector3(2, 0, 0));
+window.READY = true;
+</script>

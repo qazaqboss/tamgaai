@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { loadHorseKit } from '../../models/horse/horse-kit.js';
+import { loadRiderKit } from '../../models/rider/rider-kit.js';
+const T = THREE;
+const [hk, rk] = await Promise.all([loadHorseKit({ THREE, GLTFLoader, SkeletonUtils, mergeBufferGeometries, base: '../../models/horse/' }), loadRiderKit({ THREE, GLTFLoader, SkeletonUtils, base: '../../models/rider/' })]);
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1500, 800); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0xcfd2d6); sc.add(new T.HemisphereLight(0xffffff, 0x665544, 0.8)); const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(4, 8, 5); dl.castShadow = true; dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5 }); sc.add(dl);
+const gr = new T.Mesh(new T.PlaneGeometry(30, 30), new T.MeshStandardMaterial({ color: 0xb8ad94 })); gr.rotation.x = -Math.PI / 2; gr.receiveShadow = true; sc.add(gr);
+const mk = (x, speed, lean, shirt, hat) => { const h = hk.create(); h.root.position.x = x; sc.add(h.root); const rd = rk.create({ shirt, hat, capColor: 0xd4a83a }); h.seat.add(rd.root); rd.setLean(lean); for (let i = 0; i < 30; i++) { h.update(1 / 30, speed); h.root.updateMatrixWorld(true); rd.level(h.root); } return { h, rd }; };
+const A = mk(-1.3, 0, 0, 0x1d4fa0, 'kalpak'), Bh = mk(1.3, 14, 1, 0xc23b2b, 'cap');
+r.autoClear = false; r.setScissorTest(true);
+[[[5.5, 1.6, 1.2], [0, 1.4, 0], 900, 800, 0, 0], [[-1.3, 1.7, 3.2], [-1.3, 1.5, 0], 600, 400, 900, 400], [[1.3 + 1.6, 2.2, -1.6], [1.3, 1.5, 0.2], 600, 400, 900, 0]].forEach(([p, t, w, hh, x, y]) => {
+  r.setScissor(x, y, w, hh); r.setViewport(x, y, w, hh); r.clear(); const cam = new T.PerspectiveCamera(32, w / hh, 0.05, 60); cam.position.set(...p); cam.lookAt(...t); r.render(sc, cam); });
+window.OUT = { ok: true }; window.READY = true;
+</script>

@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { loadHorseKit } from '../../models/horse/horse-kit.js';
+const T = THREE, Q = new URLSearchParams(location.search), saddle = Q.get('saddle') !== '0';
+const kit = await loadHorseKit({ THREE, GLTFLoader, SkeletonUtils, mergeBufferGeometries, base: '../../models/horse/' });
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1500, 800); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0xcfd2d6); sc.add(new T.HemisphereLight(0xffffff, 0x665544, 0.8)); const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(4, 8, 5); dl.castShadow = true; dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4 }); sc.add(dl);
+const g = new T.Mesh(new T.PlaneGeometry(20, 20), new T.MeshStandardMaterial({ color: 0xb8ad94 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; sc.add(g); sc.add(new T.GridHelper(6, 24, 0x777777, 0x999999));
+const h = kit.create({ saddle }); sc.add(h.root); h.update(0, 0);
+r.autoClear = false; r.setScissorTest(true);
+const views = [[[4.2, 1.0, 0.35], [0, 0.85, 0.35], 750, 800, 0, 0], [[0.4, 1.1, 4.2], [0, 0.85, 0.2], 375, 400, 750, 400], [[2.8, 2.0, 2.8], [0, 0.85, 0.3], 375, 400, 1125, 400], [[0.2, 1.0, -4.0], [0, 0.85, 0], 750, 400, 750, 0]];
+views.forEach(([p, t, w, hh, x, y]) => { r.setScissor(x, y, w, hh); r.setViewport(x, y, w, hh); r.clear(); const cam = new T.PerspectiveCamera(30, w / hh, 0.05, 50); cam.position.set(...p); cam.lookAt(...t); r.render(sc, cam); });
+window.OUT = { withers: kit.withers }; window.READY = true;
+</script>

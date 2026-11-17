@@ -1,2 +1,18 @@
 .DS_Store
 *.zip
+# тяжёлые исходники 3D (на сайте используются облегчённые версии в models/)
+/*.fbx
+/*.glb
+/*.jpeg
+/*.jpg
+/horse.png
+/horse_hairs.png
+/lambert20_*
+models/man/
+models/standing-man/
+models/horse-basemesh/source/
+models/horse-basemesh/textures/
+tools/hero/*.glb
+tools/horse/tex/
+# личные файлы шежіре
+docs/shezhire-baiterek-aset*.pdf

@@ -1,8 +1,7 @@
 # Модель коня
 
-`horse_run.glb` — «Horse Run» by Amitesh Nandan
-(https://sketchfab.com/3d-models/horse-run-b7421fcc3b9b4065b2b330a3bc7e9a79),
-лицензия CC BY-ND 4.0 (https://creativecommons.org/licenses/by-nd/4.0/).
+Конь с седлом — общий модуль сайта `models/horse` (см. `models/horse/CREDITS.md`):
+«The Horse» by aaadragon (https://sketchfab.com/3d-models/the-horse-ecfe459c6baa4377b487f89c57569d5c),
+лицензия CC BY 4.0, и седло «Western Saddle».
 
-Для веба уменьшены текстуры (4096 → 1024) и квантованы вершины
-(gltf-transform resize + quantize) — техническая конвертация формата, сама модель не изменялась.
+`horse_run.glb` («Horse Run», Amitesh Nandan, CC BY-ND 4.0) больше не используется.

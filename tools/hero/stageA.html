@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><body>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+// Этап A: отрезаем подставку (камни, трава, диск), упрощаем меш (meshoptimizer, с учётом UV), сохраняем статичный GLB.
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { MeshoptSimplifier as S } from 'https://unpkg.com/meshoptimizer@0.22.0/meshopt_simplifier.module.js';
+await S.ready; S.useExperimentalFeatures = true; const t0 = performance.now(), log = m => console.log('A', ((performance.now() - t0) / 1000).toFixed(1) + 's', m); log('ready');
+const Q = new URLSearchParams(location.search), TRIS = +(Q.get('tris') ?? 120000);
+const g = await new GLTFLoader().loadAsync('bogenbay_src.glb'); let mesh; g.scene.traverse(o => { if (o.isMesh) mesh = o; }); log('loaded');
+const geo = mesh.geometry, P = geo.attributes.position.array, UV = geo.attributes.uv.array, N = geo.attributes.normal.array, I = geo.index.array;
+// сапоги (вид сверху) — внутри них разрешаем спуститься до подошвы
+const boots = [[-0.165, -0.045, -0.05, 0.125], [0.045, 0.175, -0.095, 0.075]];
+const inBoot = (x, z) => boots.some(([x0, x1, z0, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+const keep = []; let removed = 0;
+for (let t = 0; t < I.length; t += 3) { const a = I[t], b = I[t + 1], c = I[t + 2];
+  const cy = (P[a * 3 + 1] + P[b * 3 + 1] + P[c * 3 + 1]) / 3, cx = (P[a * 3] + P[b * 3] + P[c * 3]) / 3, cz = (P[a * 3 + 2] + P[b * 3 + 2] + P[c * 3 + 2]) / 3;
+  const ok = cy >= 0.14 || (inBoot(cx, cz) && cy >= 0.089); if (ok) keep.push(a, b, c); else removed++; }
+const idx = new Uint32Array(keep); log('cut ' + removed);
+const attr = new Float32Array(UV.length / 2 * 5); for (let i = 0, n = UV.length / 2; i < n; i++) { attr[i * 5] = UV[i * 2]; attr[i * 5 + 1] = UV[i * 2 + 1]; attr[i * 5 + 2] = N[i * 3] * 0.3; attr[i * 5 + 3] = N[i * 3 + 1] * 0.3; attr[i * 5 + 4] = N[i * 3 + 2] * 0.3; }
+const [si, err] = S.simplifyWithAttributes(idx, P, 3, attr, 5, [1.5, 1.5, 0.3, 0.3, 0.3], null, TRIS * 3, 0.02, []);
+log('simplified ' + si.length / 3); const [remap, unique] = S.compactMesh(si);
+const np = new Float32Array(unique * 3), nn = new Float32Array(unique * 3), nu = new Float32Array(unique * 2);
+for (let i = 0; i < remap.length; i++) { const j = remap[i]; if (j === 0xffffffff) continue; np.set(P.subarray(i * 3, i * 3 + 3), j * 3); nn.set(N.subarray(i * 3, i * 3 + 3), j * 3); nu.set(UV.subarray(i * 2, i * 2 + 2), j * 2); }
+const out = new T.BufferGeometry(); out.setAttribute('position', new T.BufferAttribute(np, 3)); out.setAttribute('normal', new T.BufferAttribute(nn, 3)); out.setAttribute('uv', new T.BufferAttribute(nu, 2)); out.setIndex(new T.BufferAttribute(si, 1));
+const m2 = new T.Mesh(out, mesh.material); m2.name = 'bogenbay';
+[mesh.material.map, mesh.material.normalMap, mesh.material.metalnessMap, mesh.material.roughnessMap].forEach(t => { if (t) t.userData.mimeType = 'image/jpeg'; });
+log('compact ' + unique); const glb = await new GLTFExporter().parseAsync(m2, { binary: true, maxTextureSize: 2048 });
+log('exported'); window.GLB = btoa(Array.from(new Uint8Array(glb), c => String.fromCharCode(c)).join(''));
+window.OUT = { removedTris: removed, keptTris: keep.length / 3, simplifiedTris: si.length / 3, verts: unique, err, bytes: glb.byteLength }; window.READY = true;
+</script>

@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8"><body>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+// Конвертер: saddle_blockout.fbx (Western Saddle) + текстуры lambert20 → models/horse/saddle.glb
+// Седло в метрах, перёд = +Z (как у коня), верх = +Y; начало координат — низ ленчика по центру (точка на хребте коня).
+import * as T from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+const tl = new T.TextureLoader(), load = u => new Promise(r => tl.load(u, r));
+const [alb, nrm, orm] = await Promise.all(['tex/saddle_albedo.jpg', 'tex/saddle_normal.jpg', 'tex/saddle_orm.jpg'].map(load));
+[alb, nrm, orm].forEach(t => { t.flipY = true; t.userData.mimeType = 'image/jpeg'; }); alb.encoding = T.sRGBEncoding;
+const leather = new T.MeshStandardMaterial({ name: 'saddle_leather', map: alb, normalMap: nrm, roughnessMap: orm, metalnessMap: orm, aoMap: orm, metalness: 1, roughness: 1 });
+const lin = h => new T.Color(h).convertSRGBToLinear();
+const strap = new T.MeshStandardMaterial({ name: 'saddle_strap', color: lin(0x3e1f10), roughness: 0.6, metalness: 0 });
+const seat = new T.MeshStandardMaterial({ name: 'saddle_seat', color: lin(0x6a3218), roughness: 0.8, metalness: 0 });
+const pick = m => m.name === 'lambert20' ? leather : m.name === 'lambert22' ? seat : strap;
+
+const f = await new FBXLoader().loadAsync('../../saddle_blockout.fbx'); f.updateMatrixWorld(true);
+const out = new T.Group(); out.name = 'saddle'; const stats = [];
+f.traverse(o => { if (!o.isMesh) return;
+  const g0 = o.geometry.clone(); g0.applyMatrix4(o.matrixWorld);
+  const mats = Array.isArray(o.material) ? o.material : [o.material];
+  const groups = g0.groups.length ? g0.groups : [{ start: 0, count: (g0.index ? g0.index.count : g0.attributes.position.count), materialIndex: 0 }];
+  // группы → отдельные меши (одна деталь = один материал)
+  const byMat = {}; groups.forEach(gr => (byMat[gr.materialIndex] ||= []).push(gr));
+  Object.entries(byMat).forEach(([mi, grs]) => {
+    const g = new T.BufferGeometry(), names = ['position', 'normal', 'uv'];
+    names.forEach(n => { const a = g0.attributes[n]; if (!a) return; const arr = []; grs.forEach(gr => { for (let i = gr.start; i < gr.start + gr.count; i++) for (let k = 0; k < a.itemSize; k++) arr.push(a.array[i * a.itemSize + k]); }); g.setAttribute(n, new T.Float32BufferAttribute(arr, a.itemSize)); });
+    const before = g.attributes.position.count, m = mergeVertices(g, 1e-4);
+    const mat = pick(mats[mi]); if (mat !== leather) m.deleteAttribute('uv');
+    const mesh = new T.Mesh(m, mat); mesh.name = o.name + (Object.keys(byMat).length > 1 ? '_' + mat.name.replace('saddle_', '') : ''); out.add(mesh);
+    stats.push([mesh.name, before, m.attributes.position.count]); });
+});
+// перёд седла (рожок) смотрит в +X → поворачиваем в +Z
+out.children.forEach(m => m.geometry.rotateY(-Math.PI / 2));
+// масштаб: длина юбки седла ≈ 0.74 м
+const skirt = out.getObjectByName('saddleskirt_low'); skirt.geometry.computeBoundingBox(); const sb = skirt.geometry.boundingBox;
+const s = 0.74 / (sb.max.z - sb.min.z);
+// точка опоры: центр низа ленчика (по осевой линии седла)
+const p = skirt.geometry.attributes.position; let minY = Infinity; const cx = (sb.min.x + sb.max.x) / 2, cz = (sb.min.z + sb.max.z) / 2;
+for (let i = 0; i < p.count; i++) if (Math.abs(p.getX(i) - cx) < (sb.max.x - sb.min.x) * 0.06) minY = Math.min(minY, p.getY(i));
+out.children.forEach(m => { m.geometry.translate(-cx, -minY, -cz); m.geometry.scale(s, s, s); m.geometry.computeBoundingBox(); m.geometry.computeBoundingSphere(); });
+const bb = new T.Box3().setFromObject(out);
+const glb = await new GLTFExporter().parseAsync(out, { binary: true });
+const b64 = btoa(Array.from(new Uint8Array(glb), c => String.fromCharCode(c)).join(''));
+window.OUT = { meshes: out.children.length, verts: stats.reduce((a, x) => a + x[2], 0), vertsBefore: stats.reduce((a, x) => a + x[1], 0), scale: s, box: [bb.min.toArray().map(x => +x.toFixed(3)), bb.max.toArray().map(x => +x.toFixed(3))], bytes: glb.byteLength };
+window.GLB = b64; window.READY = true;
+</script>

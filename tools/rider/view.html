@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const L = new GLTFLoader(); const [a, b] = await Promise.all([L.loadAsync('../../models/man/man.glb'), L.loadAsync('../../models/standing-man/standing_man.glb')]);
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1400, 700); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0xcfd2d6); sc.add(new T.HemisphereLight(0xffffff, 0x665544, 0.9)); const dl = new T.DirectionalLight(0xffffff, 1.5); dl.position.set(3, 6, 5); sc.add(dl);
+const out = {};
+[[a, -1.2, 'man'], [b, 1.2, 'standing']].forEach(([g, x, n]) => { const s = g.scene; s.updateMatrixWorld(true); const bb = new T.Box3().setFromObject(s), sz = bb.getSize(new T.Vector3());
+  const k = 1.75 / sz.y; s.scale.multiplyScalar(k); s.updateMatrixWorld(true); const b2 = new T.Box3().setFromObject(s), c = b2.getCenter(new T.Vector3()); s.position.x += x - c.x; s.position.y -= b2.min.y; s.position.z -= c.z; sc.add(s); out[n] = { size: sz.toArray(), anims: g.animations.map(q => q.name + ' ' + q.duration.toFixed(2)) }; });
+const cam = new T.PerspectiveCamera(30, 2, 0.1, 50); cam.position.set(0.6, 1.2, 5.5); cam.lookAt(0, 0.9, 0); r.render(sc, cam);
+window.OUT = out; window.READY = true;
+</script>
