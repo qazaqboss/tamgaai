@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Батыр анатомиясы · TAMĠA</title>
+<meta name="description" content="3D-манекен казахского воина 1465–1847 и степная одежда: слои, оружие, эпохи ханства.">
+<link rel="icon" href="../favicon.svg">
+<script>try{if(localStorage.getItem('shejire_theme')==='light')document.documentElement.dataset.theme='light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;700&family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* VOICE: музейная витрина-реконструктор, спокойно и точно, как этнографический атлас
+   IDEA: манекен в витрине «Anatomy»: объект и есть объяснение, каждый слой снимается
+   PICTURE: 3D-фигура, которую можно вращать и разбирать на слои и оружие
+   COLOUR and TYPE: степная синь (глубокая), кошма-белый, акцент — киноварь знамени; Rubik + PT Sans (казахские буквы)
+   LAYOUT: сцена с карточкой-деталью сверху, затем лента 382 лет, таблица характеристик, гражданская одежда */
+:root{color-scheme:light dark;
+--bg:light-dark(#f7f8f8,#0c171c);--ink:light-dark(#152027,#e4ecee);--soft:light-dark(#4a5a62,#9fb2b9);
+--panel:light-dark(#e6eef0,#12232b);--line:light-dark(#cbd8dc,#21363f);--acc:light-dark(#b3261e,#ef6a5c);
+--gold:light-dark(#8a6514,#d9b45a);--sky:light-dark(#0f5d78,#5fb7d4);--chip:light-dark(#ffffff,#0f1e25)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "PT Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Rubik,"PT Sans",sans-serif;line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,4.4vw,48px);font-weight:700}
+h2{font-size:clamp(24px,3vw,34px);font-weight:700;margin-bottom:14px}
+h3{font-size:19px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 10px;max-width:70ch}
+.band{padding:clamp(22px,3.4vw,52px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{padding-bottom:14px}
+.lede{color:var(--soft);font-size:17px;margin-top:10px}
+.lede b{color:var(--ink)}
+.stagebox{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:stretch}
+.fig{position:relative;min-height:560px;height:72vh;max-height:760px;background:var(--panel);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.fig>canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.fig>canvas:active{cursor:grabbing}
+.corner{position:absolute;font-size:13px;color:var(--soft);pointer-events:none;line-height:1.35}
+.tl{top:12px;left:14px}.tr{top:12px;right:14px;text-align:right}.bl{bottom:12px;left:14px;right:14px}
+.tl b{display:block;color:var(--ink);font:600 17px Rubik,sans-serif}
+.readout{display:flex;flex-wrap:wrap;gap:6px 18px;font-variant-numeric:tabular-nums}
+.readout span b{color:var(--ink);font-weight:700}
+#tip{position:absolute;pointer-events:none;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity .15s;z-index:3}
+#fallback{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;color:var(--soft)}
+aside.info{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;max-height:760px;overflow:auto}
+.info .kk{font:700 26px Rubik,sans-serif;line-height:1.1}
+.info .ru{color:var(--soft);margin-top:-6px}
+.info dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:4px 0;font-size:14px}
+.info dt{color:var(--soft)}.info dd{margin:0;font-variant-numeric:tabular-nums}
+.info p{font-size:15px}
+.era{border-top:1px solid var(--line);padding-top:10px;font-size:14.5px}
+.era b{color:var(--acc)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin:14px 0 4px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg .lab{font-size:13px;color:var(--soft);width:100%}
+button{font:inherit;font-size:14.5px;min-height:44px;padding:6px 13px;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer}
+button small{display:block;font-size:12.5px;color:var(--soft);line-height:1.1}
+button[aria-pressed=true]{background:var(--sky);border-color:var(--sky);color:#fff}
+button[aria-pressed=true] small{color:#ffffffcc}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.slider{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--soft)}
+input[type=range]{width:200px;accent-color:var(--acc);height:44px}
+.timeline{position:relative;height:56px;margin:18px 0 10px}
+.tbar{position:absolute;left:0;right:0;top:20px;height:16px;border-radius:8px;background:var(--line)}
+.tseg{position:absolute;top:0;height:100%;border-radius:8px;background:var(--sky);opacity:.85;border:2px solid var(--bg);cursor:pointer}
+.tseg.on{background:var(--acc);opacity:1}
+.tick{position:absolute;top:40px;font-size:12.5px;color:var(--soft);transform:translateX(-50%);white-space:nowrap}
+.tick.s{transform:none}.tick.e{transform:translateX(-100%)}
+.mark{position:absolute;top:14px;width:2px;height:28px;background:var(--ink);opacity:.55}
+.big{font:700 clamp(40px,6vw,64px)/1 Rubik,sans-serif;color:var(--acc)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px 26px;margin-top:8px}
+.facts div{border-top:2px solid var(--line);padding-top:8px}
+.events{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:6px 26px;margin:14px 0 0;padding:0;list-style:none}
+.events li{display:flex;gap:12px;font-size:15px}.events li b{min-width:44px;font-variant-numeric:tabular-nums;color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;color:var(--soft);font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{cursor:pointer}tbody tr:hover,tbody tr.sel{background:var(--panel)}
+tfoot td{font-weight:700}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:22px 34px}
+.cols section{border-top:3px solid var(--sky);padding-top:10px}
+.cols ul{margin:0;padding-left:18px}.cols li{margin-bottom:6px}
+.kz{font-weight:700}
+.note{font-size:14px;color:var(--soft)}
+.alt{background:var(--panel)}
+pre,.scroll{overflow-x:auto}code{overflow-wrap:anywhere}
+.src a{color:var(--sky)}
+.topnav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px max(4vw,16px);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topnav a{color:var(--gold);text-decoration:none;font:600 14px Rubik,sans-serif;letter-spacing:.06em}
+.topnav span{color:var(--soft);font-size:13px}
+@media(max-width:900px){.stagebox{grid-template-columns:minmax(0,1fr)}aside.info{max-height:none}.fig{height:64vh;min-height:440px}}
+@media(max-width:600px){.fig{min-height:380px;height:58vh}input[type=range]{width:150px}.tr{display:none}
+ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--soft)}.stack td:empty{display:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<nav class="topnav"><a href="../">← TAMĠA · Шежіре</a><span>Тарих · Батыр анатомиясы</span></nav>
+<header class="band"><div class="wrap">
+<h1>Анатомия казахского воина и степной одежды, 1465–1847</h1>
+<p class="lede">От Керей и Жанибека до Абылая и Кенесары — <b>382 года, около 15 поколений</b>. Манекен в витрине можно вращать и разобрать на слои: что надевали первым, что поверх, какое оружие висело на поясе. Нажмите на любую деталь — справа появятся её характеристики.</p>
+</div></header>
+
+<main>
+<section class="band" style="padding-top:6px"><div class="wrap">
+<div class="stagebox">
+ <div class="fig" id="fig">
+  <canvas id="cv" aria-label="3D-модель костюма; перетаскивайте для вращения"></canvas>
+  <div class="corner tl"><b id="setName">—</b><span id="setYears"></span></div>
+  <div class="corner tr">тянуть — вращать<br>колесо, щипок — масштаб<br>нажать — деталь</div>
+  <div class="corner bl"><div class="readout" id="readout"></div></div>
+  <div id="tip"></div>
+  <div id="fallback">3D не запустился в этом браузере (нужен WebGL). Описания всех деталей — в таблице ниже.</div>
+ </div>
+ <aside class="info" id="info" aria-live="polite"></aside>
+</div>
+<div class="controls">
+ <div class="seg" id="segW"><span class="lab">Воин по эпохам</span></div>
+ <div class="seg" id="segC"><span class="lab">Гражданская одежда</span></div>
+</div>
+<div class="controls">
+ <label class="slider" for="ex">Разборка по слоям <input id="ex" type="range" min="0" max="100" value="0"></label>
+ <button id="spin" aria-pressed="true">Вращение</button>
+ <button id="reset">Собрать и сбросить вид</button>
+</div>
+</div></section>
+
+<section class="band alt"><div class="wrap">
+<h2>382 года свободной степи: как считаются годы</h2>
+<div class="facts">
+ <div><span class="big">382</span><p>лет от основания ханства (≈1465) до гибели последнего хана Кенесары (1847).</p></div>
+ <div><span class="big">266</span><p>лет полной самостоятельности — до первой присяги Младшего жуза России (1731).</p></div>
+ <div><span class="big">≈15</span><p>поколений по 25 лет: прадед времён Касым-хана и правнук правнука при Абылае.</p></div>
+</div>
+<div class="timeline" id="tl"></div>
+<ul class="events" id="events"></ul>
+<p class="note" style="margin-top:14px">Даты основания у историков спорят: 1456, 1465 или 1470 гг. Здесь принято 1465. Между 1781 и 1822 гг. ханы ещё избирались, но власть постепенно переходила к российской администрации.</p>
+</div></section>
+
+<section class="band"><div class="wrap">
+<h2>Характеристики 3D-модели: <span id="tblName"></span></h2>
+<p class="note">Размеры и число вершин считаются прямо из сцены; масса — оценка по музейным образцам и реконструкциям. Рост манекена — 175 см (женский — 163 см).</p>
+<div class="scroll"><table class="stack" id="tbl"><thead><tr><th>Деталь</th><th class="n">Слой</th><th>Геометрия</th><th class="n">Ш × В × Г, см</th><th class="n">Вершин</th><th class="n">Масса, кг</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+</div></section>
+
+<section class="band alt"><div class="wrap">
+<h2>Гражданская одежда в деталях</h2>
+<p>Казахский костюм собирался слоями под степной климат: летом +40, зимой −40 и ветер. Основа одна у всех — рубаха, штаны, распашной халат и пояс; положение, возраст и семейное положение читались по ткани, меху, цвету и головному убору.</p>
+<div class="cols">
+<section><h3>Нательное</h3><ul>
+<li><span class="kz">Жейде</span> — рубаха-туника из бөз (хлопка) или шёлка, с прямым или стоячим воротом; у мужчин короче, у женщин — до пят как основа платья.</li>
+<li><span class="kz">Дамбал, шалбар</span> — нижние и верхние штаны с широким шагом для седла. <span class="kz">Күдері шалбар</span> — замшевые, часто с вышивкой по штанинам; их носили всадники и батыры.</li></ul></section>
+<section><h3>Верхнее распашное</h3><ul>
+<li><span class="kz">Бешпент</span> — приталенный кафтан ниже колен, на подкладке, со стоячим воротником.</li>
+<li><span class="kz">Шапан</span> — широкий халат с длинными рукавами, на вате или верблюжьей шерсти; бархат, сукно, полосатая бекасама. Подаренный шапан — знак почёта.</li>
+<li><span class="kz">Шекпен</span> — домотканый халат из верблюжьей шерсти у простых людей; <span class="kz">кебенек</span> — войлочный плащ пастуха и путника от дождя.</li>
+<li><span class="kz">Ішік</span> — шуба на лисьем, волчьем или корсачьем меху под тканью; <span class="kz">тон</span> — тулуп из овчины мехом внутрь; <span class="kz">күпі</span> — стёганый на верблюжьей шерсти.</li></ul></section>
+<section><h3>Пояс и подвесы</h3><ul>
+<li><span class="kz">Белбеу</span> — кожаный или тканый пояс; у знати — с серебряными бляхами и сердоликом.</li>
+<li><span class="kz">Кісе белбеу</span> — пояс с подвесными сумочками: нож (<span class="kz">пышақ</span>), огниво и кремень (<span class="kz">шақпақ</span>), шило, табакерка.</li>
+<li><span class="kz">Қамшы</span> — плеть из плетёной кожи; мужчина без камчи в степи почти не выходил из дома.</li></ul></section>
+<section><h3>Мужские головные уборы</h3><ul>
+<li><span class="kz">Тақия</span> — расшитая тюбетейка, носилась и под другими уборами.</li>
+<li><span class="kz">Бөрік</span> — высокая тулья из бархата с меховым околышем (лиса, куница, у ханов — соболь).</li>
+<li><span class="kz">Тымақ</span> — зимний: мех внутри, наушники и назатыльник, закрывающий шею от бурана.</li>
+<li><span class="kz">Қалпақ</span> — летняя белая войлочная шапка с отворотом полей.</li></ul></section>
+<section><h3>Обувь</h3><ul>
+<li><span class="kz">Саптама етік</span> — высокие сапоги на каблуке, удобные в стремени; у всадников голенище выше колена.</li>
+<li><span class="kz">Мәсі</span> — мягкие ичиги без каблука, носились с кожаными калошами <span class="kz">кебіс</span>.</li>
+<li><span class="kz">Шоқай</span> — простая обувь из сыромятной кожи у бедных семей.</li></ul></section>
+<section><h3>Женский костюм</h3><ul>
+<li><span class="kz">Көйлек</span> — длинное платье-туника с оборками по подолу (<span class="kz">етек</span>) и манжетам; у девушек — яркие ткани, у старших — сдержанные.</li>
+<li><span class="kz">Камзол</span> — приталенная безрукавка с баской, с серебряными пуговицами и позументом.</li>
+<li><span class="kz">Белдемше</span> — распашная юбка-запашка поверх платья у замужних, тёплая защита при верховой езде.</li></ul></section>
+<section><h3>Женские головные уборы</h3><ul>
+<li><span class="kz">Сәукеле</span> — свадебный конус высотой около 70 см: бархат, серебряные пластины, кораллы и жемчуг, на макушке пучок перьев филина (<span class="kz">үкі</span>), сзади накидка <span class="kz">желек</span>. Говорили, что хороший сәукеле стоит целого табуна коней.</li>
+<li><span class="kz">Тақия с үкі</span> — убор девушки до замужества.</li>
+<li><span class="kz">Кимешек</span> — белый капюшон замужней женщины, закрывающий шею и грудь; форма выреза различалась по родам и жузам. Поверх — тюрбан <span class="kz">шылауыш</span>.</li>
+<li><span class="kz">Жаулық</span> — платок пожилых женщин.</li></ul></section>
+<section><h3>Украшения и обереги</h3><ul>
+<li><span class="kz">Сырға</span> — серьги; <span class="kz">алқа</span> — ожерелье; <span class="kz">өңіржиек</span> — нагрудное украшение.</li>
+<li><span class="kz">Шолпы, шашбау</span> — накосные подвески; звон шолпы выдавал походку девушки.</li>
+<li><span class="kz">Білезік, жүзік, сақина</span> — браслеты и кольца; <span class="kz">тұмар</span> — треугольный амулет.</li>
+<li>Материалы — серебро с чернью и зернью, сердолик, коралл, бирюза.</li></ul></section>
+<section><h3>Ткани и знаки</h3><ul>
+<li>Своё: войлок, овчина, кожа и замша, верблюжья шерсть, мех. Привозное: шёлк, бархат (<span class="kz">барқыт</span>), парча (<span class="kz">зарбап</span>), сукно (<span class="kz">шұға</span>), хлопок (<span class="kz">бөз</span>).</li>
+<li>Чем старше человек, тем темнее и скромнее одежда; белый — цвет почтенных старших; красный — молодость и невеста.</li>
+<li>Орнамент <span class="kz">қошқар мүйіз</span> (бараньи рога) — главный мотив вышивки и позумента.</li></ul></section>
+</div>
+</div></section>
+
+<section class="band src"><div class="wrap">
+<h2>Насколько это точно</h2>
+<p>Для XV–XVII вв. казахских вещей сохранилось очень мало: воинский комплекс восстановлен по золотоордынским, ногайским и среднеазиатским аналогам, миниатюрам и запискам путешественников. Для XVIII–XIX вв. есть музейные сабли, луки, шоқпары и ружья, описания Рычкова и Левшина (1832). Модель — стилизованная реконструкция, а не копия конкретного музейного предмета: пропорции деталей верны, мелкий декор упрощён.</p>
+<p class="note">Источники: <a href="https://e-history.kz/storage/upload/library_en_files/iblock/823/823b6244d87e27f1aebe02493441e756.pdf">e-history.kz — военная организация казахов</a> · <a href="https://inform.kz/ru/kak-viglyadelo-oruzhie-kazahskih-batirov-80304883">Kazinform — оружие казахских батыров</a> · <a href="https://www.inform.kz/ru/vystavka-dospehov-kazahskih-batyrov-otkrylas-v-astane_a4062310">Kazinform — выставка доспехов К. Ахметжана</a> · <a href="https://vestnik.nsu.ru/historyphilology/files/565e76def08f83f1d2dbd6afcc31619e.pdf">Бобров, Исмаилов — сабли XVIII–XIX вв.</a> · <a href="https://bigenc.ru/b/voennoe-delo-kazakhov-v-xvii-xvi-263efb">Кушкумбаев — «Военное дело казахов в XVII–XVIII вв.»</a> · <a href="https://wikipedia.com/wiki/Kazakh_clothing">Kazakh clothing</a> · подача по методу <a href="https://github.com/wheresryan22/anatomy">wheresryan22/anatomy</a>.</p>
+</div></section>
+</main>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const ERAS=[
+{id:'e1',y0:1465,y1:1520,name:'Основание ханства',who:'Керей и Жанибек → Касым-хан',
+ kit:['body','zhejde','shalbar','beshpent','etik','sauyt','bilek','dulyga','belbeu','kylysh','sadak','qoramsaq','nayza','qalqan'],
+ text:'Около 1465 г. султаны Керей и Жанибек увели свои улусы от Абулхайр-хана в Западное Жетысу (Козыбасы, долина Шу). При Касым-хане (1511–1521) ханство стало одним из сильнейших в степи. Комплекс продолжает золотоордынскую традицию: кольчуга поверх кафтана, шлем-шишак с бармицей, лук, сабля, копьё и плетёный щит.'},
+{id:'e2',y0:1520,y1:1680,name:'Хакназар, Есим, Жангир',who:'Хакназар · Тауекел · Есим · Жангир',
+ kit:['body','zhejde','shalbar','beshpent','etik','sauyt','aina','bilek','dulyga','belbeu','kylysh','sadak','qoramsaq','nayza','qalqan','aybalta'],
+ text:'Войны с Могулистаном, Бухарой и ойратами. Под Орбұлақом (1643) Жангир-хан с небольшим отрядом остановил джунгарское войско: окопы в ущелье и ружейный огонь. В богатом снаряжении — зерцало (айна): полированные пластины поверх кольчуги; у пояса — боевой топор айбалта.'},
+{id:'e3',y0:1680,y1:1730,name:'Тауке и Аңырақай',who:'Тауке-хан · «Жеті жарғы» · джунгарские войны',
+ kit:['body','zhejde','shalbar','beshpent','etik','sauyt','aina','bilek','dulyga','belbeu','kylysh','sadak','qoramsaq','nayza','qalqan','aybalta','shoqpar'],
+ text:'Свод законов «Жеті жарғы», затем бедствие «Ақтабан шұбырынды» (1723) и победы при Бұланты (1728) и Аңырақае (≈1729–1730). Пик классического снаряжения: полный «бес қару» — садақ, найза, қылыш, айбалта, шоқпар, плюс доспех и щит.'},
+{id:'e4',y0:1730,y1:1781,name:'Эпоха Абылая',who:'Абылай-хан (1711–1781)',
+ kit:['body','zhejde','shalbar','beshpent','etik','sauyt','bilek','dulyga','belbeu','kylysh','sadak','qoramsaq','nayza','myltyq','oqshantay'],
+ text:'Абылай — батыр джунгарских войн, с 1771 г. хан трёх жузов. С 1731 г. жузы по очереди дают присягу России, но ханство ещё живёт своей политикой между Цинской империей и Россией. Ружьё с сошкой — айыр мылтық — становится обычным; кольчугу и шлем сохраняют батыры, щит уходит.'},
+{id:'e5',y0:1822,y1:1847,name:'Восстание Кенесары',who:'Кенесары Касымов, последний хан',
+ kit:['body','zhejde','shalbar','beshpent','etik','shapanW','belbeu','kylysh','nayza','myltyq','oqshantay','tymaq'],
+ text:'В 1822–1824 гг. ханская власть в Среднем и Младшем жузах упразднена. Внук Абылая Кенесары поднимает восстание (1837–1847) и в 1841 г. избирается ханом. Его сарбазы — лёгкая конница: стёганый полосатый шапан вместо доспеха, ружьё, пика, сабля, зимой тымақ. В 1847 г. хан погиб в Кыргызском Алатау.'}];
+const CIV=[
+{id:'cm',name:'Мужчина',sub:'XVIII–XIX вв.',kit:['body','zhejde','shalbar','beshpent','etik','shapan','belbeuC','borik','qamshy'],
+ text:'Праздничный костюм зажиточного степняка: белая рубаха, замшевые штаны, бешпент, бархатный шапан с орнаментом «қошқар мүйіз», кісе белбеу с ножом и огнивом, бөрік с лисьим околышем, камча в руке.'},
+{id:'cf',name:'Невеста',sub:'с сәукеле',female:1,kit:['body','koylek','kamzol','etikF','saukele','alqa','bilezik','shashbau'],
+ text:'Свадебный убор: светлое шёлковое платье с оборками, бархатный камзол с серебряными пуговицами, сәукеле с подвесками и накидкой-желек, ожерелье, браслеты, накосные шолпы. Сәукеле носили до года после свадьбы.'},
+{id:'cw',name:'Замужняя',sub:'с кимешеком',female:1,kit:['body','koylek2','kamzol2','beldemshe','etikF','kimeshek','alqa','bilezik'],
+ text:'Повседневный костюм замужней женщины: платье спокойного цвета, тёмный камзол, распашная юбка белдемше, белый кимешек с вышитым вырезом и тюрбаном-шылауыш.'}];
+const EVENTS=[[1465,'Керей и Жанибек основывают ханство'],[1511,'Касым-хан: расцвет ханства'],[1643,'Битва при Орбұлақе'],[1710,'Курултай у Қарақұма'],[1723,'«Ақтабан шұбырынды»'],[1729,'Победа при Аңырақае'],[1731,'Младший жуз принимает протекторат России'],[1771,'Абылай избран ханом трёх жузов'],[1822,'Упразднение ханской власти в Среднем жузе'],[1837,'Начало восстания Кенесары'],[1847,'Гибель Кенесары, конец ханства']];
+
+const PART={
+body:{kk:'Манекен',ru:'Тело, рост 175 см',layer:0,kg:0,geo:'Lathe + цилиндры + сферы',mat:'—',desc:'Базовая фигура. Все слои одежды строятся от одного профиля торса со смещением наружу, поэтому каждый следующий слой ровно ложится поверх предыдущего.'},
+zhejde:{kk:'Жейде',ru:'Нательная рубаха',layer:1,kg:.3,geo:'Lathe (тело вращения) + рукава-цилиндры',mat:'Бөз (хлопок) или шёлк',desc:'Первый слой. Рубаха-туника со стоячим воротом, у воинов — из плотного хлопка: под кольчугой она не даёт кольцам натирать тело.'},
+shalbar:{kk:'Күдері шалбар',ru:'Замшевые штаны',layer:1,kg:.9,geo:'Lathe + цилиндры',mat:'Замша (күдері), шерстяная нить',desc:'Широкий шаг для седла, низ заправлен в сапоги. Замша не протирается о седло и защищает от кустарника; по штанинам часто шла вышивка.'},
+beshpent:{kk:'Бешпент',ru:'Приталенный кафтан',layer:2,kg:1.2,geo:'Lathe с разрезом спереди + позумент',mat:'Сукно или шёлк на подкладке',desc:'Кафтан ниже колен со стоячим воротником. У воина он работает как поддоспешник: смягчает удар, проходящий через кольчугу.'},
+etik:{kk:'Саптама етік',ru:'Высокие сапоги',layer:2,kg:1.8,geo:'Цилиндр + эллипсоид + каблук',mat:'Юфть, войлочный чулок внутри',desc:'Высокое голенище и каблук держат ногу в стремени. Внутрь надевали войлочный чулок (байпақ).'},
+sauyt:{kk:'Сауыт',ru:'Кольчуга',layer:3,kg:9,geo:'Lathe + процедурная текстура колец',mat:'Железные кольца на заклёпках',desc:'Главный доспех степи: рубаха до середины бедра с короткими рукавами из 25–40 тыс. колец. Держит режущий удар сабли и стрелу на излёте, но не тяжёлое копьё — поэтому её надевали поверх стёганого кафтана.'},
+aina:{kk:'Айна',ru:'Зерцало',layer:4,kg:4,geo:'4 диска-цилиндра + умбоны + ремни',mat:'Полированная сталь, кожаные ремни',desc:'«Зеркала» — пластины на груди, спине и боках поверх кольчуги. Закрывают сердце и печень от копья; полировка блестела на солнце и показывала знатность владельца.'},
+bilek:{kk:'Білезік-қорған',ru:'Наручи',layer:4,kg:1.2,geo:'Усечённые конусы',mat:'Сталь, кожаная подкладка',desc:'Закрывают предплечье от локтя до кисти: этой рукой отбивали удары и держали щит.'},
+dulyga:{kk:'Дулыға',ru:'Шлем с бармицей',layer:5,kg:2.2,geo:'Lathe (купол-шишак) + кольчужная бармица',mat:'Сталь, медная оковка, перья филина',desc:'Сфероконический шлем со шпилем и наносником; кольчужная бармица закрывает шею и плечи. На шпиле часто крепили перья филина (үкі) — оберег.'},
+belbeu:{kk:'Белбеу',ru:'Боевой пояс',layer:5,kg:.8,geo:'Тор + бляхи-боксы',mat:'Кожа, серебряные бляхи',desc:'Стягивает кольчугу или шапан и несёт всё снаряжение: саблю, налучье, колчан, кисеты. Пряжка и бляхи — знак статуса.'},
+kylysh:{kk:'Қылыш',ru:'Сабля в ножнах',layer:6,kg:1.3,geo:'Tube по кривой CatmullRom + рукоять',mat:'Сталь, дерево, кожа, латунь',desc:'Изогнутый клинок около 80 см, носился на левом бедре. В XVIII–XIX вв. длинные клинки чаще были привозными — иранской и среднеазиатской работы, рукояти делали казахские мастера.'},
+sadak:{kk:'Садақ',ru:'Лук в налучье',layer:6,kg:1.4,geo:'Extrude (налучье) + Tube (плечо лука)',mat:'Дерево, рог, сухожилие, кожа',desc:'Сложносоставной рефлекторный лук из дерева, рога и сухожилий; налучье — на левом бедре. До распространения ружей — главное оружие конного боя.'},
+qoramsaq:{kk:'Қорамсақ',ru:'Колчан со стрелами',layer:6,kg:2.2,geo:'Цилиндр (сплюснутый) + 9 стрел',mat:'Кожа на деревянной основе, береста',desc:'Висел на правом бедре, вмещал 20–30 стрел (жебе) с разными наконечниками: бронебойными, срезнями, свистящими.'},
+nayza:{kk:'Найза',ru:'Копьё с флажком',layer:6,kg:2.8,geo:'Цилиндр + ромбический наконечник + конус-кисть + Shape',mat:'Древко из берёзы или тала, сталь, конский волос',desc:'Пика около 3 м с кистью из конского волоса и флажком (жалау) рода. Таран первой атаки; под флажком собирался отряд со своим ұраном.'},
+qalqan:{kk:'Қалқан',ru:'Плетёный щит',layer:6,kg:2.5,geo:'Сегмент сферы + тор + умбон',mat:'Ивовые прутья, шёлковая нить, стальной умбон',desc:'Круглый щит ≈56 см из спирально уложенных прутьев, оплетённых цветным шёлком. Лёгкий и упругий — стрела вязнет в прутьях.'},
+aybalta:{kk:'Айбалта',ru:'Боевой топор',layer:6,kg:1.6,geo:'Extrude (лезвие-полумесяц) + цилиндр',mat:'Сталь, дерево',desc:'Топор с лезвием-полумесяцем на длинной рукояти. Бил по шлемам и доспехам; входит в «бес қару» — пять видов оружия батыра.'},
+shoqpar:{kk:'Шоқпар',ru:'Боевая булава',layer:6,kg:1.4,geo:'Сфера + 14 конусов-шипов + цилиндр',mat:'Корень дерева, железные шипы',desc:'Дубина с утолщением, окованным железом и шипами. Дробящий удар через кольчугу; висела на запястной петле.'},
+myltyq:{kk:'Айыр мылтық',ru:'Ружьё с сошкой',layer:6,kg:6.5,geo:'Цилиндры + Extrude (приклад)',mat:'Сталь, дерево, кожа',desc:'Фитильное ружьё с откидной сошкой-«вилкой» (айыр): для выстрела всадник спешивался и ставил ствол на сошку. В походе висело за спиной.'},
+oqshantay:{kk:'Оқшантай',ru:'Пулевая сумка и пороховница',layer:5,kg:.9,geo:'Бокс + конус',mat:'Кожа, рог, серебро',desc:'Сумка для пуль и пыжей с пороховницей из рога на поясе — обязательный спутник ружья.'},
+tymaq:{kk:'Тымақ',ru:'Зимняя шапка',layer:5,kg:.9,geo:'Lathe + тор + наушники',mat:'Лисий мех, сукно',desc:'Мех внутри, наушники и длинный назатыльник защищают шею от бурана. Зимний поход Кенесары без него был немыслим.'},
+shapanW:{kk:'Шапан',ru:'Полосатый стёганый халат',layer:4,kg:2.2,geo:'Lathe с разрезом + рукава с раструбом',mat:'Бекасама (полосатая ткань), вата',desc:'Вместо доспеха в XIX в. — плотный стёганый халат: держит холод и отчасти режущий удар. Полосатая бекасама шла из Бухары и Коканда.'},
+shapan:{kk:'Шапан',ru:'Праздничный халат',layer:3,kg:2,geo:'Lathe с разрезом + позумент',mat:'Бархат, позумент, подкладка на вате',desc:'Широкий халат с длинными рукавами, закрывающими кисти. Орнамент «қошқар мүйіз» по бортам. Подаренный шапан — высшая почесть гостю.'},
+belbeuC:{kk:'Кісе белбеу',ru:'Пояс с подвесами',layer:4,kg:.7,geo:'Тор + боксы + конус',mat:'Кожа, серебро, сердолик',desc:'Пояс с подвесными сумочками: нож в ножнах, огниво и кремень (шақпақ), мелочи на день.'},
+borik:{kk:'Бөрік',ru:'Шапка с меховым околышем',layer:4,kg:.5,geo:'Lathe (тулья) + тор (мех)',mat:'Бархат, лисий мех',desc:'Высокая тулья из бархата и пушистый околыш; под ним — тақия.'},
+qamshy:{kk:'Қамшы',ru:'Плеть',layer:5,kg:.3,geo:'Цилиндр + Tube',mat:'Дерево (рукоять), плетёная кожа',desc:'Рукоять из дерева или рога, плеть из 4–12 ремешков. Не только для коня: камчу вешали у входа, её подарок — знак доверия.'},
+koylek:{kk:'Көйлек',ru:'Платье с оборками',layer:1,kg:.9,geo:'Lathe + 2 оборки',mat:'Шёлк',desc:'Длинное платье-туника; у девушек — светлые и яркие ткани, по подолу оборки (етек), на рукавах — манжеты-воланы.'},
+koylek2:{kk:'Көйлек',ru:'Платье замужней',layer:1,kg:.9,geo:'Lathe + 2 оборки',mat:'Хлопок или шёлк',desc:'Тот же крой, но сдержанный цвет: замужней женщине не пристало носить яркое, как невесте.'},
+kamzol:{kk:'Камзол',ru:'Бархатная безрукавка',layer:2,kg:.8,geo:'Lathe с баской + сферы-пуговицы',mat:'Бархат, серебряные пуговицы',desc:'Приталенный камзол с расширяющейся баской, позумент по бортам, ряд серебряных пуговиц.'},
+kamzol2:{kk:'Камзол',ru:'Тёмная безрукавка',layer:2,kg:.8,geo:'Lathe с баской + сферы-пуговицы',mat:'Бархат или сукно',desc:'Камзол замужней женщины — тёмных тонов, скромнее отделка.'},
+beldemshe:{kk:'Белдемше',ru:'Распашная юбка',layer:3,kg:.6,geo:'Lathe с разрезом',mat:'Сукно или бархат на подкладке',desc:'Юбка-запашка поверх платья у замужних — тепло в седле и знак семейного положения.'},
+etikF:{kk:'Етік',ru:'Женские сапожки',layer:2,kg:1,geo:'Цилиндр + эллипсоид + каблук',mat:'Сафьян',desc:'Мягкие сапожки из цветного сафьяна на небольшом каблуке, часто с вышивкой.'},
+saukele:{kk:'Сәукеле',ru:'Свадебный головной убор',layer:4,kg:2,geo:'Lathe (конус 70 см) + 30 пластин + подвески + желек',mat:'Бархат, серебро, коралл, жемчуг, перья филина',desc:'Высокий конус на войлочной основе с серебряными пластинами; по бокам — подвески до плеч, на макушке — үкі, сзади — накидка-желек. Работа ювелира могла длиться год.'},
+kimeshek:{kk:'Кимешек',ru:'Убор замужней',layer:4,kg:.6,geo:'Lathe (капюшон) + тор (шылауыш)',mat:'Белый хлопок, вышивка',desc:'Белый капюшон закрывает волосы, шею и грудь; вырез для лица обшит вышивкой. Сверху — тюрбан шылауыш.'},
+alqa:{kk:'Алқа',ru:'Ожерелье',layer:5,kg:.4,geo:'Тор + 7 дисков-подвесок',mat:'Серебро, сердолик',desc:'Серебряное ожерелье с подвесками, ложится на камзол.'},
+bilezik:{kk:'Білезік',ru:'Браслеты',layer:5,kg:.3,geo:'2 тора',mat:'Серебро с чернью',desc:'Парные широкие браслеты; их дарили на сватовстве.'},
+shashbau:{kk:'Шолпы, сырға',ru:'Накосные подвески и серьги',layer:5,kg:.5,geo:'Цилиндры-косы + диски + конусы-бубенцы',mat:'Серебро',desc:'Две косы с подвесками шолпы, звенящими при каждом шаге, и серьги-сырға.'}};
+
+const fall=$('#fallback');
+if(typeof THREE==='undefined'){fall.style.display='grid'}
+
+const T=window.THREE, TAU=Math.PI*2;
+let renderer=null;
+try{ if(T){renderer=new T.WebGLRenderer({canvas:$('#cv'),antialias:true,alpha:true});} }catch(e){fall.style.display='grid'}
+
+const V=T?T.Vector3:null, V2=T?T.Vector2:null;
+const BP=[[0,13],[40,14],[70,15],[84,16.2],[92,17],[100,16],[108,14.6],[118,15.6],[128,17.2],[136,18],[141,17],[144,14],[146.5,9],[148,6.4]];
+function bodyR(y){if(y<=BP[0][0])return BP[0][1];for(let i=1;i<BP.length;i++){const[a,ra]=BP[i-1],[b,rb]=BP[i];if(y<=b)return ra+(rb-ra)*(y-a)/(b-a)}return 6.4}
+const SH=[19,143,0],EL=[26,116,1],WR=[31,92,4],HD=[33,83,5],HP=[9,94,0],KN=[10,51,1.5],AN=[10.5,9,0];
+const M=p=>[-p[0],p[1],p[2]];
+const lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+
+function tex(w,h,draw,rx=1,ry=1){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(rx,ry);t.encoding=T.sRGBEncoding;t.anisotropy=4;return t}
+function rnd(s){return()=>(s=(s*16807)%2147483647)/2147483647}
+let RINGS,ORN,ORN2,STRIPE,WICKER,FUR;
+function makeTex(){
+ RINGS=tex(128,128,(g,w,h)=>{g.fillStyle='#4a5056';g.fillRect(0,0,w,h);g.lineWidth=3.4;for(let j=0;j<9;j++)for(let i=-1;i<9;i++){const x=i*16+(j%2?8:0),y=j*16;g.strokeStyle='#a9b0b6';g.beginPath();g.arc(x,y,6.6,0,TAU);g.stroke();g.strokeStyle='#eef1f3';g.beginPath();g.arc(x,y,6.6,3.7,4.7);g.stroke()}},30,16);
+ const orn=(bg,fg)=>tex(64,64,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.strokeStyle=fg;g.lineCap='round';g.lineWidth=4;g.beginPath();g.moveTo(32,54);g.lineTo(32,30);g.stroke();for(const s of[-1,1]){g.beginPath();g.arc(32+s*11,26,11,s<0?0:Math.PI,s<0?Math.PI*1.55:-Math.PI*.55,s>0);g.stroke();g.beginPath();g.arc(32+s*14,22,4,0,TAU);g.stroke()}g.lineWidth=3;g.strokeRect(1.5,1.5,w-3,h-3)},1,8);
+ ORN=orn('#7d1717','#e0b445');ORN2=orn('#1b2f4f','#e3c06a');
+ STRIPE=tex(256,8,(g,w)=>{const cs=['#7d1a1d','#1d5a3a','#d6a93a','#20325f','#7d1a1d','#c8572b','#20325f','#e9dcc0'];let x=0,i=0;while(x<w){const bw=[18,6,10,22,4,14,8,6][i%8];g.fillStyle=cs[i%cs.length];g.fillRect(x,0,bw,8);x+=bw;i++}},6,1);
+ const r=rnd(7);
+ WICKER=tex(256,256,(g,w,h)=>{for(let y=0;y<h;y+=4){g.fillStyle=(y/4)%2?'#6f5f3f':'#8a7a53';g.fillRect(0,y,w,4)}const cs=['#9b1f22','#1f5f8b','#d8b24a','#2f6b3a'];for(let k=0;k<26;k++){const y=Math.floor(r()*64)*4;g.fillStyle=cs[k%4];for(let x=0;x<w;x+=10)if(r()>.35)g.fillRect(x,y,7,4)}},1,1);
+ FUR=tex(128,128,(g,w,h)=>{g.fillStyle='#8a4f22';g.fillRect(0,0,w,h);for(let k=0;k<900;k++){const x=r()*w,y=r()*h;g.strokeStyle=r()>.5?'#c98a4a':'#5a3216';g.lineWidth=1.2;g.beginPath();g.moveTo(x,y);g.lineTo(x+(r()-.5)*4,y+6);g.stroke()}},3,2);
+}
+function mat(c,o={}){const m=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.82,metalness:0,side:T.DoubleSide},o));m.color.convertSRGBToLinear();return m}
+function mesh(g,m,p,r,s){const x=new T.Mesh(g,m);if(p)x.position.set(p[0],p[1],p[2]);if(r)x.rotation.set(r[0],r[1],r[2]);if(s)x.scale.set(s[0],s[1],s[2]);x.castShadow=true;x.receiveShadow=true;return x}
+function seg(a,b,ra,rb,m,rad=18){const A=new V(...a),B=new V(...b),d=B.clone().sub(A),L=d.length();const x=mesh(new T.CylinderGeometry(rb,ra,L,rad,1,false),m);x.position.copy(A).addScaledVector(d,.5);x.quaternion.setFromUnitVectors(new V(0,1,0),d.normalize());return x}
+function ball(p,r,m,s,ws=20,hs=14){return mesh(new T.SphereGeometry(r,ws,hs),m,p,null,s)}
+function lathe(pts,m,o={}){const gap=o.gap||0,ps=o.phiStart!=null?o.phiStart:gap/2,pl=o.phiLen!=null?o.phiLen:TAU-gap;const g=new T.LatheGeometry(pts.map(([r,y])=>new V2(Math.max(r,.01),y)),o.seg||44,ps,pl);g.scale(1,1,o.zs==null?.62:o.zs);return mesh(g,m,o.pos)}
+function robePts(y0,y1,off,fl,n=30){const p=[];for(let i=0;i<=n;i++){const y=y0+(y1-y0)*i/n;p.push([bodyR(y)+off+(y<97?(97-y)*fl:0),y])}return p}
+function robe(G,y0,y1,off,fl,m,gap=0,trim=null){G.add(lathe(robePts(y0,y1,off,fl),m,{gap}));if(trim){const pts=robePts(y0,y1,off+.35,fl);if(gap){G.add(lathe(pts,trim,{phiStart:gap/2,phiLen:.16}));G.add(lathe(pts,trim,{phiStart:TAU-gap/2-.16,phiLen:.16}))}const hem=robePts(y0,y0+4,off+.4,fl,2);G.add(lathe(hem,trim,{gap}))}}
+function sleeves(G,off,m,end=WR,flare=0,upTo=null){for(const s of[1,-1]){const f=s>0?p=>p:M;const e=upTo?lerp(SH,EL,upTo):EL;G.add(ball(f(SH),6.2+off,m));G.add(seg(f(SH),f(e),5.9+off,(upTo?5.3:4.8)+off,m));if(!upTo){G.add(ball(f(EL),4.8+off,m));G.add(seg(f(EL),f(end),4.6+off,3.4+off+flare,m))}}}
+function boots(G,c,heel){const m=mat(c,{roughness:.55});for(const s of[1,-1]){const x=s*10.5;G.add(seg([x,5,0],[x,heel?44:52,1.4],5,heel?6.6:7.4,m));G.add(ball([x,4.6,5.5],5,m,[.95,.75,2.3]));G.add(mesh(new T.BoxGeometry(5.6,heel?4:3,5),mat('#2a1a10'),[x,heel?2:1.5,-3.6]));G.add(mesh(new T.ConeGeometry(2,5,10),m,[x,5.3,16.5],[1.25,0,0]))}}
+function belt(G,off,y,c,plq){const R=bodyR(y)+off;G.add(mesh(new T.TorusGeometry(R,1.9,8,64),mat(c,{roughness:.6}),[0,y,0],[Math.PI/2,0,0],[1,.62,1]));const met=mat('#c9c3b4',{metalness:.85,roughness:.35});for(let i=0;i<plq;i++){const a=i/plq*TAU+.15;G.add(mesh(new T.BoxGeometry(2.6,3.2,1),met,[Math.sin(a)*(R+1.4),y,Math.cos(a)*(R*.62+1.4)],[0,a,0]))}G.add(mesh(new T.BoxGeometry(5,4.4,1.4),mat('#d8b24a',{metalness:.85,roughness:.3}),[0,y,R*.62+1.6]))}
+const STEEL=()=>mat('#dfe4e8',{metalness:.55,roughness:.28}),BRASS=()=>mat('#d6ac4c',{metalness:.55,roughness:.32});
+
+const B={
+body(G){const sk=mat('#c99a74',{roughness:.7});G.add(lathe(BP.filter(p=>p[0]>=82).map(([y,r])=>[r,y]),sk));G.add(seg([0,142,0],[0,156,.5],5.7,5.2,sk));G.add(ball([0,163,.6],10,sk,[.92,1.16,1.02],28,20));G.add(mesh(new T.ConeGeometry(1.3,3.2,10),sk,[0,160.5,10.6],[Math.PI/2,0,0]));
+ for(const f of[p=>p,M]){G.add(ball(f(SH),6,sk));G.add(seg(f(SH),f(EL),5.8,4.8,sk));G.add(ball(f(EL),4.8,sk));G.add(seg(f(EL),f(WR),4.6,3.4,sk));G.add(ball(f(lerp(WR,HD,.5)),3.6,sk,[.8,1.35,.65]));G.add(ball(f(HP),8.2,sk));G.add(seg(f(HP),f(KN),8.2,5.9,sk));G.add(ball(f(KN),5.8,sk));G.add(seg(f(KN),f(AN),5.7,3.6,sk));G.add(ball(f([10.5,4,5]),4.4,sk,[.9,.7,2.2]))}},
+zhejde(G){const m=mat('#ece6da');robe(G,72,147.5,.5,.08,m);sleeves(G,.5,m);G.add(lathe([[6.9,146],[7.1,151]],m,{zs:.9}))},
+shalbar(G){const m=mat('#8a6a48',{roughness:.95});G.add(lathe(robePts(82,101,.9,0,6),m));for(const f of[p=>p,M]){G.add(seg(f(HP),f(KN),9.3,6.9,m));G.add(ball(f(KN),6.9,m));G.add(seg(f(KN),f([10.5,14,0]),6.7,5,m))}},
+beshpent(G){const m=mat('#6b2620');robe(G,56,147,1.5,.1,m,.2,mat('#fff',{map:ORN}));sleeves(G,1.5,m);G.add(lathe([[8.6,145],[8.4,151]],m,{zs:.85}))},
+etik(G){boots(G,'#1d1714',0)},
+sauyt(G){const m=mat('#fff',{map:RINGS,metalness:.45,roughness:.45});robe(G,66,146.5,2.6,.09,m);sleeves(G,2.6,m,WR,0,.86)},
+aina(G){const st=STEEL(),br=BRASS(),lt=mat('#5a3a22');const R=bodyR(126)+2.6,zc=R*.62+.9;
+ const plate=(p,r,rot,rr)=>{const g=new T.Group();g.add(mesh(new T.CylinderGeometry(rr,rr,.7,48),st,[0,0,0]));g.add(mesh(new T.TorusGeometry(rr,.45,8,48),br,[0,.2,0],[Math.PI/2,0,0]));g.add(mesh(new T.SphereGeometry(rr*.22,20,10,0,TAU,0,Math.PI/2),br,[0,.3,0]));g.position.set(...p);g.rotation.set(...rot);G.add(g)};
+ plate([0,126,zc],0,[Math.PI/2,0,0],8.5);plate([0,126,-zc],0,[-Math.PI/2,0,0],8.5);const xs=bodyR(112)+2.6+.6;plate([xs,112,0],0,[0,0,-Math.PI/2],5.6);plate([-xs,112,0],0,[0,0,Math.PI/2],5.6);
+ for(const s of[1,-1]){G.add(seg([s*5,133,zc-.6],[s*8,147.5,0],.9,.9,lt,6));G.add(seg([s*8,147.5,0],[s*5,133,-zc+.6],.9,.9,lt,6))}},
+bilek(G){const st=STEEL(),br=BRASS();for(const f of[p=>p,M]){const a=lerp(EL,WR,.22);G.add(seg(f(a),f(WR),6.5,5.5,st,20));{const t=mesh(new T.TorusGeometry(6.5,.5,6,24),br,f(a));t.lookAt(...f(EL));G.add(t)}}},
+dulyga(G){const st=STEEL(),br=BRASS(),rg=mat('#fff',{map:RINGS,metalness:.45,roughness:.45});const y0=165.5;
+ G.add(lathe([[11.4,0],[11.7,2.5],[11.4,6],[9.9,10.5],[7,14],[3.6,17.4],[1.4,20.5],[.4,23]].map(([r,y])=>[r,y+y0]),st,{zs:1.05,seg:48}));
+ G.add(mesh(new T.TorusGeometry(11.6,.75,8,56),br,[0,y0+1,0],[Math.PI/2,0,0],[1,1.05,1]));G.add(seg([0,y0+22,0],[0,y0+31,0],.9,.45,br,10));G.add(ball([0,y0+31.5,0],1.2,br));
+ G.add(mesh(new T.BoxGeometry(1.6,9.5,.6),st,[0,161.5,12.6],[-.08,0,0]));
+ const fe=mat('#6d5a43',{roughness:.9});for(let i=0;i<3;i++){const c=mesh(new T.ConeGeometry(1.1,14,6),fe,[0,y0+30,0]);c.rotation.set(-.45+i*.1,i*2.1,.5);c.translateY(7);G.add(c)}
+ G.add(lathe([[11.6,y0+.5],[12.6,160],[13.8,154]],rg,{gap:2.1,zs:1}));G.add(lathe([[13.8,154],[15.5,150],[18,146.5]],rg,{zs:.9}))},
+belbeu(G){belt(G,3.7,103,'#4a2e1c',12)},
+kylysh(G){const cur=new T.CatmullRomCurve3([[-23,101,6],[-24.5,88,1],[-24.5,72,-6],[-23,56,-14],[-20.5,44,-21],[-17,35,-26]].map(p=>new V(...p)));G.add(mesh(new T.TubeGeometry(cur,48,1.9,10),mat('#3a2418',{roughness:.5})));
+ const br=BRASS();for(const t of[.02,.3,.98]){const r=mesh(new T.TorusGeometry(2.1,.45,6,16),br,cur.getPoint(t).toArray());r.lookAt(cur.getPoint(t).add(cur.getTangent(t)));G.add(r)}
+ G.add(seg([-23,102,6.6],[-22,113,12],1.4,1.2,mat('#20140d'),12));G.add(mesh(new T.BoxGeometry(1.2,1.5,8),br,[-23,102,6.6],[.45,0,0]));G.add(ball([-21.8,114,12.6],1.7,br))},
+sadak(G){const sh=new T.Shape();[[0,0],[17,0],[22,-12],[18,-34],[12,-58],[5,-76],[0,-79]].forEach((p,i)=>i?sh.lineTo(p[0],p[1]):sh.moveTo(p[0],p[1]));sh.closePath();
+ const g=new T.ExtrudeGeometry(sh,{depth:2.4,bevelEnabled:true,bevelSize:.7,bevelThickness:.7,bevelSegments:2,curveSegments:4});const m=mesh(g,mat('#5c2a1c',{roughness:.6}));m.rotation.y=Math.PI/2;m.position.set(-29,112,-3);G.add(m);
+ const bow=new T.CatmullRomCurve3([[-28,110,-8],[-28,124,-12],[-28,134,-10],[-28,139,-6]].map(p=>new V(...p)));G.add(mesh(new T.TubeGeometry(bow,24,.85,8),mat('#2a1d14',{roughness:.45})))},
+qoramsaq(G){const g=new T.Group();const lt=mat('#6b3a22',{roughness:.6});g.add(mesh(new T.CylinderGeometry(5.6,3.6,58,14),lt,[0,0,0],null,[1,1,.55]));g.add(mesh(new T.TorusGeometry(5.6,.6,6,20),BRASS(),[0,29,0],[Math.PI/2,0,0],[1,.55,1]));
+ const sh=mat('#c9b48a'),fl=[mat('#f2efe6'),mat('#9b1f22'),mat('#222')];for(let i=0;i<9;i++){const x=(i%3-1)*2.6,z=(Math.floor(i/3)-1)*1.2;g.add(seg([x,18,z],[x*1.3,47,z*1.3],.35,.35,sh,6));for(let k=0;k<3;k++){const p=mesh(new T.PlaneGeometry(1.6,6.5),fl[i%3],[x*1.27,43,z*1.27],[0,k*2.1,0]);g.add(p)}}
+ g.position.set(23.5,80,-11);g.rotation.set(-.22,0,.1);G.add(g)},
+nayza(G){const wd=mat('#7a5a36',{roughness:.7}),st=STEEL();G.add(seg([34.5,0,6],[34.5,284,6],1.3,1.2,wd,10));G.add(seg([34.5,284,6],[34.5,290,6],1.2,1.7,st,10));G.add(mesh(new T.CylinderGeometry(0,2.8,30,4),st,[34.5,305,6],null,[1,1,.32]));G.add(mesh(new T.CylinderGeometry(2.8,1.7,4,4),st,[34.5,288,6],null,[1,1,.32]));
+ G.add(mesh(new T.ConeGeometry(4,13,14),mat('#8b1e1a',{roughness:1}),[34.5,277,6],[Math.PI,0,0]));const sh=new T.Shape();sh.moveTo(0,0);sh.lineTo(0,24);sh.quadraticCurveTo(22,20,40,11);sh.quadraticCurveTo(20,6,0,0);const fl=mesh(new T.ShapeGeometry(sh,8),mat('#a3261f',{roughness:.9}),[35.6,244,6]);fl.userData.flag=1;G.add(fl)},
+qalqan(G){const g=new T.Group(),R=58,th=Math.asin(28/R);const geo=new T.SphereGeometry(R,56,12,0,TAU,0,th);geo.translate(0,-R,0);g.add(mesh(geo,mat('#fff',{map:WICKER,roughness:.9})));const ry=R*Math.cos(th)-R;
+ g.add(mesh(new T.TorusGeometry(28,1.1,8,72),mat('#5b3b20',{roughness:.6}),[0,ry,0],[Math.PI/2,0,0]));g.add(mesh(new T.SphereGeometry(6.6,28,10,0,TAU,0,Math.PI/2),STEEL(),[0,-.6,0]));g.add(mesh(new T.ConeGeometry(1.4,5,12),BRASS(),[0,7.6,0]));
+ const n=new V(-1,0,-.05).normalize();g.quaternion.setFromUnitVectors(new V(0,1,0),n);g.position.set(-42,104,5);G.add(g)},
+aybalta(G){const g=new T.Group();g.add(seg([0,0,0],[0,80,0],1.3,1.1,mat('#6a4a2c'),10));const sh=new T.Shape();sh.moveTo(0,6);sh.lineTo(7,4);sh.quadraticCurveTo(17,14,19,-4);sh.quadraticCurveTo(14,-14,7,-6);sh.lineTo(0,-3);sh.closePath();
+ g.add(mesh(new T.ExtrudeGeometry(sh,{depth:.8,bevelEnabled:true,bevelSize:.3,bevelThickness:.3,bevelSegments:1}),STEEL(),[0,72,-.7]));g.add(mesh(new T.BoxGeometry(4,5,3),STEEL(),[-2,72,0]));
+ g.position.set(-17,68,-17);g.rotation.set(0,0,-.42);G.add(g)},
+shoqpar(G){const wd=mat('#6b4a2a'),ir=mat('#55595d',{metalness:.8,roughness:.45});G.add(seg([18,100,10],[19.5,66,12.5],1.1,1.5,wd,10));const c=[19.8,61,12.8];G.add(ball(c,4.6,wd));G.add(mesh(new T.TorusGeometry(4.7,.6,6,24),ir,c,[Math.PI/2,0,0]));
+ for(let i=0;i<14;i++){const a=i*2.4,b=Math.acos(1-2*(i+.5)/14);const d=new V(Math.sin(b)*Math.cos(a),Math.cos(b),Math.sin(b)*Math.sin(a));const s=mesh(new T.ConeGeometry(.8,2.6,6),ir);s.position.set(c[0]+d.x*5,c[1]+d.y*5,c[2]+d.z*5);s.quaternion.setFromUnitVectors(new V(0,1,0),d);G.add(s)}
+ G.add(mesh(new T.TorusGeometry(2.4,.3,6,16),mat('#3a2418'),[18,102,10]))},
+myltyq(G){const g=new T.Group(),st=STEEL(),wd=mat('#5a3a1f',{roughness:.6});g.add(seg([0,0,0],[0,132,0],1.25,1,st,12));for(const y of[40,80,118])g.add(mesh(new T.TorusGeometry(1.5,.35,6,14),BRASS(),[0,y,0],[Math.PI/2,0,0]));
+ const sh=new T.Shape();sh.moveTo(-1.6,40);sh.lineTo(1.8,40);sh.lineTo(3.4,4);sh.lineTo(4.6,-12);sh.lineTo(-3,-12);sh.lineTo(-2.8,4);sh.closePath();g.add(mesh(new T.ExtrudeGeometry(sh,{depth:3.6,bevelEnabled:true,bevelSize:.4,bevelThickness:.4,bevelSegments:1}),wd,[0,0,-1.8]));
+ for(const s of[1,-1])g.add(seg([s*1.4,118,0],[s*2.6,30,0],.45,.45,wd,6));g.add(mesh(new T.BoxGeometry(1.2,4,2),st,[2.4,24,0]));
+ g.position.set(-20,56,-17.5);g.rotation.set(0,0,-.36);G.add(g)},
+oqshantay(G){const lt=mat('#6b3a22',{roughness:.55});G.add(mesh(new T.BoxGeometry(8,10,3.4),lt,[11,94,13.4],[0,.42,0]));G.add(mesh(new T.BoxGeometry(8.4,4,3.8),mat('#3d2416'),[11,98,13.6],[0,.42,0]));G.add(ball([12.8,96.5,15.7],.9,BRASS()));
+ G.add(mesh(new T.ConeGeometry(2.6,13,14),mat('#d9c8a0',{roughness:.4}),[17,88,12.5],[0,0,.5]))},
+tymaq(G){const cl=mat('#26364a'),fur=mat('#fff',{map:FUR,roughness:1});G.add(lathe([[10.9,166],[11.2,171],[9.8,176],[6.4,179.5],[0,181]],cl,{zs:1.05}));G.add(mesh(new T.TorusGeometry(11.7,2.7,10,40),fur,[0,166.5,0],[Math.PI/2,0,0],[1,1.06,1]));
+ for(const s of[1,-1])G.add(ball([s*11.6,157,1],4.2,fur,[.55,1.6,1.1]));G.add(lathe([[12.5,166],[13.6,158],[15,149]],fur,{phiStart:Math.PI-1.1,phiLen:2.2,zs:1}))},
+shapanW(G){const m=mat('#fff',{map:STRIPE,roughness:.75});robe(G,22,147,2.9,.12,m,.28,mat('#fff',{map:ORN2}));sleeves(G,2.9,m,lerp(WR,HD,.55),1.6)},
+shapan(G){const m=mat('#1c3354',{roughness:.6});robe(G,20,147,2.9,.12,m,.3,mat('#fff',{map:ORN2}));sleeves(G,2.9,m,lerp(WR,HD,.6),1.8)},
+belbeuC(G){belt(G,3.9,103,'#2a1a10',8);const lt=mat('#5d3320',{roughness:.6});G.add(mesh(new T.BoxGeometry(6,7,2.4),lt,[-12,96,14.3],[0,-.5,0]));G.add(ball([-12,98.5,15.6],.8,BRASS()));
+ G.add(mesh(new T.CylinderGeometry(1.6,.9,17,10),mat('#3a2418'),[13,92,14],[0,0,.18],[1,1,.55]));G.add(seg([12.2,100.5,14],[11.6,106.5,14.3],.9,.8,mat('#e7dcc3'),8));G.add(mesh(new T.BoxGeometry(5,3,1.6),BRASS(),[-19,98,9],[0,-.9,0]))},
+borik(G){G.add(lathe([[9.8,166],[10.6,172],[10.2,180],[7.8,182.4],[0,183]],mat('#7b1d2c',{roughness:.5}),{zs:1.05}));G.add(lathe([[11.3,165],[12.8,167],[13,171],[11.9,173.5]],mat('#fff',{map:FUR,roughness:1}),{zs:1.05}));G.add(mesh(new T.TorusGeometry(4.2,.5,6,20),BRASS(),[0,182.6,0],[Math.PI/2,0,0]))},
+qamshy(G){G.add(seg([33,88,5],[34,70,7.5],1,.8,mat('#5a3a1f'),10));const c=new T.CatmullRomCurve3([[34,70,7.5],[35,58,10],[34.5,45,13],[33,34,12],[32,27,10]].map(p=>new V(...p)));G.add(mesh(new T.TubeGeometry(c,30,.6,6),mat('#2a1a10')));G.add(mesh(new T.ConeGeometry(.9,5,8),mat('#2a1a10'),[32,24.5,9.5],[Math.PI,0,0]))},
+koylek(G){const m=mat('#efe6d6',{roughness:.5});robe(G,6,147.5,.7,.17,m);for(const[y,o]of[[6,2.4],[14,2.9]])G.add(lathe(robePts(y,y+7,o,.17,3),mat('#d9c3a2',{roughness:.5})));sleeves(G,.7,m,lerp(WR,HD,.2),1.4);G.add(lathe([[7.2,146],[7.6,151]],m,{zs:.9}))},
+koylek2(G){const m=mat('#3f5f78',{roughness:.6});robe(G,6,147.5,.7,.17,m);for(const[y,o]of[[6,2.4],[14,2.9]])G.add(lathe(robePts(y,y+7,o,.17,3),mat('#34506a',{roughness:.6})));sleeves(G,.7,m,lerp(WR,HD,.2),1.2);G.add(lathe([[7.2,146],[7.6,151]],m,{zs:.9}))},
+kamzol(G){robe(G,78,146.5,1.9,.35,mat('#8e1b24',{roughness:.45}),.16,mat('#fff',{map:ORN}));const sv=mat('#e5e5e5',{metalness:.9,roughness:.25});for(let i=0;i<7;i++){const y=102+i*6;G.add(ball([2.2,y,(bodyR(y)+1.9)*.62+.6],.85,sv))}},
+kamzol2(G){robe(G,78,146.5,1.9,.35,mat('#22392d',{roughness:.55}),.16,mat('#fff',{map:ORN2}));const sv=mat('#d5d5d5',{metalness:.9,roughness:.3});for(let i=0;i<6;i++){const y=104+i*6.4;G.add(ball([2.2,y,(bodyR(y)+1.9)*.62+.6],.8,sv))}},
+beldemshe(G){robe(G,36,92,2.6,.21,mat('#4a2a3c',{roughness:.6}),.55,mat('#fff',{map:ORN}))},
+etikF(G){boots(G,'#7a1c1c',1)},
+saukele(G){const rv=mat('#9c1b26',{roughness:.45}),sv=mat('#e3e3e3',{metalness:.92,roughness:.22}),co=mat('#d2483a',{roughness:.4});
+ G.add(lathe([[10.6,165],[10.9,170],[9.6,190],[7.6,210],[5.4,228],[4.2,236],[0,238]],rv,{zs:1.05,seg:48}));G.add(mesh(new T.TorusGeometry(10.9,.9,8,48),sv,[0,166.5,0],[Math.PI/2,0,0],[1,1.05,1]));
+ for(const a of[0,1.05,-1.05,Math.PI])for(let i=0;i<7;i++){const y=172+i*9;const r=bodyRS(y)+.4;const d=mesh(new T.CylinderGeometry(1.5,1.5,.4,16),sv);d.position.set(Math.sin(a)*r,y,Math.cos(a)*r*1.05);d.lookAt(d.position.x*2,y,d.position.z*2);d.rotateX(Math.PI/2);G.add(d)}
+ G.add(ball([0,239.5,0],2.3,sv));const fe=mat('#efe8dc',{roughness:1});for(let i=0;i<5;i++){const c=mesh(new T.ConeGeometry(1.2,12,6),fe,[0,240,0]);c.rotation.set(-.35,i*1.25,.3);c.translateY(6);G.add(c)}
+ for(const s of[1,-1])for(let k=0;k<3;k++){const x=s*(11.2+k*.8),z=1-k*2.2;G.add(seg([x,167,z],[x,136+k*2,z],.25,.25,sv,5));for(let j=0;j<4;j++)G.add(ball([x,162-j*7.5,z],j%2?.9:1.1,j%2?co:sv,null,10,8))}
+ G.add(lathe([[4.6,232],[9,212],[16,180],[24,140],[30,104]],mat('#f3f0ea',{transparent:true,opacity:.55,roughness:1,depthWrite:false}),{phiStart:Math.PI-1.25,phiLen:2.5,zs:.9}))},
+kimeshek(G){const w=mat('#f4f2ec',{roughness:.9});G.add(lathe([[10.3,152],[11.2,158],[11.5,166],[11.2,173],[9.6,178]],w,{gap:2.1,zs:1.08}));G.add(lathe([[10.6,152],[13.2,146.5],[17.5,141],[19.6,134]],w,{zs:.86}));
+ G.add(lathe([[11.7,154],[11.9,172]],mat('#fff',{map:ORN}),{phiStart:1.05-.18,phiLen:.18,zs:1.08}));G.add(lathe([[11.7,154],[11.9,172]],mat('#fff',{map:ORN}),{phiStart:TAU-1.05,phiLen:.18,zs:1.08}));
+ G.add(mesh(new T.TorusGeometry(8.4,3.6,14,40),w,[0,177,0],[Math.PI/2,0,0],[1,1.06,1]));G.add(ball([0,179,0],8,w,[1,.45,1.06]))},
+alqa(G){const sv=mat('#e2e2e2',{metalness:.9,roughness:.25}),cr=mat('#b5452c',{roughness:.35});const r=mesh(new T.TorusGeometry(9.2,.45,8,48),sv,[0,142.5,3.2],[Math.PI/2-.42,0,0],[1,.92,1]);G.add(r);
+ for(let i=0;i<7;i++){const a=(i-3)*.32;const x=Math.sin(a)*9.6,z=Math.cos(a)*7.6+4.3,y=138.6-Math.cos(a)*1.8;G.add(mesh(new T.CylinderGeometry(1.25,1.25,.35,16),sv,[x,y,z],[Math.PI/2-.4,0,0]));G.add(ball([x,y-1.9,z+.5],.65,cr,null,10,8))}},
+bilezik(G){const sv=mat('#d9d9d9',{metalness:.9,roughness:.3});for(const f of[p=>p,M]){const p=lerp(EL,WR,.9),t=mesh(new T.TorusGeometry(4.6,.9,8,28),sv,f(p));t.lookAt(...f(EL));G.add(t)}},
+shashbau(G){const hr=mat('#18110c',{roughness:.7}),sv=mat('#e0e0e0',{metalness:.92,roughness:.25});for(const s of[1,-1]){G.add(seg([s*4.5,158,-9.5],[s*5.6,104,-14.2],1.7,1.2,hr,10));for(let j=0;j<4;j++)G.add(mesh(new T.CylinderGeometry(1.7,1.7,.4,14),sv,[s*5.7,102-j*4,-14.6],[Math.PI/2,0,0]));G.add(mesh(new T.ConeGeometry(1.2,3,10),sv,[s*5.7,84,-14.6]));
+ G.add(seg([s*9.3,157.5,1],[s*9.5,151,1.4],.2,.2,sv,5));G.add(ball([s*9.5,150,1.4],1.05,mat('#c4402f',{roughness:.3})))}}
+};
+function bodyRS(y){return 10.6+(4.2-10.6)*(y-165)/(236-165)}
+
+/* ---------- scene ---------- */
+const parts={},root=T?new T.Group():null;let scene,cam,sun,built=false;
+function build(){
+ makeTex();scene=new T.Scene();scene.add(root);
+ cam=new T.PerspectiveCamera(30,1,5,8000);
+ scene.add(new T.HemisphereLight(0xe6eef5,0x3a2f25,.8));
+ sun=new T.DirectionalLight(0xfff1dc,1.25);sun.position.set(220,420,320);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-420;sc.right=420;sc.top=420;sc.bottom=-120;sc.far=1400;sun.shadow.bias=-.0006;scene.add(sun);
+ const rim=new T.DirectionalLight(0xbfdcff,.55);rim.position.set(-300,240,-320);scene.add(rim);
+ const gnd=new T.Mesh(new T.CircleGeometry(900,64),new T.ShadowMaterial({opacity:.22}));gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;scene.add(gnd);
+ root.updateMatrixWorld(true);for(const id in PART){const G=new T.Group();B[id](G);G.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.userData.pid=id}});G.visible=false;G.userData.pid=id;root.add(G);
+  let v=0,t=0;G.traverse(o=>{if(o.isMesh){const g=o.geometry;v+=g.attributes.position.count;t+=(g.index?g.index.count:g.attributes.position.count)/3}});
+  G.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(G);parts[id]={G,verts:v,tris:Math.round(t),bb,c:bb.getCenter(new V()),off:new V()}}
+ built=true}
+/* ---------- state ---------- */
+const SETS=[...ERAS.map(e=>({...e,kind:'w'})),...CIV.map(c=>({...c,kind:'c'}))];
+let cur=SETS[0],sel=null,ex=0,exT=0,spin=!matchMedia('(prefers-reduced-motion: reduce)').matches,theta=.55,phi=.16,zoom=1,camD=500,camT=null,fitD=500;
+const tgt=T?new V(0,110,0):null,tgtGoal=T?new V(0,110,0):null;
+function fmt(n,d=0){return n.toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function dims(id){const p=parts[id];if(!p)return'—';const s=p.bb.getSize(new V()).multiplyScalar(cur.female?.93:1);return `${fmt(s.x)} × ${fmt(s.y)} × ${fmt(s.z)}`}
+function layout(){if(!built)return;const list=cur.kit.filter(id=>id!=='body');const wear=list.filter(id=>PART[id].layer<6).sort((a,b)=>PART[a].layer-PART[b].layer),arms=list.filter(id=>PART[id].layer>=6);
+ for(const id in parts)parts[id].off.set(0,0,0);
+ wear.forEach((id,i)=>{const k=i+1,s=k%2?1:-1;parts[id].off.set(s*Math.ceil(k/2)*58*exT,0,0)});
+ arms.forEach((id,i)=>{const k=i+1,s=k%2?1:-1,p=parts[id];p.off.set(s*Math.ceil(k/2)*70*exT-p.c.x*exT*.6,0,-150*exT)});
+ const bb=new T.Box3();for(const id of cur.kit){const p=parts[id];const b=p.bb.clone().translate(p.off);bb.union(b)}
+ if(cur.female){bb.min.multiplyScalar(.93);bb.max.multiplyScalar(.93)}
+ const sz=bb.getSize(new V()),cx=bb.getCenter(new V());tgtGoal.set(cx.x,cx.y,cx.z);
+ const w=cv.clientWidth||1,h=cv.clientHeight||1,a=w/h,tf=Math.tan(15*Math.PI/180);fitD=Math.max(sz.y/(2*tf),Math.max(sz.x,sz.z)/(2*tf*a))*1.16+Math.max(sz.x,sz.z)*.18*exT;
+ for(const id in parts)parts[id].G.position.copy(parts[id].off)}
+function setSet(s){cur=s;sel=null;if(built){for(const id in parts)parts[id].G.visible=s.kit.includes(id);root.scale.setScalar(s.female?.93:1)}
+ document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===s.id));document.querySelectorAll('.tseg').forEach(b=>b.classList.toggle('on',b.dataset.id===s.id));
+ $('#setName').textContent=s.kind==='w'?`Воин · ${s.name}`:`Гражданский костюм · ${s.name}`;$('#setYears').textContent=s.kind==='w'?`${s.y0}–${s.y1} · ${s.who}`:s.sub;
+ layout();readout();table();info()}
+function readout(){let v=0,t=0,kg=0,n=0;for(const id of cur.kit){const p=parts[id];if(p){v+=p.verts;t+=p.tris}kg+=PART[id].kg;if(id!=='body')n++}
+ $('#readout').innerHTML=`<span>Деталей <b>${n}</b></span><span>Вершин <b>${fmt(v)}</b></span><span>Треугольников <b>${fmt(t)}</b></span><span>Масса комплекта <b>≈ ${fmt(kg,1)} кг</b></span><span>Разборка <b>${Math.round(ex*100)}%</b></span>`}
+function table(){$('#tblName').textContent=cur.kind==='w'?`воин, ${cur.y0}–${cur.y1}`:cur.name.toLowerCase();let kg=0,v=0;
+ $('#tbl tbody').innerHTML=cur.kit.filter(i=>i!=='body').sort((a,b)=>PART[a].layer-PART[b].layer).map(id=>{const P=PART[id],p=parts[id];kg+=P.kg;v+=p?p.verts:0;return `<tr data-id="${id}" class="${sel===id?'sel':''}"><td><b>${P.kk}</b> — ${P.ru}</td><td class="n">${P.layer}</td><td>${P.geo}</td><td class="n">${dims(id)}</td><td class="n">${p?fmt(p.verts):'—'}</td><td class="n">${fmt(P.kg,1)}</td></tr>`}).join('');
+ $('#tbl tfoot').innerHTML=`<tr><td>Итого</td><td></td><td></td><td></td><td class="n">${fmt(v)}</td><td class="n">≈ ${fmt(kg,1)}</td></tr>`}
+function info(){const el=$('#info');const era=`<div class="era"><b>${cur.kind==='w'?cur.y0+'–'+cur.y1+' · ':''}${cur.name}</b><p style="margin-top:4px">${cur.text}</p></div>`;
+ if(!sel){el.innerHTML=`<div class="kk">Выберите деталь</div><div class="ru">Нажмите на часть манекена или строку таблицы</div><p>Сдвиньте «Разборку по слоям» — одежда выстроится в ряд в порядке надевания, оружие отойдёт назад.</p>${era}`;return}
+ const P=PART[sel],p=parts[sel];el.innerHTML=`<div class="kk">${P.kk}</div><div class="ru">${P.ru}</div><dl><dt>Материал</dt><dd>${P.mat}</dd><dt>Слой</dt><dd>${P.layer} ${P.layer>=6?'(оружие)':'(одежда/доспех)'}</dd><dt>Геометрия</dt><dd>${P.geo}</dd><dt>Габариты</dt><dd>${dims(sel)} см</dd><dt>Вершин</dt><dd>${p?fmt(p.verts):'—'}</dd><dt>Треугольников</dt><dd>${p?fmt(p.tris):'—'}</dd><dt>Масса</dt><dd>≈ ${fmt(P.kg,1)} кг</dd></dl><p>${P.desc}</p>${era}`}
+function highlight(){if(!T)return;for(const id in parts)parts[id].G.traverse(o=>{if(o.isMesh&&o.material.emissive){o.material.emissive.setHex(id===sel?0x8a2a10:0);o.material.emissiveIntensity=id===sel?.55:0}})}
+function select(id){sel=id&&id!=='body'?id:null;highlight();info();document.querySelectorAll('#tbl tbody tr').forEach(r=>r.classList.toggle('sel',r.dataset.id===sel))}
+
+/* ---------- UI ---------- */
+$('#segW').insertAdjacentHTML('beforeend',ERAS.map(e=>`<button data-id="${e.id}" aria-pressed="false">${e.name}<small>${e.y0}–${e.y1}</small></button>`).join(''));
+$('#segC').insertAdjacentHTML('beforeend',CIV.map(e=>`<button data-id="${e.id}" aria-pressed="false">${e.name}<small>${e.sub}</small></button>`).join(''));
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setSet(SETS.find(s=>s.id===b.dataset.id))));
+const Y0=1465,Y1=1847,pc=y=>(y-Y0)/(Y1-Y0)*100;
+$('#tl').innerHTML=`<div class="tbar">${ERAS.map(e=>`<div class="tseg" data-id="${e.id}" title="${e.name}" style="left:${pc(e.y0)}%;width:${pc(e.y1)-pc(e.y0)}%"></div>`).join('')}</div>${EVENTS.map(([y])=>`<div class="mark" style="left:${pc(y)}%"></div>`).join('')}<span class="tick s" style="left:0">1465</span><span class="tick" style="left:${pc(1643)}%">1643</span><span class="tick" style="left:${pc(1731)}%">1731</span><span class="tick e" style="left:100%">1847</span>`;
+document.querySelectorAll('.tseg').forEach(b=>b.addEventListener('click',()=>{setSet(SETS.find(s=>s.id===b.dataset.id));$('#fig').scrollIntoView({behavior:'smooth',block:'center'})}));
+$('#events').innerHTML=EVENTS.map(([y,t])=>`<li><b>${y}</b><span>${t}</span></li>`).join('');
+$('#tbl tbody').addEventListener('click',e=>{const r=e.target.closest('tr');if(r)select(r.dataset.id)});
+const exI=$('#ex');exI.addEventListener('input',()=>{ex=exI.value/100;readout()});
+$('#spin').setAttribute('aria-pressed',spin);$('#spin').addEventListener('click',()=>{spin=!spin;$('#spin').setAttribute('aria-pressed',spin)});
+$('#reset').addEventListener('click',()=>{ex=0;exI.value=0;theta=.55;phi=.16;zoom=1;select(null);readout()});
+
+const cv=$('#cv'),tip=$('#tip');
+if(renderer){
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+ build();
+ const resize=()=>{const w=cv.clientWidth,h=cv.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();layout()};new ResizeObserver(resize).observe(cv);
+ const ray=new T.Raycaster(),ptr=new T.Vector2(),pts=new Map();let moved=0,pinch=0;
+ const pick=e=>{const r=cv.getBoundingClientRect();ptr.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ptr,cam);const vis=[];root.traverseVisible(o=>{if(o.isMesh)vis.push(o)});const h=ray.intersectObjects(vis,false)[0];return h?h.object.userData.pid:null};
+ cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);moved=0;if(pts.size===2){const[a,b]=[...pts.values()];pinch=Math.hypot(a[0]-b[0],a[1]-b[1])}});
+ cv.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(p){const dx=e.clientX-p[0],dy=e.clientY-p[1];moved+=Math.abs(dx)+Math.abs(dy);if(pts.size===1){theta-=dx*.008;phi=Math.max(-.15,Math.min(1.25,phi+dy*.006))}else if(pts.size===2){pts.set(e.pointerId,[e.clientX,e.clientY]);const[a,b]=[...pts.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]);zoom=Math.max(.3,Math.min(2.6,zoom*pinch/d));pinch=d;return}pts.set(e.pointerId,[e.clientX,e.clientY]);tip.style.opacity=0;return}
+  if(e.pointerType==='mouse'){const id=pick(e);if(id&&id!=='body'){const r=cv.getBoundingClientRect();tip.textContent=`${PART[id].kk} — ${PART[id].ru}`;tip.style.left=Math.min(e.clientX-r.left+14,r.width-tip.offsetWidth-8)+'px';tip.style.top=(e.clientY-r.top+14)+'px';tip.style.opacity=1;cv.style.cursor='pointer'}else{tip.style.opacity=0;cv.style.cursor=''}}});
+ const up=e=>{if(pts.has(e.pointerId)){pts.delete(e.pointerId);if(moved<6&&pts.size===0)select(pick(e))}};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>pts.delete(e.pointerId));
+ cv.addEventListener('pointerleave',()=>tip.style.opacity=0);
+ cv.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.3,Math.min(2.6,zoom*Math.exp(e.deltaY*.0012)))},{passive:false});
+ let last=performance.now();
+ const loop=now=>{const dt=Math.min(.05,(now-last)/1000);last=now;if(spin&&!pts.size)theta+=dt*.22;
+  if(Math.abs(exT-ex)>.001){exT+=(ex-exT)*Math.min(1,dt*6);layout()}
+  tgt.lerp(tgtGoal,Math.min(1,dt*5));camD+=(fitD*zoom-camD)*Math.min(1,dt*5);
+  cam.position.set(tgt.x+camD*Math.sin(theta)*Math.cos(phi),tgt.y+camD*Math.sin(phi),tgt.z+camD*Math.cos(theta)*Math.cos(phi));cam.lookAt(tgt);
+  const fl=parts.nayza&&parts.nayza.G;if(fl&&fl.visible)fl.traverse(o=>{if(o.userData.flag)o.rotation.y=Math.sin(now/600)*.35});
+  renderer.render(scene,cam);requestAnimationFrame(loop)};
+ setSet(SETS[0]);requestAnimationFrame(loop);
+}else{setSet(SETS[0])}
+}
+</script>
+</body>
+</html>
