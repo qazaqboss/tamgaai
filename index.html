@@ -7750,6 +7750,7 @@
                     <div className="text-center mb-10">
                         <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase mb-2">ТАРИХ ЖОЛЫ · ПУТЬ ИСТОРИИ</p>
                         <h2 className="text-3xl md:text-4xl font-serif">От саков до независимости</h2>
+                        <a href="batyr/" className="inline-block mt-4 px-5 py-2 rounded-full text-xs tracking-widest uppercase border border-[#C5A55A] text-[#C5A55A] hover:bg-[#C5A55A1A]">⚔ 3D: батыр анатомиясы 1465–1847 →</a>
                     </div>
                     <div className="relative overflow-x-auto pb-4">
                         <div className="relative min-w-[900px] h-24">
@@ -9476,6 +9477,7 @@
                 { k: 'kui', icon: '♫', kk: 'Домбыра · күй', ru: 'Ноты, табулатура Ү/А и 3D-домбыра со звуком', hot: true },
                 { k: 'customs', icon: '⧖', kk: 'Салт-дәстүр', ru: 'Бесік, тұсаукесер, Наурыз — в 3D' },
                 { k: 'stories', icon: '◯', kk: 'Ертегілер', ru: 'Сказки и легенды степи' },
+                { k: 'batyr', icon: '⚔', kk: 'Батыр анатомиясы', ru: '3D-воин 1465–1847: доспех, оружие, одежда по эпохам', hot: true },
             ] },
             { group: 'Ойын · Мұра', items: [
                 { k: 'games', icon: '🐎', kk: 'Ойындар', ru: 'Бәйге Pro, Асық ату и 11 игр' },
@@ -9550,7 +9552,7 @@
             }, [allTamgas.length]);
 
             const activeTamga = allTamgas[tamgaIdx];
-            const go = (k) => ({ tree: onTreeClick, profile: onProfileClick, dna: onDnaClick, chat: onChatClick, learn: onLearnClick, atlas: onAtlasClick, kui: onKuiClick, customs: onCustomsClick, stories: onStoriesClick, games: onGamesClick, food: onFoodClick, token: onTokenClick })[k]?.();
+            const go = (k) => ({ tree: onTreeClick, profile: onProfileClick, dna: onDnaClick, chat: onChatClick, learn: onLearnClick, atlas: onAtlasClick, kui: onKuiClick, batyr: () => { location.href = 'batyr/'; }, customs: onCustomsClick, stories: onStoriesClick, games: onGamesClick, food: onFoodClick, token: onTokenClick })[k]?.();
 
             return (
                 <div className="max-w-7xl mx-auto px-6 pt-24">
