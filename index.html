@@ -5470,6 +5470,7 @@
                     <div className="absolute bottom-6 inset-x-0 flex justify-center gap-3 pointer-events-auto">
                         <button onClick={() => setWalking(w => !w)} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>{walking ? '❚❚ Тоқтау' : '▶ Жүру'}</button>
                         {onBio && <button onClick={onBio} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A]" style={{ background: 'rgba(12,10,6,.75)', backdropFilter: 'blur(6px)' }}>📜 Өмірбаяны</button>}
+                        <a href={'heroes/' + H.id + '/'} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A60]" style={{ background: 'rgba(12,10,6,.75)', backdropFilter: 'blur(6px)' }}>↗ Жеке бет</a>
                     </div>
                     <p className="absolute bottom-2 right-4 text-[9px] text-[#555] pointer-events-none">Тартып айналдырыңыз · дөңгелекпен жақындатыңыз</p>
                 </div>
@@ -5574,6 +5575,7 @@
 
                     <div className="flex justify-center mt-12">
                         <button onClick={onBack} className="px-8 py-3 rounded-full text-xs tracking-widest uppercase font-bold text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>⚔ Батырды 3D-де көру</button>
+                        <a href="heroes/bogenbay/" className="ml-3 px-8 py-3 rounded-full text-xs tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A]">↗ Жеке бет</a>
                     </div>
                 </div>
             );
