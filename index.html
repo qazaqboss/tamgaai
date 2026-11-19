@@ -9834,6 +9834,7 @@
                             <div className="flex flex-wrap gap-3 mb-10">
                                 <button onClick={() => go('tree')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase font-bold transition hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg,#E8C66A,#8B6914)', color: '#000', boxShadow: '0 6px 30px rgba(197,165,90,.45)' }}>◈ Шежіре ағашын ашу</button>
                                 <button onClick={() => go('profile')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase border border-[#C5A55A] text-[#E8C66A] backdrop-blur-sm bg-[#0808084d] hover:bg-[#C5A55A1A] transition">👤 Менің бұтағым</button>
+                                <button onClick={() => go('heroes')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase border border-[#C5A55A] text-[#E8C66A] backdrop-blur-sm bg-[#0808084d] hover:bg-[#C5A55A1A] transition">⚔ Батырлар · 3D</button>
                             </div>
                             <div className="grid grid-cols-4 gap-3 max-w-md">
                                 {[['28 644', 'есім'], ['21', 'ру'], ['3', 'жүз'], ['20', 'буын']].map(([n, l]) => <div key={l}>
@@ -9851,6 +9852,16 @@
             return (
                 <section id="home-sections" className="mb-24 px-2 md:px-4 scroll-mt-8">
                     <p className="text-center text-[#C5A55A] text-base md:text-xl italic font-serif mb-14 max-w-2xl mx-auto">«{prov}»</p>
+                    <button onClick={() => go('heroes')} className="keep-dark group relative w-full overflow-hidden rounded-3xl text-left mb-14 transition-all duration-300 hover:-translate-y-1" style={{ border: '1px solid rgba(197,165,90,.55)', background: 'radial-gradient(ellipse at 80% 50%, #2a1f0e 0%, #0c0a07 60%)', minHeight: 240 }}>
+                        <img src="images/heroes/bogenbay.webp" alt="Бөгенбай батыр" className="absolute right-0 bottom-0 h-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxWidth: '55%', objectPosition: 'right bottom', maskImage: 'linear-gradient(90deg,transparent,#000 35%)', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 35%)' }} />
+                        <div className="relative p-6 md:p-10" style={{ maxWidth: '62%' }}>
+                            <span className="inline-block px-3 py-1 rounded-full text-[9px] tracking-[0.3em] uppercase text-black font-bold mb-4" style={{ background: 'linear-gradient(135deg,#E8C66A,#8B6914)' }}>Жаңа · 3D</span>
+                            <p className="font-serif text-3xl md:text-5xl text-[#f6eedb] mb-2">⚔ Батырлар</p>
+                            <p className="text-[#d9cfb8] text-sm md:text-lg mb-1">Қанжығалы Бөгенбай батыр</p>
+                            <p className="text-[#8a8170] text-xs md:text-sm mb-5">Батыр 3D-де жүріп келеді · өмірбаяны · Бөгенбай батыр в 3D и его биография</p>
+                            <span className="inline-block px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A] group-hover:bg-[#C5A55A1A] transition">Ашу →</span>
+                        </div>
+                    </button>
                     <div>
                         {HOME_SECTIONS.map(sec => <div key={sec.group} style={{ marginBottom: 44 }}>
                             <div className="flex items-center gap-4 mb-5"><p className="text-[#C5A55A] text-[10px] tracking-[0.5em] uppercase whitespace-nowrap">{sec.group}</p><span className="flex-1 h-px bg-gradient-to-r from-[#C5A55A40] to-transparent" /></div>
