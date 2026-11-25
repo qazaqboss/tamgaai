@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const g = await new GLTFLoader().loadAsync('bogenbay_src.glb'); const m = g.scene;
+m.traverse(o => { if (o.isMesh) { o.material.clippingPlanes = [new T.Plane(new T.Vector3(0, -1, 0), 0.2)]; o.material.side = T.DoubleSide; } });
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1500, 700); r.localClippingEnabled = true; r.outputEncoding = T.sRGBEncoding; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0x222222); sc.add(new T.HemisphereLight(0xffffff, 0x666666, 1.2)); sc.add(m);
+const grid = new T.Group(); for (let y = 0.04; y <= 0.16; y += 0.01) { const l = new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(-0.3, y, 0.3), new T.Vector3(0.3, y, 0.3)]), new T.LineBasicMaterial({ color: Math.round(y * 100) % 5 ? 0x00ff88 : 0xff3355 })); grid.add(l); } sc.add(grid);
+const g2 = new T.GridHelper(0.6, 12, 0xff3355, 0x00ffff); g2.position.y = 0.2; sc.add(g2);
+r.autoClear = false; r.setScissorTest(true);
+const oc = (x, w) => { const c = new T.OrthographicCamera(-0.3, 0.3, 0.3 * 700 / w * 1, -0.3 * 700 / w, -5, 5); return c; };
+{ r.setScissor(0, 0, 750, 700); r.setViewport(0, 0, 750, 700); r.clear(); const c = new T.OrthographicCamera(-0.3, 0.3, 0.2 + 0.08, 0.2 - 0.48 * 700 / 750 + 0.08, -5, 5); c.position.set(0, 0, 2); c.lookAt(0, 0, 0); c.top = 0.25; c.bottom = 0.25 - 0.6 * 700 / 750; c.updateProjectionMatrix(); r.render(sc, c); }
+{ r.setScissor(750, 0, 750, 700); r.setViewport(750, 0, 750, 700); r.clear(); const c = new T.OrthographicCamera(-0.3, 0.3, 0.3 * 700 / 750, -0.3 * 700 / 750, -5, 5); c.position.set(0, 3, 0); c.up.set(0, 0, -1); c.lookAt(0, 0, 0); r.render(sc, c); }
+window.READY = true;
+</script>

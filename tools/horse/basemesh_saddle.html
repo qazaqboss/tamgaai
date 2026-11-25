@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { fitStaticHorse } from '../../models/horse/static-horse.js';
+const Q = new URLSearchParams(location.search);
+const L = new GLTFLoader(); const [hg, sg] = await Promise.all([L.loadAsync('../../models/horse-basemesh/horse_basemesh.glb'), L.loadAsync('../../models/horse/saddle.glb')]);
+const fit = fitStaticHorse(T, hg.scene, { saddleZ: +(Q.get('sz') ?? 0.56), sink: +(Q.get('sink') ?? 0.02) });
+const r = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1500, 800); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+const sc = new T.Scene(); sc.background = new T.Color(0xcfd2d6); sc.add(new T.HemisphereLight(0xffffff, 0x665544, 0.8)); const dl = new T.DirectionalLight(0xffffff, 1.6); dl.position.set(4, 8, 5); dl.castShadow = true; Object.assign(dl.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 }); sc.add(dl);
+const g = new T.Mesh(new T.PlaneGeometry(20, 20), new T.MeshStandardMaterial({ color: 0xb8ad94 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; sc.add(g);
+sc.add(fit.root); fit.saddle.add(sg.scene);
+r.autoClear = false; r.setScissorTest(true);
+[[[4.0, 1.2, 0.3], [0, 1.0, 0.3], 750, 800, 0, 0], [[0.3, 1.4, 4.0], [0, 1.0, 0], 375, 400, 750, 400], [[2.6, 2.4, 2.4], [0, 1.0, 0.2], 375, 400, 1125, 400], [[1.2, 1.9, -0.2], [0, 1.4, -0.1], 750, 400, 750, 0]].forEach(([p, t, w, hh, x, y]) => {
+  r.setScissor(x, y, w, hh); r.setViewport(x, y, w, hh); r.clear(); const cam = new T.PerspectiveCamera(30, w / hh, 0.05, 50); cam.position.set(...p); cam.lookAt(...t); r.render(sc, cam); });
+window.OUT = fit.info; window.READY = true;
+</script>

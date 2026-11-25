@@ -29,6 +29,8 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+    <!-- ES-модули three.js (GLTFLoader, SkeletonUtils) получают тот же глобальный THREE — нужно для коня с седлом (models/horse) -->
+    <script type="importmap">{"imports":{"three":"./models/horse/three-global.js"}}</script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap"
         rel="stylesheet">
@@ -463,7 +465,7 @@
             jetyru: { name: "ЖЕТІРУ", juz: ZHUZES.KISHI, tamga: "⧗", tamgaName: "Жеті", color: "#C5A55A", story: "Жетыру — союз семи родов, созданный по преданиям Тауке-ханом для укрепления обороноспособности степи." },
         };
 
-        const SCREENS = { HOME: 'home', FLOW: 'flow', TREE: 'tree', CUSTOMS: 'customs', TOKEN_INFO: 'token', STORIES: 'stories', GAMES: 'games', FOOD: 'food', DNA: 'dna', CHAT: 'chat', PROFILE: 'profile', LEARN: 'learn', ATLAS: 'atlas', KUI: 'kui' };
+        const SCREENS = { HOME: 'home', FLOW: 'flow', TREE: 'tree', CUSTOMS: 'customs', TOKEN_INFO: 'token', STORIES: 'stories', GAMES: 'games', FOOD: 'food', DNA: 'dna', CHAT: 'chat', PROFILE: 'profile', LEARN: 'learn', ATLAS: 'atlas', KUI: 'kui', HEROES: 'heroes', HERO_BIO: 'hero_bio' };
 
         // ── База знаний для чата по каждому роду ──
         const TRIBES_KNOWLEDGE = {
@@ -4447,7 +4449,7 @@
                     </button>
 
                     {currentScreen === SCREENS.HOME ? (
-                        <HomeScreen onTribeSelect={handleTribeClick} onTreeClick={goToTree} onCustomsClick={goToCustoms} onTokenClick={goToTokenInfo} onStoriesClick={goToStories} onGamesClick={goToGames} onFoodClick={goToFood} onDnaClick={goToDna} onChatClick={goToChat} onProfileClick={goToProfile} onLearnClick={() => goTo(SCREENS.LEARN)} onAtlasClick={() => goTo(SCREENS.ATLAS)} onKuiClick={() => goTo(SCREENS.KUI)} />
+                        <HomeScreen onTribeSelect={handleTribeClick} onTreeClick={goToTree} onCustomsClick={goToCustoms} onTokenClick={goToTokenInfo} onStoriesClick={goToStories} onGamesClick={goToGames} onFoodClick={goToFood} onDnaClick={goToDna} onChatClick={goToChat} onProfileClick={goToProfile} onLearnClick={() => goTo(SCREENS.LEARN)} onAtlasClick={() => goTo(SCREENS.ATLAS)} onKuiClick={() => goTo(SCREENS.KUI)} onHeroesClick={() => goTo(SCREENS.HEROES)} />
                     ) : currentScreen === SCREENS.FLOW ? (
                         <InteractiveFlow tribeKey={selectedTribe} onBack={goHome} onTreeFinish={goToTree} />
                     ) : currentScreen === SCREENS.TREE ? (
@@ -4458,6 +4460,10 @@
                         <DombraKuiScreen onBack={goHome} />
                     ) : currentScreen === SCREENS.ATLAS ? (
                         <Atlas3DScreen onBack={goHome} />
+                    ) : currentScreen === SCREENS.HEROES ? (
+                        <HeroesScreen onBack={goHome} onBio={() => goTo(SCREENS.HERO_BIO)} />
+                    ) : currentScreen === SCREENS.HERO_BIO ? (
+                        <HeroBioScreen onBack={() => goTo(SCREENS.HEROES)} />
                     ) : currentScreen === SCREENS.CUSTOMS ? (
                         <CustomsScreen onBack={goHome} />
                     ) : currentScreen === SCREENS.TOKEN_INFO ? (
@@ -4481,7 +4487,7 @@
                     </footer>
 
                     {/* Floating submit button */}
-                    {currentScreen !== SCREENS.TREE && currentScreen !== SCREENS.ATLAS && <button onClick={() => setShowSubmitModal(true)}
+                    {currentScreen !== SCREENS.TREE && currentScreen !== SCREENS.ATLAS && currentScreen !== SCREENS.HEROES && currentScreen !== SCREENS.HERO_BIO && <button onClick={() => setShowSubmitModal(true)}
                         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
                         style={{background:'linear-gradient(135deg,#C5A55A,#8B6914)', boxShadow:'0 4px 24px rgba(197,165,90,0.4)', color:'#000'}}>
                         <span className="text-base font-bold leading-none">+</span>
@@ -5371,6 +5377,209 @@
             [ZHUZES.ORTA]: { color: 0x8fb3ff, land: 'Сарыарқа, Солтүстік, Шығыс', ru: 'Центр, север и восток', saying: '«Орта жүзге — қалам беріп, дау бақ»' },
             [ZHUZES.KISHI]:{ color: 0xe07a5f, land: 'Батыс Қазақстан', ru: 'Запад', saying: '«Кіші жүзге — найза беріп, жау бақ»' },
         };
+
+        // ═════════════════════  БАТЫРЛАР — 3D герои  ═════════════════════
+        const HEROES = [{
+            id: 'bogenbay', model: 'models/heroes/bogenbay.glb', height: 1.85,
+            kk: 'Қанжығалы Бөгенбай батыр', ru: 'Канжыгалы Богенбай батыр', years: 'шамамен 1680 — 1778',
+            origin: 'Орта жүз · Арғын · Қанжығалы руы',
+            lead: 'Жоңғар шапқыншылығына қарсы күрестің бас қолбасшыларының бірі, Абылай ханның сенімді серігі.',
+            facts: [
+                ['⚔', 'Бұланты шайқасы', '1728 жылы Бұланты өзені бойындағы жеңісте қазақ жасағын бастаушылардың бірі болды.'],
+                ['🏹', 'Аңырақай', 'Аңырақай шайқасына (1729–1730) қатысып, жоңғар әскерін талқандауға үлес қосты.'],
+                ['🤝', 'Абылайдың серігі', 'Абылай ханның ақылшысы әрі қолбасшысы, Орта жүздің ел қорғаған батыры.'],
+                ['🏛', 'Тарихи жады', 'Есімі көшелер мен елді мекендерге берілген, жыраулар жырында ел қорғаны ретінде аталады.'],
+            ],
+            ru_note: 'Один из главных полководцев казахов в войне с джунгарами, соратник Абылай хана.',
+        }];
+        const _heroCache = {};
+        function loadHeroGLB(url) {
+            return _heroCache[url] || (_heroCache[url] = (async () => {
+                const { GLTFLoader } = await importModule('https://unpkg.com/three@0.149.0/examples/jsm/loaders/GLTFLoader.js');
+                return new GLTFLoader().loadAsync(new URL(url, document.baseURI).href, e => { if (e.total) window.dispatchEvent(new CustomEvent('hero-progress', { detail: e.loaded / e.total })); });
+            })().catch(e => { delete _heroCache[url]; throw e; }));
+        }
+        // степная земля: тёплая трава, пятна, тропинка
+        function steppeTexture(T) {
+            const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+            g.fillStyle = '#4e4526'; g.fillRect(0, 0, 512, 512);
+            for (let i = 0; i < 9000; i++) { const x = Math.random() * 512, y = Math.random() * 512, l = 2 + Math.random() * 7;
+                g.strokeStyle = ['#6b5f33', '#57502b', '#7d6e3b', '#4a4426', '#8a7a44'][i % 5]; g.globalAlpha = 0.35 + Math.random() * 0.4; g.lineWidth = 1;
+                g.beginPath(); g.moveTo(x, y); g.lineTo(x + (Math.random() - .5) * 3, y - l); g.stroke(); }
+            g.globalAlpha = 1; const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(10, 10); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t;
+        }
+
+        function HeroesScreen({ onBack, onBio }) {
+            const mountRef = useRef(null);
+            const [heroIdx] = useState(0);
+            const [walking, setWalking] = useState(true);
+            const [prog, setProg] = useState(0);
+            const [ready, setReady] = useState(false);
+            const api = useRef({});
+            const H = HEROES[heroIdx];
+            useEffect(() => { const f = e => setProg(e.detail); window.addEventListener('hero-progress', f); return () => window.removeEventListener('hero-progress', f); }, []);
+            useEffect(() => { api.current.walking = walking; }, [walking]);
+            const err = useThree(mountRef, {
+                opts: { distance: 4.4, target: [0, 1.0, 0], minDist: 1.8, maxDist: 11, autoRotate: true, fog: false },
+                run: (S) => {
+                    const { T, scene, renderer } = S; let alive = true; S.st.theta = 0.55; S.st.phi = 1.38;
+                    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+                    scene.background = null; scene.fog = new T.Fog(0x14100a, 9, 22);
+                    const sun = new T.DirectionalLight(0xffe2b0, 0.85); sun.position.set(3, 6, 4); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -2, right: 2, top: 3, bottom: -1 }); sun.shadow.bias = -0.0005; scene.add(sun);
+                    scene.add(new T.HemisphereLight(0xfff2d8, 0x2a1e0e, 0.3));
+                    // земля + трава, которые «едут» навстречу шагу (батыр идёт на месте, камеру можно вращать)
+                    const tex = steppeTexture(T);
+                    const ground = new T.Mesh(new T.CircleGeometry(14, 72), new T.MeshStandardMaterial({ map: tex, roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+                    const tufts = []; { const gm = new T.MeshStandardMaterial({ color: 0x5a4f26, roughness: 1, side: T.DoubleSide }), geo = new T.ConeGeometry(0.012, 0.14, 3, 1, true);
+                        for (let i = 0; i < 380; i++) { const m = new T.Mesh(geo, gm); const r = 0.6 + Math.sqrt(Math.random()) * 9, a = Math.random() * Math.PI * 2; m.position.set(Math.cos(a) * r, 0.08, Math.sin(a) * r); m.scale.set(0.8 + Math.random() * 0.6, 0.5 + Math.random() * 0.9, 0.8 + Math.random() * 0.6); m.position.y = 0.04; m.rotation.z = (Math.random() - .5) * 0.4; scene.add(m); tufts.push(m); } }
+                    S.onFrame((dt) => { if (!api.current.speed) return; const d = api.current.speed * dt; tex.offset.y -= d / 28 * 10; tufts.forEach(m => { m.position.z -= d; if (m.position.z < -9.5) m.position.z += 19; }); });
+                    // батыр
+                    loadHeroGLB(H.model).then(g => {
+                        if (!alive) return; const hero = g.scene; hero.updateMatrixWorld(true);
+                        const box = new T.Box3().setFromObject(hero), k = H.height / ((box.max.y - box.min.y) * 0.91); // рост — до верха шлема, перо (~9 %) не в счёт
+                        hero.scale.setScalar(k); hero.position.y = -box.min.y * k; scene.add(hero);
+                        hero.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+                        const mixer = new T.AnimationMixer(hero), walk = mixer.clipAction(g.animations[0]); walk.play();
+                        const stride = 0.255 * k;   // м/с — скорость шага модели (длина шага × частота)
+                        let w = 1; setReady(true);
+                        S.onFrame(dt => { const target = api.current.walking ? 1 : 0; w += (target - w) * Math.min(1, dt * 3);
+                            walk.setEffectiveWeight(Math.max(0.0001, w)); walk.setEffectiveTimeScale(Math.max(0.05, w));
+                            if (w < 0.02) walk.time = 0; api.current.speed = stride * w; mixer.update(dt); });
+                    }).catch(e => { console.warn('Батыр (GLB) не загрузился', e); setProg(-1); });
+                    return () => { alive = false; };
+                },
+            }, [heroIdx]);
+
+            return (
+                <div className="fixed inset-0 z-40 keep-dark" style={{ background: 'radial-gradient(ellipse at 50% 35%, #2a2112 0%, #0c0a06 70%)' }}>
+                    <div ref={mountRef} className="absolute inset-0" />
+                    {err && <div className="absolute inset-0 flex items-center justify-center text-[#C5A55A] text-sm p-8 text-center">{err}</div>}
+                    {!ready && !err && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><p className="text-[#C5A55A] text-xs tracking-[0.4em] uppercase">{prog < 0 ? 'Модель жүктелмеді · не загрузилась' : `Батыр жүктелуде… ${Math.round(prog * 100)}%`}</p></div>}
+                    <div className="absolute top-0 left-0 p-4 md:p-8 max-w-md pointer-events-none">
+                        <button onClick={onBack} className="pointer-events-auto text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-4 block">← Назад</button>
+                        <p className="text-[#C5A55A] text-[9px] tracking-[0.5em] uppercase">Батырлар · Герои</p>
+                        <h2 className="text-3xl md:text-5xl font-serif text-white leading-tight mt-1">{H.kk}</h2>
+                        <p className="text-[#bfae80] text-xs mt-2">{H.years} · {H.origin}</p>
+                        <p className="text-[#ddd] text-sm leading-relaxed mt-4">{H.lead}</p>
+                        <p className="text-[#888] text-xs italic mt-1">{H.ru_note}</p>
+                        <div className="mt-5 space-y-2 hidden md:block">
+                            {H.facts.map(([ic, t, d]) => <div key={t} className="rounded-xl p-3 border border-[#C5A55A30]" style={{ background: 'rgba(12,10,6,.72)', backdropFilter: 'blur(6px)' }}>
+                                <p className="text-[#F0D882] text-sm font-serif">{ic} {t}</p><p className="text-[#bbb] text-xs leading-relaxed mt-1">{d}</p></div>)}
+                        </div>
+                    </div>
+                    <div className="absolute bottom-6 inset-x-0 flex justify-center gap-3 pointer-events-auto">
+                        <button onClick={() => setWalking(w => !w)} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>{walking ? '❚❚ Тоқтау' : '▶ Жүру'}</button>
+                        {onBio && <button onClick={onBio} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A]" style={{ background: 'rgba(12,10,6,.75)', backdropFilter: 'blur(6px)' }}>📜 Өмірбаяны</button>}
+                        <a href={'heroes/' + H.id + '/'} className="px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A60]" style={{ background: 'rgba(12,10,6,.75)', backdropFilter: 'blur(6px)' }}>↗ Жеке бет</a>
+                    </div>
+                    <p className="absolute bottom-2 right-4 text-[9px] text-[#555] pointer-events-none">Тартып айналдырыңыз · дөңгелекпен жақындатыңыз</p>
+                </div>
+            );
+        }
+
+        // ═════════════════════  ӨМІРБАЯН — Қанжығалы Бөгенбай батыр  ═════════════════════
+        // Текст — по открытым источникам (см. «Дереккөздер»); даты приблизительные, спорные сведения помечены.
+        const BOGENBAY_BIO = {
+            origin: [
+                ['Шыққан тегі', 'Бөгенбай Ақшаұлы — Орта жүз Арғын тайпасының Қанжығалы руынан. Шамамен 1680 жылы Сырдария өңірінде туған деген дерек бар. Әкесі Ақша — Тәуке хан тұсындағы беделді тұлға: дереккөздер бойынша хан оған үлкен әскер басқаруды сеніп тапсырған.',
+                 'Происходит из рода Канжыгалы племени Аргын Среднего жуза. По данным источников, родился около 1680 года близ Сырдарьи. Его отец Акша был влиятельным человеком при хане Тауке и, по преданию, командовал большим войском.'],
+                ['Тәрбиесі', 'Шешендігі мен ақыл-парасатын әкесінен дарытқан. Кейбір деректерде Тәуке ханның балаларымен бірге тәрбиеленгені айтылады.',
+                 'Красноречие унаследовал от отца. По некоторым сведениям, воспитывался вместе с детьми хана Тауке.'],
+            ],
+            timeline: [
+                ['1710', 'Қарақұм жиыны', 'Үш жүздің өкілдері бас қосқан жиында жалпы қазақ жасағын басқаруға сайланғаны айтылады. Жиындағы атақты сөзді оған телу кейбір тарихшылар тарапынан даулы саналады.', 'На съезде представителей трёх жузов, по преданию, избран предводителем общеказахского ополчения. Приписываемая ему знаменитая речь оспаривается частью историков.', true],
+                ['1723', 'Ақтабан шұбырынды', 'Жоңғар шапқыншылығының ең ауыр жылдары. Бөгенбай ел қорғаған батырлардың қатарында жасақ бастады.', 'Самые тяжёлые годы джунгарского нашествия. Богенбай — среди батыров, возглавлявших оборону.'],
+                ['1728', 'Бұланты шайқасы', 'Бұланты өзені бойындағы жеңісте қазақ жасағын бастаушылардың бірі болғаны айтылады.', 'Называется одним из предводителей казахского войска в победе на реке Буланты.'],
+                ['1729–1730', 'Аңырақай шайқасы', 'Үш жүз жасағы бірігіп, жоңғар әскерін талқандаған ұлы шайқас. Аңыз бойынша біріккен қолды бастағандардың бірі — Бөгенбай. Шайқас туралы құжаттық деректер аз.', 'Великая битва, где объединённое войско трёх жузов разбило джунгар; по преданию, Богенбай — один из её предводителей. Документальных источников о битве немного.', true],
+                ['1731', 'Ресейге бодандық', '1731 жылғы 10 қазанда Ресей протекторатын ресми қабылдаған алғашқы қазақ старшиналарының бірі болды.', '10 октября 1731 года одним из первых казахских старшин официально принял российский протекторат.'],
+                ['1740–1770', 'Абылайдың серігі', 'Абылай ханның ақылшысы әрі қолбасшысы ретінде жоңғарларға қарсы күресті жалғастырды, қазақтарды жоңғар билігінен азат етуге үлес қосты.', 'Соратник и полководец Абылай хана; продолжал борьбу с джунгарами и сыграл важную роль в освобождении казахов от их власти.'],
+                ['1778', 'Өмірінің соңы', 'Торғай өңірінде дүниеден өтті.', 'Скончался в Тургайской долине.'],
+            ],
+            debate: ['Тарихшылардың пікірі', 'Бөгенбай туралы деректердің көбі жыраулар жыры, шежіре және ел аузындағы аңыздар арқылы жеткен. Ақтөбелік профессор Айсұлу Тасымова оның кейбір еңбектерін, соның ішінде 1710 жылғы Қарақұм жиынындағы атақты сөзді оған телуді даулы деп санайды. Аңырақай шайқасының нақты барысы да құжаттармен толық расталмаған.',
+                'Многое о Богенбае известно из жырау, шежіре и народных преданий. Историк Айсулу Тасимова (Актобе) считает спорной часть приписываемых ему заслуг, в том числе речь на Каракумском съезде 1710 года; ход Анракайской битвы тоже документально подтверждён не полностью.'],
+            legacy: ['Мұрасы', 'Бөгенбай батыр — ел бірлігі мен ерліктің символы. Оның есімі қалалардағы көшелер мен даңғылдарға, елді мекендерге берілген; бейнесі тарихи кітаптар мен фильмдерде, соның ішінде Аңырақай шайқасы туралы туындыларда сомдалады.',
+                'Богенбай батыр — символ единства и мужества. Его имя носят улицы и проспекты, населённые пункты; его образ — в книгах и фильмах, в том числе об Анракайской битве.'],
+            sources: [
+                ['«Бөгенбай Ақшаұлы» — Қазақстан: Ұлттық энциклопедия, 1999, 394–395 б.', null],
+                ['Bogenbay Batyr — Wikipedia', 'https://en.wikipedia.org/wiki/Bogenbay_Batyr'],
+                ['Актюбинский профессор поставила под сомнение заслуги Богенбай-батыра — Tengrinews', 'https://tengrinews.kz/science/aktyubinskiy-professor-postavila-somnenie-zaslugi-bogenbay-304670/'],
+                ['Анракайская битва — Рувики', 'https://ru.ruwiki.ru/wiki/%D0%90%D0%BD%D1%80%D0%B0%D0%BA%D0%B0%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%B1%D0%B8%D1%82%D0%B2%D0%B0'],
+            ],
+        };
+
+        function HeroBioScreen({ onBack }) {
+            const B = BOGENBAY_BIO, H = HEROES[0];
+            useEffect(() => { window.scrollTo({ top: 0 }); }, []);
+            return (
+                <div className="max-w-6xl mx-auto px-4 md:px-8 pt-20 pb-28">
+                    <button onClick={onBack} className="text-[#666] hover:text-[#C5A55A] text-[10px] tracking-widest uppercase mb-10 block">← 3D-де көру · Назад к 3D</button>
+                    {/* шапка: текст + портрет */}
+                    <header className="grid md:grid-cols-[1.25fr_1fr] gap-8 md:gap-12 items-center mb-16 md:mb-24">
+                        <div>
+                            <p className="text-[#C5A55A] text-[10px] tracking-[0.5em] uppercase mb-4">Өмірбаян · Биография</p>
+                            <h1 className="text-4xl md:text-7xl font-serif leading-[1.05] text-white">{H.kk}</h1>
+                            <p className="text-[#bfae80] text-sm md:text-base mt-4">{H.ru}</p>
+                            <div className="flex flex-wrap gap-2 mt-6">
+                                {[H.years, 'Орта жүз', 'Арғын · Қанжығалы', 'Жоңғар соғысы'].map(t => <span key={t} className="px-3 py-1 rounded-full border border-[#C5A55A40] text-[#E8C66A] text-[11px] tracking-wide">{t}</span>)}
+                            </div>
+                            <p className="text-[#ddd] text-base md:text-lg leading-relaxed mt-8 font-light">{H.lead}</p>
+                            <p className="text-[#888] text-sm italic mt-2">{H.ru_note}</p>
+                            <OrnamentLine />
+                        </div>
+                        <div className="relative flex justify-center">
+                            <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(197,165,90,.28), rgba(197,165,90,0))' }} />
+                            <img src="images/heroes/bogenbay.webp" alt={H.kk} className="relative w-[78%] md:w-[88%] max-w-[420px] drop-shadow-[0_20px_40px_rgba(0,0,0,.6)]" />
+                        </div>
+                    </header>
+
+                    {/* происхождение */}
+                    <section className="grid md:grid-cols-2 gap-4 md:gap-6 mb-16 md:mb-24">
+                        {B.origin.map(([t, kk, ru]) => <div key={t} className="glass-card rounded-2xl p-6 md:p-8 border border-[#C5A55A25]">
+                            <p className="text-[#C5A55A] text-[10px] tracking-[0.4em] uppercase mb-3">{t}</p>
+                            <p className="text-[#e8e2d4] leading-relaxed">{kk}</p>
+                            <p className="text-[#888] text-sm italic leading-relaxed mt-3">{ru}</p>
+                        </div>)}
+                    </section>
+
+                    {/* хронология */}
+                    <section className="mb-16 md:mb-24">
+                        <div className="flex items-center gap-4 mb-8"><p className="text-[#C5A55A] text-[10px] tracking-[0.5em] uppercase whitespace-nowrap">Өмір жолы · Хронология</p><span className="flex-1 h-px bg-gradient-to-r from-[#C5A55A60] to-transparent" /></div>
+                        <ol className="relative border-l border-[#C5A55A40] ml-3 md:ml-6">
+                            {B.timeline.map(([y, t, kk, ru, disputed]) => <li key={y} className="mb-10 ml-6 md:ml-10">
+                                <span className="absolute -left-[7px] mt-1.5 w-3.5 h-3.5 rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%,#fff6d6,#C5A55A 60%,#8B6914)', boxShadow: '0 0 12px rgba(197,165,90,.6)' }} />
+                                <p className="text-[#E8C66A] font-serif text-2xl md:text-3xl">{y}</p>
+                                <h3 className="text-white font-serif text-xl md:text-2xl mt-1">{t}{disputed && <span className="ml-3 align-middle text-[9px] tracking-widest uppercase text-[#c9a46a] border border-[#c9a46a60] rounded-full px-2 py-0.5">даулы · спорно</span>}</h3>
+                                <p className="text-[#ddd] leading-relaxed mt-2 max-w-3xl">{kk}</p>
+                                <p className="text-[#888] text-sm italic leading-relaxed mt-1 max-w-3xl">{ru}</p>
+                            </li>)}
+                        </ol>
+                    </section>
+
+                    {/* споры и наследие */}
+                    <section className="grid md:grid-cols-2 gap-4 md:gap-6 mb-16">
+                        {[B.debate, B.legacy].map(([t, kk, ru]) => <div key={t} className="rounded-2xl p-6 md:p-8 border border-[#C5A55A30]" style={{ background: 'linear-gradient(135deg,rgba(197,165,90,.10),rgba(197,165,90,.02))' }}>
+                            <p className="text-[#F0D882] font-serif text-2xl mb-3">{t}</p>
+                            <p className="text-[#e8e2d4] leading-relaxed">{kk}</p>
+                            <p className="text-[#888] text-sm italic leading-relaxed mt-3">{ru}</p>
+                        </div>)}
+                    </section>
+
+                    {/* источники */}
+                    <section className="glass-card rounded-2xl p-6 md:p-8 border border-[#C5A55A20]">
+                        <p className="text-[#C5A55A] text-[10px] tracking-[0.4em] uppercase mb-4">Дереккөздер · Источники</p>
+                        <ul className="space-y-2 text-sm">
+                            {B.sources.map(([t, u]) => <li key={t} className="text-[#bbb]">• {u ? <a href={u} target="_blank" rel="noopener noreferrer" className="text-[#E8C66A] hover:underline">{t}</a> : t}</li>)}
+                        </ul>
+                        <p className="text-[#666] text-xs mt-5">Даталар шамамен берілген; ел аузындағы деректер мен құжаттар әр түрлі болуы мүмкін. · Даты приблизительные; сведения преданий и документов могут расходиться.</p>
+                    </section>
+
+                    <div className="flex justify-center mt-12">
+                        <button onClick={onBack} className="px-8 py-3 rounded-full text-xs tracking-widest uppercase font-bold text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>⚔ Батырды 3D-де көру</button>
+                        <a href="heroes/bogenbay/" className="ml-3 px-8 py-3 rounded-full text-xs tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A]">↗ Жеке бет</a>
+                    </div>
+                </div>
+            );
+        }
 
         function Atlas3DScreen({ onBack }) {
             const [mode, setMode] = useState('yurt');
@@ -6485,12 +6694,12 @@
         // ═════════════════════  ЕР-ТҰРМАН  ═════════════════════
         const SADDLE_PARTS = [
             { id: 'toqym',   kk: 'Тоқым',     ru: 'Потник',          text: 'Войлочная подкладка под седло, бережёт спину коня. Праздничный тоқым украшали вышивкой.' },
-            { id: 'qaptal',  kk: 'Қаптал',    ru: 'Полки ленчика',   text: 'Две продольные доски — основа седла (ер ағашы). Лежат по бокам хребта коня и распределяют вес всадника.' },
-            { id: 'aldqas',  kk: 'Алдыңғы қас', ru: 'Передняя лука', text: 'Высокая передняя дуга. Её украшали серебром и костью. Казахское седло с высокой лукой называется «құранды ер».' },
-            { id: 'artqas',  kk: 'Артқы қас', ru: 'Задняя лука',     text: 'Задняя дуга, на которую опирается спина всадника в долгом пути.' },
+            { id: 'qaptal',  kk: 'Қаптал',    ru: 'Ленчик и юбка',   text: 'Основа седла (ер ағашы): две продольные полки по бокам хребта коня, сверху — кожаная юбка с серебряными бляхами. Распределяет вес всадника.' },
+            { id: 'aldqas',  kk: 'Алдыңғы қас', ru: 'Передняя лука', text: 'Высокая передняя дуга с головкой. Её украшали серебром и костью. Казахское седло с высокой лукой называется «құранды ер».' },
+            { id: 'artqas',  kk: 'Отырғыш пен артқы қас', ru: 'Сиденье и задняя лука', text: 'Сиденье всадника и задняя дуга, на которую он опирается спиной в долгом пути.' },
             { id: 'tebingi', kk: 'Тебінгі',   ru: 'Крылья',          text: 'Кожаные пластины по бокам — защищают ноги всадника от пота коня и стремянных ремней.' },
             { id: 'uzengi',  kk: 'Үзеңгі',    ru: 'Стремена',        text: 'Опора для ног. Висят на ремнях «үзеңгі бау». Пословица: «Үзеңгі қағысу» — ехать бок о бок, быть ровней.' },
-            { id: 'aiyl',    kk: 'Айыл',      ru: 'Подпруга',        text: 'Широкий ремень под брюхом коня, который крепко держит седло.' },
+            { id: 'aiyl',    kk: 'Айыл',      ru: 'Подпруги',        text: 'Ремни под брюхом коня с кольцами-тартпа: алдыңғы и артқы айыл крепко держат седло на месте.' },
             { id: 'omildirik', kk: 'Өмілдірік', ru: 'Нагрудник',     text: 'Ремень вокруг груди коня — не даёт седлу съезжать назад на подъёме.' },
             { id: 'quiysqan', kk: 'Құйысқан', ru: 'Подхвостник',     text: 'Ремень от задней луки под хвост — держит седло на спуске.' },
         ];
@@ -6555,7 +6764,71 @@
             const floor = rugFloor(T, scene, GY, 9, 12); const felt = scene.children[scene.children.length - 2];
             look.shadows();
             S.st.phi = 1.3; S.st.theta = 0.35;
-            return { parts };
+            // ── «Horse basemesh» с нашим седлом (models/horse): процедурное ер-тұрман видно, пока модели грузятся, и остаётся, если не загрузятся ──
+            let alive = true;
+            Promise.all([loadHorseKitGlobal(), loadStaticHorse()]).then(([kit, sh]) => { if (kit && sh && alive) { upgradeSaddle(T, kit, parts, [horse], scene, sh, GY); look.shadows(); } });
+            return { parts, dispose: () => { alive = false; } };
+        }
+        // детали модели седла → части казахского ер-тұрман
+        const SADDLE_MAP = { qaptal: /^(saddleskirt|concho(?!horn)|dring|polySurface648)/i, aldqas: /^(horn|conchohorn)/i, artqas: /^seat/i,
+            tebingi: /^fender/i, uzengi: /^stirrup/i, aiyl: /^(girth|frontstrap|collarring|rearstrap|polySurface64[67])/i };
+        // разлёт деталей в системе седла (метры): +Z — к голове коня, +Y — вверх
+        const SADDLE_EXPLODE = { toqym: [0, 0.14, -0.42], qaptal: [0, 0.32, 0], aldqas: [0, 0.62, 0.32], artqas: [0, 0.56, -0.3], tebingi: [0, -0.08, 0.5],
+            uzengi: [0, -0.42, 0.3], aiyl: [0, -0.5, -0.05], omildirik: [0, 0, 0.55], quiysqan: [0, 0.22, -0.5] };
+        function upgradeSaddle(T, kit, parts, placeholder, scene, sh, floorY = null) {
+            const U = 2.9;                                            // масштаб сцены атласа: холка ≈ 4.6 ед.
+            // конь «Horse basemesh» (sidahearne, CC BY 4.0): в метрах, седло — по линии спины (models/horse/static-horse.js)
+            const fit = sh.fit(T, sh.scene.clone(true)), rig = fit.root, H = fit.saddle;
+            rig.scale.setScalar(U); rig.rotation.y = Math.PI / 2; scene.add(rig); rig.updateMatrixWorld(true);  // нос → +X, как у схемы
+            const sp = H.getWorldPosition(new T.Vector3()); rig.position.set(-sp.x, 1.2 - sp.y, -sp.z); rig.updateMatrixWorld(true);
+            rig.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+            if (floorY != null) { const bb = new T.Box3().setFromObject(fit.mesh); rig.position.y += floorY - bb.min.y; rig.updateMatrixWorld(true); } // копыта — на ковёр студии
+            placeholder.forEach(o => { o.visible = false; });
+            const toLocal = new T.Matrix4().copy(H.matrixWorld).invert();
+            // поверхность коня в системе седла — по ней кроятся потник, нагрудник и подхвостник
+            const P = [], tris = []; { const body = fit.mesh, g = body.geometry, p = g.attributes.position, v = new T.Vector3();
+                for (let i = 0; i < p.count; i++) P.push(v.fromBufferAttribute(p, i).clone().applyMatrix4(body.matrixWorld).applyMatrix4(toLocal));
+                if (g.index) for (let i = 0; i < g.index.count; i += 3) tris.push([g.index.getX(i), g.index.getX(i + 1), g.index.getX(i + 2)]); else for (let i = 0; i < p.count; i += 3) tris.push([i, i + 1, i + 2]); }
+            // луч по коже коня → ближайшая точка попадания (или null)
+            const ray = new T.Ray(), hitP = new T.Vector3();
+            const hit = (o, d) => { ray.set(o, d.normalize()); let best = null, bd = Infinity; for (const [a, b, c] of tris) { if (ray.intersectTriangle(P[a], P[b], P[c], false, hitP)) { const dd = hitP.distanceTo(o); if (dd < bd) { bd = dd; best = hitP.clone(); } } } return best; };
+            const setPart = (id, meshes) => { const p = parts[id]; if (!p) return;
+                p.grp.clear(); p.grp.position.set(0, 0, 0); p.grp.rotation.set(0, 0, 0); p.grp.scale.set(1, 1, 1); H.add(p.grp);
+                p.base = new T.Vector3(); p.explode = new T.Vector3(...SADDLE_EXPLODE[id]); p.mats.length = 0; const box = new T.Box3();
+                meshes.forEach(m => { m.userData.part = id; m.castShadow = true; [].concat(m.material).forEach(mt => p.mats.push(mt)); p.grp.add(m); m.updateMatrix(); m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrix)); });
+                const c = box.getCenter(new T.Vector3()); p.anchor = () => c.clone(); return box; };
+            // детали модели седла (у каждой части — свои копии материалов, чтобы подсвечивалась только она)
+            kit.saddleParts.updateMatrixWorld(true); const bins = {};
+            kit.saddleParts.traverse(m => { if (!m.isMesh) return; const id = Object.keys(SADDLE_MAP).find(k => SADDLE_MAP[k].test(m.name)); if (id) (bins[id] ||= []).push(m); });
+            const boxes = {};
+            Object.entries(bins).forEach(([id, ms]) => { const cache = new Map();
+                boxes[id] = setPart(id, ms.map(m => { const c = new T.Mesh(m.geometry, cache.get(m.material) || cache.set(m.material, m.material.clone()).get(m.material)); c.name = m.name; m.matrixWorld.decompose(c.position, c.quaternion, c.scale); return c; })); });
+            const leather = new T.MeshStandardMaterial({ color: 0x3e1f10, roughness: 0.6 }), silver = new T.MeshStandardMaterial({ color: 0xd8d8e0, roughness: 0.25, metalness: 0.9 });
+            const topAt = z => hit(new T.Vector3(0, 2, z), new T.Vector3(0, -1, 0))?.y ?? 0.03;
+            const widthAt = (z, y) => hit(new T.Vector3(2, y, z), new T.Vector3(-1, 0, 0))?.x ?? 0.26;
+            // тоқым — войлочный потник с орнаментом: выкроен по сечению спины, выглядывает из-под юбки седла
+            { const L = 0.82, z0 = -0.04, D = 0.2, NU = 24, NZ = 14, pos = [], uv = [], idx = [];
+              for (let j = 0; j <= NZ; j++) { const z = z0 + (j / NZ - 0.5) * L, top = topAt(z) + 0.012, W = widthAt(z, top - D) + 0.014;
+                for (let i = 0; i <= NU; i++) { const u = i / NU * 2 - 1; pos.push(u * W, top - D * (1 - Math.sqrt(1 - u * u)), z); uv.push(i / NU, j / NZ); } }
+              for (let j = 0; j < NZ; j++) for (let i = 0; i < NU; i++) { const a = j * (NU + 1) + i, b = a + NU + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+              const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+              setPart('toqym', [new T.Mesh(g, new T.MeshStandardMaterial({ map: ornamentTexture(T, 512, 256), roughness: 1, side: T.DoubleSide }))]); }
+            // өмілдірік — нагрудник: от передних колец седла вокруг груди; ремень лежит на коже (лучи вокруг груди)
+            { const front = (boxes.qaptal ? boxes.qaptal.max.z : 0.35) - 0.08, yC = -0.42; // на уровне плечевого сустава
+              const fz = hit(new T.Vector3(0, yC, 3), new T.Vector3(0, 0, -1))?.z ?? front + 0.6, cz = fz - 0.3, pts = [new T.Vector3(0.2, -0.07, front)];
+              for (let d = 95; d >= -95; d -= 10) { const f = d * Math.PI / 180, y = yC + 0.13 * Math.pow(Math.abs(d) / 95, 2), o = new T.Vector3(Math.sin(f) * 2, y, cz + Math.cos(f) * 2);
+                const hp = hit(o, new T.Vector3(0, y, cz).sub(o)); if (hp) pts.push(hp.add(new T.Vector3(Math.sin(f), 0, Math.cos(f)).multiplyScalar(0.014))); }
+              pts.push(new T.Vector3(-0.2, -0.07, front));
+              const tube = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 96, 0.02, 8, false), leather.clone());
+              const concho = new T.Mesh(new T.SphereGeometry(0.045, 20, 12), silver.clone()); concho.scale.z = 0.35; concho.position.set(0, yC, fz + 0.03);
+              setPart('omildirik', [tube, concho]); }
+            // құйысқан — подхвостник: от задней луки по хребту к корню хвоста и петлёй под хвост
+            { const zs = (boxes.artqas ? boxes.artqas.min.z : -0.32) + 0.03, tail = P.filter(v => Math.abs(v.x) < 0.06 && v.y > topAt(zs) - 0.25).reduce((a, v) => (v.z < a.z ? v : a), new T.Vector3(0, 0, 9)).clone().add(new T.Vector3(0, -0.04, 0.03)); // корень хвоста — край крупа
+              const pts = [new T.Vector3(0, topAt(zs) + 0.012, zs)]; for (let k = 1; k <= 3; k++) { const z = zs + (tail.z + 0.06 - zs) * k / 4; pts.push(new T.Vector3(0, topAt(z) + 0.012, z)); }
+              pts.push(new T.Vector3(0, tail.y + 0.05, tail.z + 0.02), new T.Vector3(0, tail.y - 0.02, tail.z - 0.08));
+              const tube = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 48, 0.016, 8, false), leather.clone());
+              const loop = new T.Mesh(new T.TorusGeometry(0.06, 0.016, 8, 24), leather.clone()); loop.position.set(0, tail.y - 0.06, tail.z - 0.02); loop.rotation.y = Math.PI / 2;
+              setPart('quiysqan', [tube, loop]); }
         }
 
         // ═════════════════════  АСПАПТАР МЕН БҰЙЫМДАР: қобыз, сыбызғы, шаңқобыз, қамшы, торсық, сандық  ═════════════════════
@@ -8673,8 +8946,64 @@
 
 
         return makeHorse; })();
-        // Конь (+ всадник) на реалистичном движке. Нос смотрит в +Z
-        function makeHorse(T, { coat = 0x7a4a24, rider = true, robe = 0x1d4fa0, hat = 'kalpak' } = {}) {
+        // ── Конь с седлом: «The Horse» © aaadragon (Sketchfab, CC BY 4.0) + седло — общий модуль models/horse/horse-kit.js ──
+        // Модули three.js получают глобальный THREE через importmap → models/horse/three-global.js. import() вызываем мимо Babel.
+        const importModule = new Function('u', 'return import(u)');
+        let _horseKitP = null; const _horseKitProg = new Set();
+        function loadHorseKitGlobal(onProgress) {
+            if (onProgress) _horseKitProg.add(onProgress);
+            return _horseKitP || (_horseKitP = (async () => {
+                const J = 'https://unpkg.com/three@0.149.0/examples/jsm/', here = u => new URL(u, document.baseURI).href;
+                const [{ GLTFLoader }, SkeletonUtils, BGU, { loadHorseKit }] = await Promise.all([importModule(J + 'loaders/GLTFLoader.js'), importModule(J + 'utils/SkeletonUtils.js'), importModule(J + 'utils/BufferGeometryUtils.js'), importModule(here('models/horse/horse-kit.js'))]);
+                const kit = await loadHorseKit({ THREE: window.THREE, GLTFLoader, SkeletonUtils, mergeBufferGeometries: BGU.mergeBufferGeometries, base: here('models/horse/'), onProgress: p => _horseKitProg.forEach(f => f(p)) });
+                window.__HORSE_KIT = kit; return kit;
+            })().catch(e => { console.warn('Конь (GLB) не загрузился — используется процедурный', e); _horseKitP = null; return null; }));
+        }
+        // наездник: «Standing Man» © zhuoyi0904 (Sketchfab, CC BY 4.0) — посадка в седло через скелет (models/rider/rider-kit.js)
+        let _riderKitP = null; const _riderKitProg = new Set();
+        function loadRiderKitGlobal(onProgress) {
+            if (onProgress) _riderKitProg.add(onProgress);
+            return _riderKitP || (_riderKitP = (async () => {
+                const J = 'https://unpkg.com/three@0.149.0/examples/jsm/', here = u => new URL(u, document.baseURI).href;
+                const [{ GLTFLoader }, SkeletonUtils, { loadRiderKit }] = await Promise.all([importModule(J + 'loaders/GLTFLoader.js'), importModule(J + 'utils/SkeletonUtils.js'), importModule(here('models/rider/rider-kit.js'))]);
+                const kit = await loadRiderKit({ THREE: window.THREE, GLTFLoader, SkeletonUtils, base: here('models/rider/'), onProgress: p => _riderKitProg.forEach(f => f(p)) });
+                window.__RIDER_KIT = kit; return kit;
+            })().catch(e => { console.warn('Наездник (GLB) не загрузился — простой всадник', e); _riderKitP = null; return null; }));
+        }
+        // статичный конь для атласа: «Horse basemesh» © sidahearne (Sketchfab, CC BY 4.0)
+        let _staticHorseP = null;
+        function loadStaticHorse() {
+            return _staticHorseP || (_staticHorseP = (async () => {
+                const here = u => new URL(u, document.baseURI).href;
+                const [{ GLTFLoader }, { fitStaticHorse }] = await Promise.all([importModule('https://unpkg.com/three@0.149.0/examples/jsm/loaders/GLTFLoader.js'), importModule(here('models/horse/static-horse.js'))]);
+                const g = await new GLTFLoader().loadAsync(here('models/horse-basemesh/horse_basemesh.glb'));
+                return { scene: g.scene, fit: fitStaticHorse };
+            })().catch(e => { console.warn('Конь (basemesh) не загрузился', e); _staticHorseP = null; return null; }));
+        }
+        const HORSE_SCALE = 1.06;      // холка ≈ 1.65 м — как у прежнего коня, под масштаб игр
+        const RIDER_DY = -0.78;        // таз всадника (makePerson: ось ног на 0.85) — над сиденьем седла
+        // Конь (+ всадник). Нос смотрит в +Z. Есть модель — конь с седлом; нет — процедурный движок.
+        function makeHorse(T, { coat = 0x7a4a24, rider = true, robe = 0x1d4fa0, hat = 'kalpak', real = false, cap = null } = {}) {
+            const kit = window.__HORSE_KIT;
+            if (kit && real && rider && window.__RIDER_KIT) { // реалистичный наездник в седле (Көкпар, Бәйге)
+                const g = new T.Group(), h = kit.create({ tint: coat }); h.root.scale.setScalar(HORSE_SCALE); g.add(h.root);
+                const rd = window.__RIDER_KIT.create({ shirt: robe, hat: cap != null ? 'cap' : null, capColor: cap ?? 0xF0D882 }); rd.root.scale.setScalar(1 / HORSE_SCALE); h.seat.add(rd.root);
+                rd.root.userData.baseY = 0;
+                g.add(blobShadow(T, 1.2)); let lean = 0;
+                g.userData = { legs: [], rider: rd.root, bodyG: h.root, horse: h, animate: (dt, speed) => {
+                    h.update(dt, speed); lean += (Math.min(1, Math.max(0, (speed - 3) / 9)) - lean) * Math.min(1, dt * 3); rd.setLean(lean);
+                    h.root.updateMatrixWorld(true); rd.level(h.root); } };
+                return g;
+            }
+            if (kit) {
+                const g = new T.Group(), h = kit.create({ tint: coat }); h.root.scale.setScalar(HORSE_SCALE); g.add(h.root);
+                let riderG = null;
+                if (rider) { riderG = makePerson(T, { robe, hat }); riderG.scale.setScalar(1 / HORSE_SCALE); riderG.userData.baseY = RIDER_DY / HORSE_SCALE; riderG.position.set(0, riderG.userData.baseY, 0);
+                    riderG.userData.legs.forEach((l, i) => { l.rotation.z = (i ? -1 : 1) * 0.42; l.rotation.x = -0.5; }); riderG.userData.arms.forEach(a => a.rotation.x = -0.9); h.seat.add(riderG); }
+                g.add(blobShadow(T, 1.2));
+                g.userData = { legs: [], rider: riderG, bodyG: h.root, horse: h, animate: (dt, speed) => h.update(dt, speed) };
+                return g;
+            }
             const H = makeHorseReal(coat, { robe, cloth: 0x9b2a22 });
             const g = H.root, bodyG = H.body;
             // убираем жокея движка — ставим наших всадников в национальной одежде
@@ -8722,16 +9051,22 @@
         function GameShell({ game, onExit }) {
             const mountRef = useRef(null); const stageRef = useRef(null);
             const [phase, setPhase] = useState('intro'); const [hud, setHud] = useState({}); const [res, setRes] = useState(null); const [runId, setRunId] = useState(0); const [err, setErr] = useState('');
+            const needKits = () => game.horses && (!window.__HORSE_KIT || (game.realRiders && !window.__RIDER_KIT));
+            const [loading, setLoading] = useState(needKits() ? 0 : null); // конные игры ждут модель коня с седлом (и наездников)
             const touch = typeof window !== 'undefined' && (('ontouchstart' in window) || window.innerWidth < 820);
             useEffect(() => {
                 if (!window.THREE) { setErr('3D-кітапхана жүктелмеді · three.js не загрузился'); return; }
-                let S, cleanup; try {
+                let S, cleanup, dead = false;
+                const init = () => { if (dead) return; try {
                     S = createGameStage(mountRef.current, game.stage || {}); stageRef.current = S; S.setPaused(true);
                     const api = { hud: (o) => setHud(h => ({ ...h, ...o })), end: (r) => { S.setPaused(true);
                         const nb = r.score != null && r.score > 0 ? setBest(game.id, r.score, game.higherBetter !== false) : false; setRes({ ...r, newBest: nb, best: getBest(game.id) }); setPhase('end'); } };
                     cleanup = game.create(S, api);
-                } catch (e) { console.error(e); setErr('WebGL қолжетімсіз · WebGL недоступен'); }
-                return () => { cleanup?.(); S?.dispose(); };
+                } catch (e) { console.error(e); setErr('WebGL қолжетімсіз · WebGL недоступен'); } };
+                if (needKits()) { const pr = [0, 0], upd = () => !dead && setLoading(game.realRiders ? (pr[0] * 4.3 + pr[1] * 5.4) / 9.7 : pr[0]);
+                    Promise.all([loadHorseKitGlobal(p => { pr[0] = p; upd(); }), game.realRiders ? loadRiderKitGlobal(p => { pr[1] = p; upd(); }) : null]).then(() => { if (!dead) { setLoading(null); init(); } }); }
+                else init();
+                return () => { dead = true; cleanup?.(); S?.dispose(); };
             }, [runId]);
             const start = () => { setPhase('play'); stageRef.current?.setPaused(false); };
             const restart = () => { setHud({}); setRes(null); setPhase('intro'); setRunId(n => n + 1); };
@@ -8769,7 +9104,7 @@
                                 <p className="text-[#ddd] text-sm leading-relaxed mt-4">{game.goal}</p>
                                 <div className="mt-4 text-left rounded-xl p-3 text-xs text-[#bbb] space-y-1" style={{ background: 'rgba(255,255,255,.04)' }}>{game.controls.map((c, i) => <p key={i}>• {c}</p>)}</div>
                                 {best != null && <p className="text-[#C5A55A] text-xs mt-3">Рекорд: <b>{best}{game.unit || ''}</b></p>}
-                                <button onClick={start} className="mt-5 w-full py-3.5 rounded-2xl font-bold tracking-widest text-black" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>▶ БАСТАУ</button>
+                                <button onClick={start} disabled={loading != null} className="mt-5 w-full py-3.5 rounded-2xl font-bold tracking-widest text-black disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#C5A55A,#8B6914)' }}>{loading != null ? `Тұлпарлар жүктелуде… ${Math.round(loading * 100)}%` : '▶ БАСТАУ'}</button>
                             </div>
                         </div>)}
                     {phase === 'end' && res && (
@@ -8803,7 +9138,7 @@
             const goals = [new T.Vector3(0, 0, 44), new T.Vector3(0, 0, -44)];
             goals.forEach((gp, i) => { const ring = new T.Mesh(new T.TorusGeometry(4, 0.25, 8, 40), lam(T, i ? 0xc23b2b : 0xd4a83a)); ring.rotation.x = Math.PI / 2; ring.position.copy(gp).setY(0.25); scene.add(ring);
                 const f = flag(T, i ? 0xc23b2b : 0xd4a83a, 7); f.position.copy(gp).add(new T.Vector3(4.5, 0, 0)); scene.add(f); });
-            const mk = (coat, robe, x, z, h) => { const g = makeHorse(T, { coat, robe }); g.position.set(x, 0, z); scene.add(g); return { g, h, v: 0, team: robe === 0x1d4fa0 ? 0 : 1, cd: 0 }; };
+            const mk = (coat, robe, x, z, h) => { const g = makeHorse(T, { coat, robe, real: true }); g.position.set(x, 0, z); scene.add(g); return { g, h, v: 0, team: robe === 0x1d4fa0 ? 0 : 1, cd: 0 }; };
             const me = mk(0x6b3e1c, 0x1d4fa0, 0, 30, Math.PI);
             const mates = [mk(0x3a2a1a, 0x1d4fa0, -10, 32, Math.PI)];
             const foes = [mk(0x8a5a32, 0xc23b2b, 0, -30, 0), mk(0xd8d0c0, 0xc23b2b, 10, -32, 0), mk(0x2a1d14, 0xc23b2b, -10, -32, 0)];
@@ -8854,7 +9189,7 @@
             const ban = new T.Mesh(new T.PlaneGeometry(W + 1, 1.2), new T.MeshBasicMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#9b2a22'; g.fillRect(0, 0, 512, 64); g.fillStyle = '#F0D882'; g.font = 'bold 40px Inter, sans-serif'; g.textAlign = 'center'; g.fillText('МӘРЕ · ФИНИШ', 256, 46); return new T.CanvasTexture(c); })(), side: T.DoubleSide }));
             ban.position.y = 5.4; fin.add(ban); fin.position.z = L; scene.add(fin);
             const coats = [0x6b3e1c, 0xe8e0d0, 0x2a1d14, 0x9a6a3a, 0x5a5a5a], robes = [0x1d4fa0, 0xc23b2b, 0x2f7a3a, 0x7a3a9a, 0xd48a1a];
-            const horses = coats.map((c, i) => { const g = makeHorse(T, { coat: c, robe: robes[i] }); const x = -6 + i * 3; g.position.set(x, 0, 0); scene.add(g); return { g, h: 0, v: 0, x, done: false, t: 0, base: 16.2 + Math.random() * 1.6, surge: Math.random() * 6 }; });
+            const horses = coats.map((c, i) => { const g = makeHorse(T, { coat: c, robe: robes[i], real: true, cap: [0xF0D882, 0xffffff, 0xf2c14e, 0xffffff, 0x1d4fa0][i % 5] }); const x = -6 + i * 3; g.position.set(x, 0, 0); scene.add(g); return { g, h: 0, v: 0, x, done: false, t: 0, base: 16.2 + Math.random() * 1.6, surge: Math.random() * 6 }; });
             const me = horses[0]; let stamina = 1, t = -3, finished = [], whipFx = 0;
             camera.position.set(-4, 4, -8);
             S.onFrame((dt) => {
@@ -9185,15 +9520,15 @@
         }
 
         const GAMES_3D = [
-            { id: 'kokpar', icon: '🐐', name: 'Көкпар', subtitle: 'Козлодрание · 2×2 + соперник', goal: 'Схватите тушу козла (серке) и довезите её до золотого круга «тайқазан» вашей команды. Соперники в красном попытаются отобрать. Матч — 2 минуты.', controls: ['◀ ▶ — поворот, ▲ — галоп, ▼ — тормоз', 'Пробел — держать серке крепче (сложнее отнять)'], buttons: [...DPAD, ['action', 'Ұстау', 'r']], create: gameKokpar },
-            { id: 'baiga', icon: '🐎', name: 'Бәйге', subtitle: 'Скачки на 900 м', goal: 'Обгоните четырёх соперников на 900 метрах. Каждый удар камчой ускоряет коня, но тратит его силы.', controls: ['Пробел / ▲ — камча (ритмично!)', '◀ ▶ — смещаться по дорожке'], buttons: [['left', '◀'], ['right', '▶'], ['action', 'ҚАМШЫ', 'r']], higherBetter: false, unit: ' с', create: gameBayge },
-            { id: 'audaryspaq', icon: '⚔', name: 'Аударыспақ', subtitle: 'Конная борьба', goal: 'Стащите соперника с коня! Нажимайте ◀ и ▶ поочерёдно — так вы тянете его к себе. Победа в двух раундах.', controls: ['◀ ▶ строго по очереди: ◀ ▶ ◀ ▶ …', 'Два одинаковых нажатия подряд ослабляют хват'], buttons: [['left', '◀ СОЛ'], ['right', 'ОҢ ▶', 'r']], create: gameAudaryspaq },
+            { id: 'kokpar', horses: true, realRiders: true, icon: '🐐', name: 'Көкпар', subtitle: 'Козлодрание · 2×2 + соперник', goal: 'Схватите тушу козла (серке) и довезите её до золотого круга «тайқазан» вашей команды. Соперники в красном попытаются отобрать. Матч — 2 минуты.', controls: ['◀ ▶ — поворот, ▲ — галоп, ▼ — тормоз', 'Пробел — держать серке крепче (сложнее отнять)'], buttons: [...DPAD, ['action', 'Ұстау', 'r']], create: gameKokpar },
+            { id: 'baiga', horses: true, realRiders: true, icon: '🐎', name: 'Бәйге', subtitle: 'Скачки на 900 м', goal: 'Обгоните четырёх соперников на 900 метрах. Каждый удар камчой ускоряет коня, но тратит его силы.', controls: ['Пробел / ▲ — камча (ритмично!)', '◀ ▶ — смещаться по дорожке'], buttons: [['left', '◀'], ['right', '▶'], ['action', 'ҚАМШЫ', 'r']], higherBetter: false, unit: ' с', create: gameBayge },
+            { id: 'audaryspaq', horses: true, icon: '⚔', name: 'Аударыспақ', subtitle: 'Конная борьба', goal: 'Стащите соперника с коня! Нажимайте ◀ и ▶ поочерёдно — так вы тянете его к себе. Победа в двух раундах.', controls: ['◀ ▶ строго по очереди: ◀ ▶ ◀ ▶ …', 'Два одинаковых нажатия подряд ослабляют хват'], buttons: [['left', '◀ СОЛ'], ['right', 'ОҢ ▶', 'r']], create: gameAudaryspaq },
             { id: 'kures', icon: '🤼', name: 'Қазақ күресі', subtitle: 'Борьба на поясах', goal: 'Поймайте момент для броска: нажмите, когда стрелка в зелёной зоне. Кто первым сделает 3 чистых броска — палуан.', controls: ['Пробел / кнопка — бросок', 'Промах даёт сопернику шанс контратаки'], buttons: [['action', 'ЛАҚТЫРУ', 'r']], create: gameKures },
             { id: 'togyz', icon: '⬤', name: 'Тоғызқұмалақ 3D', subtitle: 'Дала шахматы', goal: 'Классические правила: ходите из своей лунки (ближний ряд), берите чётные, получите тұздық на «трёх». Наберите 82 құмалақ.', controls: ['Наведите и нажмите на свою лунку', 'Шарики раскладываются против часовой стрелки'], create: gameTogyz3D },
             { id: 'asyk', icon: '🦴', name: 'Асық ату', subtitle: 'Сақой по кону', goal: 'Выбейте как можно больше асыков из ряда «кон» тяжёлой сақа. 6 бросков.', controls: ['◀ ▶ или палец — направление', 'Зажмите пробел/экран — сила, отпустите — бросок'], buttons: [['left', '◀'], ['right', '▶'], ['action', 'АТУ', 'r']], create: gameAsyq },
-            { id: 'qyz_quu', icon: '💨', name: 'Қыз қуу', subtitle: 'Догони девушку', goal: 'Догоните девушку на скаку и «поцелуйте» её. Потом она гонится за вами с камчой — доскачите до юрты, сохранив сердца.', controls: ['◀ ▶ — поворот, ▲ — галоп', 'Пробел — сүю, когда догнали'], buttons: [...DPAD, ['action', 'СҮЮ 💋', 'r']], create: gameQyzQuu },
+            { id: 'qyz_quu', horses: true, icon: '💨', name: 'Қыз қуу', subtitle: 'Догони девушку', goal: 'Догоните девушку на скаку и «поцелуйте» её. Потом она гонится за вами с камчой — доскачите до юрты, сохранив сердца.', controls: ['◀ ▶ — поворот, ▲ — галоп', 'Пробел — сүю, когда догнали'], buttons: [...DPAD, ['action', 'СҮЮ 💋', 'r']], create: gameQyzQuu },
             { id: 'altybaqan', icon: '🎪', name: 'Алтыбақан', subtitle: 'Ночные качели', goal: 'Раскачайте качели до 75°. Жмите в крайних точках, когда качели на миг замирают, — так они летят выше.', controls: ['Пробел / кнопка — «тербету» в крайней точке', 'Неудачный толчок гасит размах'], buttons: [['action', 'ТЕРБЕТУ', 'r']], stage: { sky: ['#04050c', '#1b1f38'], fog: [0x0b0d18, 30, 200] }, create: gameAltybaqan },
-            { id: 'jamby', icon: '🏹', name: 'Жамбы ату', subtitle: 'Стрельба по слитку', goal: 'На скаку собьёте стрелой серебряный слиток (жамбы), висящий на шесте. 4 заезда по 3 стрелы, учитывайте ветер.', controls: ['Мышь/палец — прицел, клик — выстрел', 'или стрелки — прицел, пробел — выстрел'], buttons: [...DPAD, ['action', 'АТУ', 'r']], create: gameJamby },
+            { id: 'jamby', horses: true, icon: '🏹', name: 'Жамбы ату', subtitle: 'Стрельба по слитку', goal: 'На скаку собьёте стрелой серебряный слиток (жамбы), висящий на шесте. 4 заезда по 3 стрелы, учитывайте ветер.', controls: ['Мышь/палец — прицел, клик — выстрел', 'или стрелки — прицел, пробел — выстрел'], buttons: [...DPAD, ['action', 'АТУ', 'r']], create: gameJamby },
             { id: 'orys_oyyny', icon: '🪢', name: 'Орамал тастау', subtitle: 'Брось платок', goal: 'Бегите вокруг круга, незаметно бросьте платок за спину сидящего и обегите круг раньше, чем он вас поймает. 5 раундов.', controls: ['▲ / ▶ — бежать быстрее', 'Пробел — бросить орамал'], buttons: [['up', '▲ ЖҮГІРУ'], ['action', 'ТАСТАУ', 'r']], create: gameOramal },
             { id: 'ak_suyek', icon: '🌙', name: 'Ақ сүйек', subtitle: 'Белая кость при луне', goal: 'Ночью в степи спрятана светящаяся белая кость. Найдите её по подсказке «ыстық — суық» и принесите к костру. Соперники будут её отбирать.', controls: ['◀ ▶ — поворот, ▲ — идти, ▼ — назад', 'Догоните держателя кости, чтобы отнять'], buttons: DPAD, stage: { sky: ['#05070f', '#1e2440'], fog: [0x10142a, 12, 70] }, create: gameAqSuyek },
         ];
@@ -9481,6 +9816,7 @@
             ] },
             { group: 'Ойын · Мұра', items: [
                 { k: 'games', icon: '🐎', kk: 'Ойындар', ru: 'Бәйге Pro, Асық ату и 11 игр' },
+                { k: 'heroes', icon: '⚔', kk: 'Батырлар', ru: 'Бөгенбай батыр в 3D — герои степи' },
                 { k: 'food', icon: '🍖', kk: 'Асхана', ru: 'Национальная кухня' },
                 { k: 'token', icon: '⩔', kk: 'TAMĠA токені', ru: '3D-монета с тамғой вашего рода', green: true },
             ] },
@@ -9500,6 +9836,7 @@
                             <div className="flex flex-wrap gap-3 mb-10">
                                 <button onClick={() => go('tree')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase font-bold transition hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg,#E8C66A,#8B6914)', color: '#000', boxShadow: '0 6px 30px rgba(197,165,90,.45)' }}>◈ Шежіре ағашын ашу</button>
                                 <button onClick={() => go('profile')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase border border-[#C5A55A] text-[#E8C66A] backdrop-blur-sm bg-[#0808084d] hover:bg-[#C5A55A1A] transition">👤 Менің бұтағым</button>
+                                <button onClick={() => go('heroes')} className="px-7 py-3.5 rounded-full text-xs tracking-widest uppercase border border-[#C5A55A] text-[#E8C66A] backdrop-blur-sm bg-[#0808084d] hover:bg-[#C5A55A1A] transition">⚔ Батырлар · 3D</button>
                             </div>
                             <div className="grid grid-cols-4 gap-3 max-w-md">
                                 {[['28 644', 'есім'], ['21', 'ру'], ['3', 'жүз'], ['20', 'буын']].map(([n, l]) => <div key={l}>
@@ -9517,6 +9854,16 @@
             return (
                 <section id="home-sections" className="mb-24 px-2 md:px-4 scroll-mt-8">
                     <p className="text-center text-[#C5A55A] text-base md:text-xl italic font-serif mb-14 max-w-2xl mx-auto">«{prov}»</p>
+                    <button onClick={() => go('heroes')} className="keep-dark group relative w-full overflow-hidden rounded-3xl text-left mb-14 transition-all duration-300 hover:-translate-y-1" style={{ border: '1px solid rgba(197,165,90,.55)', background: 'radial-gradient(ellipse at 80% 50%, #2a1f0e 0%, #0c0a07 60%)', minHeight: 240 }}>
+                        <img src="images/heroes/bogenbay.webp" alt="Бөгенбай батыр" className="absolute right-0 bottom-0 h-full object-contain transition-transform duration-500 group-hover:scale-105" style={{ maxWidth: '55%', objectPosition: 'right bottom', maskImage: 'linear-gradient(90deg,transparent,#000 35%)', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 35%)' }} />
+                        <div className="relative p-6 md:p-10" style={{ maxWidth: '62%' }}>
+                            <span className="inline-block px-3 py-1 rounded-full text-[9px] tracking-[0.3em] uppercase text-black font-bold mb-4" style={{ background: 'linear-gradient(135deg,#E8C66A,#8B6914)' }}>Жаңа · 3D</span>
+                            <p className="font-serif text-3xl md:text-5xl text-[#f6eedb] mb-2">⚔ Батырлар</p>
+                            <p className="text-[#d9cfb8] text-sm md:text-lg mb-1">Қанжығалы Бөгенбай батыр</p>
+                            <p className="text-[#8a8170] text-xs md:text-sm mb-5">Батыр 3D-де жүріп келеді · өмірбаяны · Бөгенбай батыр в 3D и его биография</p>
+                            <span className="inline-block px-6 py-2.5 rounded-full text-[11px] tracking-widest uppercase font-bold text-[#F0D882] border border-[#C5A55A] group-hover:bg-[#C5A55A1A] transition">Ашу →</span>
+                        </div>
+                    </button>
                     <div>
                         {HOME_SECTIONS.map(sec => <div key={sec.group} style={{ marginBottom: 44 }}>
                             <div className="flex items-center gap-4 mb-5"><p className="text-[#C5A55A] text-[10px] tracking-[0.5em] uppercase whitespace-nowrap">{sec.group}</p><span className="flex-1 h-px bg-gradient-to-r from-[#C5A55A40] to-transparent" /></div>
@@ -9535,7 +9882,7 @@
             );
         }
 
-        function HomeScreen({ onTribeSelect, onTreeClick, onCustomsClick, onTokenClick, onStoriesClick, onGamesClick, onFoodClick, onDnaClick, onChatClick, onProfileClick, onLearnClick, onAtlasClick, onKuiClick }) {
+        function HomeScreen({ onTribeSelect, onTreeClick, onCustomsClick, onTokenClick, onStoriesClick, onGamesClick, onFoodClick, onDnaClick, onChatClick, onProfileClick, onLearnClick, onAtlasClick, onKuiClick, onHeroesClick }) {
             const allTamgas = useMemo(() => Object.values(TRIBES_DB), []);
             const [tamgaIdx, setTamgaIdx] = React.useState(0);
             const [tamgaVisible, setTamgaVisible] = React.useState(true);
@@ -9552,7 +9899,7 @@
             }, [allTamgas.length]);
 
             const activeTamga = allTamgas[tamgaIdx];
-            const go = (k) => ({ tree: onTreeClick, profile: onProfileClick, dna: onDnaClick, chat: onChatClick, learn: onLearnClick, atlas: onAtlasClick, kui: onKuiClick, batyr: () => { location.href = 'batyr/'; }, customs: onCustomsClick, stories: onStoriesClick, games: onGamesClick, food: onFoodClick, token: onTokenClick })[k]?.();
+            const go = (k) => ({ tree: onTreeClick, profile: onProfileClick, dna: onDnaClick, chat: onChatClick, learn: onLearnClick, atlas: onAtlasClick, kui: onKuiClick, heroes: onHeroesClick, batyr: () => { location.href = 'batyr/'; }, customs: onCustomsClick, stories: onStoriesClick, games: onGamesClick, food: onFoodClick, token: onTokenClick })[k]?.();
 
             return (
                 <div className="max-w-7xl mx-auto px-6 pt-24">
