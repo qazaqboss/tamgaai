@@ -209,7 +209,7 @@ new GLTFLoader().loadAsync('../../models/heroes/bogenbay.glb', e => { if (e.tota
   hero.scale.setScalar(k); hero.position.y = -box.min.y * k; scene.add(hero);
   hero.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
   mixer = new T.AnimationMixer(hero); walk = mixer.clipAction(g.animations[0]); walk.play();
-  speedK = 0.255 * k; loading.remove();
+  speedK = 0.306 * k; loading.remove();
 }).catch(e => { console.warn('Батыр (GLB) не загрузился', e); loading.textContent = 'Модель жүктелмеді · не загрузилась'; });
 
 const clock = new T.Clock();

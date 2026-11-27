@@ -1,0 +1,137 @@
+<!doctype html><meta charset="utf-8"><body>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.149.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.149.0/examples/jsm/"}}</script>
+<script type="module">
+// Этап C: перепривязка кожи и новый цикл ходьбы для models/heroes/bogenbay.glb
+// 1) убираем остатки травы у сапог; 2) гладкие веса (сглаживание по рёбрам меша + по пространству — швы между кусками не рвутся);
+// 3) кость плаща — подол качается с запаздыванием; 4) ходьба по биомеханическим кривым (сгибание бедра/колена/стопы, качание таза, противоход рук).
+// Запуск: открыть в браузере через локальный сервер — window.GLB (base64) содержит готовый файл.
+import * as T from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+const log = m => console.log('C', m);
+const g = await new GLTFLoader().loadAsync(new URLSearchParams(location.search).get('src') || '../../models/heroes/bogenbay.glb');
+let src; g.scene.traverse(o => { if (o.isSkinnedMesh || o.isMesh) src = src || o; });
+const geo0 = new T.BufferGeometry(); geo0.setAttribute('position', src.geometry.attributes.position.clone()); geo0.setAttribute('normal', src.geometry.attributes.normal.clone());
+geo0.setAttribute('uv', src.geometry.attributes.uv.clone()); geo0.setIndex(src.geometry.index.clone());
+const P = geo0.attributes.position, nv = P.count;
+
+// ── 1. связные куски: убираем мелочь у земли (трава, щепки) ──
+{ const idx = geo0.index.array, par = new Int32Array(nv).map((_, i) => i); const f = a => { while (par[a] !== a) { par[a] = par[par[a]]; a = par[a]; } return a; };
+  for (let t = 0; t < idx.length; t += 3) { const a = f(idx[t]); par[f(idx[t + 1])] = a; par[f(idx[t + 2])] = a; }
+  const st = new Map(); for (let i = 0; i < nv; i++) { const r = f(i), y = P.getY(i); const s = st.get(r) || { n: 0, maxY: -9, minY: 9 }; s.n++; s.maxY = Math.max(s.maxY, y); s.minY = Math.min(s.minY, y); st.set(r, s); }
+  // цвет куска по текстуре: трава жёлто-зелёная, сапоги коричневые
+  const img = src.material.map.image, cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const c2 = cv.getContext('2d'); c2.drawImage(img, 0, 0);
+  const pix = c2.getImageData(0, 0, cv.width, cv.height).data, UV = geo0.attributes.uv, col = new Map();
+  for (let i = 0; i < nv; i += 2) { const r = f(i), u = Math.min(cv.width - 1, Math.max(0, Math.floor(UV.getX(i) * cv.width))), w = Math.min(cv.height - 1, Math.max(0, Math.floor(UV.getY(i) * cv.height))), o = (w * cv.width + u) * 4;
+    const c = col.get(r) || [0, 0, 0, 0]; c[0] += pix[o]; c[1] += pix[o + 1]; c[2] += pix[o + 2]; c[3]++; col.set(r, c); }
+  const yellow = r => { const c = col.get(r); if (!c || !c[3]) return false; return c[1] / Math.max(1, c[0]) > 0.7 && c[0] / c[3] > 110; };
+  const keep = []; let drop = 0;
+  for (let t = 0; t < idx.length; t += 3) { const r = f(idx[t]), s = st.get(r); if ((s.maxY < 0.24 && yellow(r)) || (s.maxY < 0.2 && s.n < 40)) { drop++; continue; } keep.push(idx[t], idx[t + 1], idx[t + 2]); }
+  geo0.setIndex(keep); log('drop tris ' + drop + ' / comps ' + st.size); }
+
+// ── 2. скелет (как в этапе B) + кость плаща ──
+const J = {
+  hips: [0, 0.42, 0], spine: [0, 0.5, -0.005], chest: [0, 0.6, -0.005], neck: [0, 0.715, 0], head: [0, 0.765, 0.02], headEnd: [0, 0.9, 0.02],
+  shoulderL: [0.055, 0.68, 0], armL: [0.14, 0.665, 0], foreL: [0.165, 0.57, 0.04], handL: [0.1, 0.545, 0.12], handEndL: [0.08, 0.53, 0.16],
+  shoulderR: [-0.055, 0.68, 0], armR: [-0.14, 0.665, 0], foreR: [-0.175, 0.55, 0], handR: [-0.155, 0.48, 0.02], handEndR: [-0.15, 0.44, 0.03],
+  thighL: [0.075, 0.4, 0], shinL: [0.09, 0.26, 0.02], footL: [0.095, 0.14, 0], toeL: [0.095, 0.1, 0.1],
+  thighR: [-0.075, 0.4, 0], shinR: [-0.09, 0.26, 0.02], footR: [-0.095, 0.14, 0], toeR: [-0.095, 0.1, 0.1],
+  cape: [0, 0.46, -0.06], capeEnd: [0, 0.2, -0.09],
+};
+const PARENT = { spine: 'hips', chest: 'spine', neck: 'chest', head: 'neck', headEnd: 'head',
+  shoulderL: 'chest', armL: 'shoulderL', foreL: 'armL', handL: 'foreL', handEndL: 'handL',
+  shoulderR: 'chest', armR: 'shoulderR', foreR: 'armR', handR: 'foreR', handEndR: 'handR',
+  thighL: 'hips', shinL: 'thighL', footL: 'shinL', toeL: 'footL', thighR: 'hips', shinR: 'thighR', footR: 'shinR', toeR: 'footR', cape: 'hips', capeEnd: 'cape' };
+const names = Object.keys(J), bones = {}, NB = names.length, BI = Object.fromEntries(names.map((n, i) => [n, i]));
+names.forEach(n => { const b = new T.Bone(); b.name = n; bones[n] = b; });
+names.forEach(n => { const p = PARENT[n], w = new T.Vector3(...J[n]); if (p) { bones[p].add(bones[n]); bones[n].position.copy(w.sub(new T.Vector3(...J[p]))); } else bones[n].position.copy(w); });
+const SEG = { hips: 'spine', spine: 'chest', chest: 'neck', neck: 'head', head: 'headEnd', shoulderL: 'armL', armL: 'foreL', foreL: 'handL', handL: 'handEndL',
+  shoulderR: 'armR', armR: 'foreR', foreR: 'handR', handR: 'handEndR', thighL: 'shinL', shinL: 'footL', footL: 'toeL', thighR: 'shinR', shinR: 'footR', footR: 'toeR', cape: 'capeEnd' };
+const segs = Object.keys(SEG), A = segs.map(n => new T.Vector3(...J[n])), B = segs.map(n => new T.Vector3(...J[SEG[n]]));
+const KIND = n => /^(thigh|shin|foot)/.test(n) ? 'leg' : /^(shoulder|arm|fore|hand)/.test(n) ? 'arm' : n === 'cape' ? 'cape' : 'core';
+const SIDE = n => n.endsWith('L') ? 1 : n.endsWith('R') ? -1 : 0;
+
+// ── 3. начальные веса (по отрезкам костей с зонами) в плотной матрице nv × NB ──
+const W = new Float32Array(nv * NB), v = new T.Vector3(), q = new T.Vector3(), line = new T.Line3();
+for (let i = 0; i < nv; i++) { v.fromBufferAttribute(P, i); let sum = 0;
+  const back = v.z < -0.035 || Math.abs(v.x) > 0.15, capeZone = v.y < 0.47 && v.y > 0.17 && back;
+  for (let s = 0; s < segs.length; s++) { const n = segs[s], k = KIND(n), sd = SIDE(n);
+    line.set(A[s], B[s]); line.closestPointToPoint(v, true, q); let d = q.distanceTo(v);
+    if (k === 'leg') { if (capeZone || v.y > 0.45 || v.x * sd < -0.025) continue; if (d > (v.y < 0.235 ? 0.11 : 0.08)) continue; }
+    if (k === 'arm') { const hand = /hand/.test(n); if (!hand && (v.x * sd < 0.1 || v.z < -0.06)) continue; if (d > (hand ? 0.055 : 0.065) || (v.y < 0.4 && !hand)) continue; }
+    if (k === 'cape') { if (!capeZone) continue; d *= 0.6; }
+    if (n === 'head' && v.y < 0.7) continue;
+    const w = 1 / Math.pow(d + 0.015, 4); W[i * NB + BI[n]] += w; sum += w; }
+  if (!sum) { W[i * NB + BI.hips] = 1; continue; } for (let b = 0; b < NB; b++) W[i * NB + b] /= sum; }
+// подол плаща: чем ниже, тем больше кости плаща (у пояса — 0)
+for (let i = 0; i < nv; i++) { v.fromBufferAttribute(P, i); if (!(v.y < 0.47 && v.y > 0.17 && (v.z < -0.035 || Math.abs(v.x) > 0.15))) continue;
+  const k = Math.min(1, Math.max(0, (0.44 - v.y) / 0.2)); const o = i * NB; for (let b = 0; b < NB; b++) W[o + b] *= (1 - k); W[o + BI.cape] += k; }
+
+// ── 4. сглаживание: соседи по рёбрам + ближние вершины других кусков (швы сапог/штанин, бронепластины) ──
+const nbr = Array.from({ length: nv }, () => []); { const idx = geo0.index.array; for (let t = 0; t < idx.length; t += 3) { const a = idx[t], b = idx[t + 1], c = idx[t + 2]; nbr[a].push(b, c); nbr[b].push(a, c); nbr[c].push(a, b); } }
+{ const R = 0.012, cell = new Map(), key = (x, y, z) => `${Math.floor(x / R)},${Math.floor(y / R)},${Math.floor(z / R)}`;
+  for (let i = 0; i < nv; i++) { const k = key(P.getX(i), P.getY(i), P.getZ(i)); (cell.get(k) || cell.set(k, []).get(k)).push(i); }
+  for (let i = 0; i < nv; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i), cx = Math.floor(x / R), cy = Math.floor(y / R), cz = Math.floor(z / R); let added = 0;
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) { const L = cell.get(`${cx + a},${cy + b},${cz + c}`); if (!L) continue;
+      for (const j of L) { if (j === i || added > 6) continue; const dx = P.getX(j) - x, dy = P.getY(j) - y, dz = P.getZ(j) - z; if (dx * dx + dy * dy + dz * dz < R * R) { nbr[i].push(j); added++; } } } } }
+{ let cur = W, nxt = new Float32Array(W.length);
+  for (let it = 0; it < 14; it++) { for (let i = 0; i < nv; i++) { const L = nbr[i], o = i * NB; if (!L.length) { for (let b = 0; b < NB; b++) nxt[o + b] = cur[o + b]; continue; }
+      for (let b = 0; b < NB; b++) { let s = 0; for (const j of L) s += cur[j * NB + b]; nxt[o + b] = cur[o + b] * 0.45 + 0.55 * s / L.length; } }
+    [cur, nxt] = [nxt, cur]; }
+  W.set(cur); }
+// вершины-дубли на швах UV (одна точка — несколько вершин) получают одинаковые веса: без трещин
+{ const grp = new Map(); for (let i = 0; i < nv; i++) { const k = `${P.getX(i).toFixed(5)},${P.getY(i).toFixed(5)},${P.getZ(i).toFixed(5)}`; (grp.get(k) || grp.set(k, []).get(k)).push(i); }
+  for (const L of grp.values()) { if (L.length < 2) continue; for (let b = 0; b < NB; b++) { let s = 0; for (const i of L) s += W[i * NB + b]; s /= L.length; for (const i of L) W[i * NB + b] = s; } } }
+// топ-4 влияния на вершину
+const SI = new Uint16Array(nv * 4), SW = new Float32Array(nv * 4);
+for (let i = 0; i < nv; i++) { const o = i * NB, arr = []; for (let b = 0; b < NB; b++) if (W[o + b] > 1e-4) arr.push([b, W[o + b]]); arr.sort((a, b) => b[1] - a[1]); const top = arr.slice(0, 4); const s = top.reduce((a, b) => a + b[1], 0) || 1;
+  top.forEach(([b, w], k) => { SI[i * 4 + k] = b; SW[i * 4 + k] = w / s; }); if (!top.length) { SI[i * 4] = BI.hips; SW[i * 4] = 1; } }
+geo0.setAttribute('skinIndex', new T.Uint16BufferAttribute(SI, 4)); geo0.setAttribute('skinWeight', new T.Float32BufferAttribute(SW, 4)); log('weights ok');
+
+const mesh = new T.SkinnedMesh(geo0, src.material); mesh.name = 'bogenbay_body';
+const root = new T.Group(); root.name = 'Bogenbay'; root.add(bones.hips); root.add(mesh); root.updateMatrixWorld(true);
+mesh.bind(new T.Skeleton(names.map(n => bones[n])));
+
+// ── 5. ходьба: кривые походки человека (градусы, t = 0 — касание пяткой), периодический сплайн ──
+const D = Math.PI / 180;
+const curve = (pts) => { const n = pts.length; return t => { t = ((t % 1) + 1) % 1; let i = 0; while (i < n - 1 && pts[i + 1][0] <= t) i++;
+  const p = k => pts[((k % n) + n) % n], P0 = p(i - 1), P1 = p(i), P2 = p(i + 1), P3 = p(i + 2);
+  const t1 = P1[0], t2 = i + 1 < n ? P2[0] : 1 + pts[0][0]; const u = (t - t1) / (t2 - t1 || 1), u2 = u * u, u3 = u2 * u;
+  return 0.5 * (2 * P1[1] + (-P0[1] + P2[1]) * u + (2 * P0[1] - 5 * P1[1] + 4 * P2[1] - P3[1]) * u2 + (-P0[1] + 3 * P1[1] - 3 * P2[1] + P3[1]) * u3); }; };
+const HIP = curve([[0, 24], [0.12, 20], [0.3, 4], [0.5, -10], [0.6, -4], [0.72, 16], [0.86, 27]]);      // сгибание бедра (+ вперёд)
+const KNEE = curve([[0, 4], [0.14, 16], [0.32, 6], [0.48, 8], [0.62, 38], [0.73, 58], [0.86, 28], [0.95, 6]]); // сгибание колена
+const ANK = curve([[0, 0], [0.08, -8], [0.3, 6], [0.48, 10], [0.62, -16], [0.74, -4], [0.88, 3]]);        // + тыльное сгибание
+const DUR = 1.15, NK = 60, times = [], tracks = {}, qa = new T.Quaternion(), e = new T.Euler();
+const rot = (n, x, y = 0, z = 0) => { e.set(x, y, z, 'YXZ'); qa.setFromEuler(e); (tracks[n] ||= []).push(...qa.toArray()); };
+const hipPos = [], STR = 0.78;   // плащ и длинный халат — шаг чуть сдержаннее спортивного
+for (let k = 0; k <= NK; k++) { const u = k / NK, f = u * Math.PI * 2; times.push(u * DUR);
+  for (const [s, ph] of [['L', 0], ['R', 0.5]]) { const t = u + ph;
+    rot('thigh' + s, -HIP(t) * D * STR, 0, 0); rot('shin' + s, KNEE(t) * D * STR, 0, 0); rot('foot' + s, -ANK(t) * D, 0, 0); }
+  const sL = Math.sin(f);                                   // f = 0: левая пятка касается
+  rot('hips', 0.03, 0.07 * Math.sin(f + 0.2), 0.035 * Math.sin(2 * f + Math.PI / 2) * 0 + 0.03 * Math.cos(f));
+  rot('spine', 0.02, -0.04 * Math.sin(f + 0.2), -0.012 * Math.cos(f)); rot('chest', 0.03, -0.055 * Math.sin(f + 0.2), -0.012 * Math.cos(f));
+  rot('neck', -0.02, 0.05 * Math.sin(f + 0.2), 0.01 * Math.cos(f)); rot('head', -0.03, 0.03 * Math.sin(f + 0.2), 0.008 * Math.cos(f));
+  // правая рука свободна: маятник вперёд, когда вперёд левая нога; локоть сгибается на махе вперёд
+  const swing = Math.sin(f + 0.35); rot('shoulderR', 0, 0, 0); rot('armR', -0.24 * swing, 0, 0.04); rot('foreR', -0.12 - 0.16 * Math.max(0, swing), 0, 0); rot('handR', -0.05 - 0.05 * Math.max(0, swing), 0, 0);
+  rot('shoulderL', 0, 0, 0); rot('armL', 0.05 * swing, 0, 0); rot('foreL', 0, 0, 0); rot('handL', 0, 0, 0);   // левая держит саблю
+  // плащ запаздывает за телом и раскачивается от шага
+  rot('cape', 0.07 + 0.05 * Math.sin(2 * f - 1.2), 0.04 * Math.sin(f - 0.9), 0.05 * Math.sin(f - 1.1));
+  // таз: два подъёма за цикл (выше всего в середине опоры), сдвиг к опорной ноге
+  hipPos.push(J.hips[0] + 0.006 * Math.sin(f + Math.PI / 2) * -1, J.hips[1] - 0.006 - 0.008 * Math.cos(2 * f), J.hips[2]); }
+const clipTracks = Object.entries(tracks).map(([n, vals]) => new T.QuaternionKeyframeTrack(n + '.quaternion', times, vals));
+clipTracks.push(new T.VectorKeyframeTrack('hips.position', times, hipPos));
+const clip = new T.AnimationClip('walk', DUR, clipTracks);
+
+// ── 6. скорость шага: средняя скорость носка опорной ноги назад (чтобы стопа не скользила по земле) ──
+const mixer = new T.AnimationMixer(root), act = mixer.clipAction(clip); act.play(); const toe = new T.Vector3(); const samples = [];
+for (let k = 0; k < 120; k++) { mixer.setTime(k / 120 * DUR); root.updateMatrixWorld(true); bones.toeL.getWorldPosition(toe); samples.push([toe.y, toe.z]); }
+let vs = []; for (let k = 1; k < 120; k++) { const [y0, z0] = samples[k - 1], [y1, z1] = samples[k]; if (Math.max(y0, y1) < 0.105 && z1 < z0) vs.push((z0 - z1) / (DUR / 120)); }
+const speed = vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : 0.25;
+act.stop(); mixer.uncacheRoot(root); names.forEach(n => { bones[n].quaternion.identity(); }); bones.hips.position.set(...J.hips);
+clip.userData = { speed }; root.userData = { walkSpeed: speed };
+log('speed ' + speed.toFixed(3));
+
+const glb = await new GLTFExporter().parseAsync(root, { binary: true, animations: [clip], maxTextureSize: 2048 });
+window.GLB = btoa(Array.from(new Uint8Array(glb), c => String.fromCharCode(c)).join(''));
+window.OUT = { verts: nv, bones: NB, bytes: glb.byteLength, speed }; window.READY = true;
+</script>

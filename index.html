@@ -5440,7 +5440,7 @@
                         hero.scale.setScalar(k); hero.position.y = -box.min.y * k; scene.add(hero);
                         hero.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
                         const mixer = new T.AnimationMixer(hero), walk = mixer.clipAction(g.animations[0]); walk.play();
-                        const stride = 0.255 * k;   // м/с — скорость шага модели (длина шага × частота)
+                        const stride = 0.306 * k;   // м/с — скорость шага модели (длина шага × частота)
                         let w = 1; setReady(true);
                         S.onFrame(dt => { const target = api.current.walking ? 1 : 0; w += (target - w) * Math.min(1, dt * 3);
                             walk.setEffectiveWeight(Math.max(0.0001, w)); walk.setEffectiveTimeScale(Math.max(0.05, w));
